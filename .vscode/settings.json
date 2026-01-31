@@ -1,0 +1,6 @@
+{
+  "editor.minimap.enabled": false,
+  "editor.wordWrap": "on",
+  "editor.formatOnSave": true,
+  "workbench.editor.enablePreview": false
+}

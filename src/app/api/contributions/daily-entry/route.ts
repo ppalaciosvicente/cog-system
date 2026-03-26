@@ -152,6 +152,7 @@ export async function GET(request: NextRequest) {
     households.forEach((household) => {
       household.memberIds.forEach((memberId) => householdByMemberId.set(memberId, household));
     });
+    type LookupRow = { id: number; name?: string | null };
     const fundTypeNameById = new Map(
       ((fundTypeRows ?? []) as LookupRow[]).map((row) => [row.id, row.name ?? String(row.id)]),
     );

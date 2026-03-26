@@ -268,7 +268,7 @@ export async function PUT(request: NextRequest) {
   });
   const managedRoleIds = [CONTRIBUTION_ADMIN_ROLE, CONTRIBUTION_USER_ROLE]
     .map((name) => roleIdByName.get(name))
-    .filter((id): id is number => Number.isFinite(id) && id > 0);
+    .filter((id): id is number => typeof id === "number" && Number.isFinite(id) && id > 0);
 
   const { error: deleteRoleErr } = await supabase
     .from("emcaccountroles")

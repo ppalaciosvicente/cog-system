@@ -53,9 +53,9 @@ function applyScopeFilters(
   access: Extract<Awaited<ReturnType<typeof getContributionAccess>>, { ok: true }>,
   donorStatusIds: number[],
 ) {
-  let scopedQuery = query.in("statusid", donorStatusIds);
+  let scopedQuery = query.in("statusid", donorStatusIds as number[]);
   if (!access.isAdmin) {
-    scopedQuery = scopedQuery.in("countrycode", access.allowedCountryCodes);
+    scopedQuery = scopedQuery.in("countrycode", access.allowedCountryCodes as string[]);
   }
   return scopedQuery;
 }

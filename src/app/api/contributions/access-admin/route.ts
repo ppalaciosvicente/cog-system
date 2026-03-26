@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
 
   const contribRoleIds = [CONTRIBUTION_ADMIN_ROLE, CONTRIBUTION_USER_ROLE]
     .map((roleName) => roleIdByName.get(roleName))
-    .filter((id): id is number => Number.isFinite(id) && id > 0);
+    .filter((id): id is number => typeof id === "number" && Number.isFinite(id) && id > 0);
 
   const accounts = ((accountData ?? []) as AccountRow[]).filter(
     (row) => Number.isFinite(row.id) && row.id > 0 && Number.isFinite(row.memberid) && (row.memberid ?? 0) > 0,

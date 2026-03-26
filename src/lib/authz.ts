@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { createServiceRoleClient } from "@/lib/supabase/service";
+import { createServiceRoleClient } from "./supabase/service";
 import type { RoleRow } from "@/types/roles";
 import { normalizeRoleRow } from "@/types/roles";
 

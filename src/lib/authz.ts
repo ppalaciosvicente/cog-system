@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { createServiceRoleClient } from "./supabase/service";
-import type { RoleRow } from "@/types/roles";
-import { normalizeRoleRow } from "@/types/roles";
+import type { RoleRow } from "../types/roles";
+import { normalizeRoleRow } from "../types/roles";
 
 function parseCookieValue(cookieHeader: string | null, name: string) {
   if (!cookieHeader) return null;

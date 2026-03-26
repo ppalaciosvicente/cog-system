@@ -1,0 +1,130 @@
+.selectRow {
+  display: grid;
+  gap: 10px;
+}
+
+.reviewCard {
+  margin-top: 14px;
+}
+
+.reviewText {
+  margin: 10px 0 20px;
+}
+
+.namesRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px minmax(0, 1fr);
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.memberName {
+  font-weight: 700;
+}
+
+.mobileMemberName {
+  display: none;
+  font-weight: 700;
+}
+
+.compareGrid {
+  display: grid;
+  gap: 10px;
+}
+
+.groupHeading {
+  margin: 0;
+  font-size: 14px;
+}
+
+.groupRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.groupCard {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #f9fafb;
+}
+
+.groupTitle {
+  margin: 0;
+  font-size: 14px;
+}
+
+.groupFieldRow {
+  display: grid;
+  gap: 6px;
+}
+
+.fieldRow {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr) 120px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.phoneRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.fieldLabel {
+  font-weight: 600;
+}
+
+.copyButtons {
+  display: grid;
+  gap: 6px;
+  align-self: center;
+}
+
+.copyButton {
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.groupCopyButtons {
+  align-self: center;
+}
+
+@media (max-width: 900px) {
+  .namesRow {
+    display: none;
+  }
+
+  .mobileMemberName {
+    display: block;
+  }
+
+  .fieldRow {
+    grid-template-columns: 1fr;
+  }
+
+  .phoneRow {
+    grid-template-columns: 1fr;
+  }
+
+  .groupRow {
+    grid-template-columns: 1fr;
+  }
+
+  .copyButtons {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .copyButtons {
+    grid-template-columns: 1fr;
+  }
+}

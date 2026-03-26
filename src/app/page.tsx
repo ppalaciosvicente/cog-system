@@ -1,16 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "../lib/supabase/client";
+import { loadCurrentAppAccess } from "@/lib/app-access";
+import forms from "@/styles/forms.module.css";
 
 export default function HomePage() {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);
-  const [roles, setRoles] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [roleSummary, setRoleSummary] = useState<string | null>(null);
+  const [appAccess, setAppAccess] = useState({
+    canAccessEmc: false,
+    canAccessContributions: false,
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -18,49 +25,43 @@ export default function HomePage() {
     async function run() {
       setLoading(true);
       setError(null);
+      setRoleSummary(null);
+      setAppAccess({ canAccessEmc: false, canAccessContributions: false });
 
       try {
-        const { data: { user }, error: userErr } = await supabase.auth.getUser();
-        if (userErr || !user) {
-          router.replace("/login");
+        const access = await loadCurrentAppAccess(supabase);
+        if (!access.ok) {
+          if (access.unauthenticated) {
+            router.replace("/login");
+            return;
+          }
+
+          setError(access.error);
           return;
         }
 
-        // IMPORTANT: lowercase table name
-        const { data: account, error: accErr } = await supabase
-          .from("emcaccounts")
-          .select("id, isactive")
-          .eq("authuserid", user.id)
-          .single();
-
-        if (accErr || !account || !account.isactive) {
-          setError("No active EMC account linked to this login.");
+        const nextAppAccess = access.appAccess;
+        if (nextAppAccess.canAccessEmc && !nextAppAccess.canAccessContributions) {
+          router.replace("/emc");
           return;
         }
 
-        // IMPORTANT: lowercase table names
-        const { data: roleRows, error: roleErr } = await supabase
-          .from("emcaccountroles")
-          .select("emcroles(rolename)")
-          .eq("accountid", account.id);
-
-        if (roleErr) {
-          setError(`Failed to load roles: ${roleErr.message}`);
+        if (!nextAppAccess.canAccessEmc && nextAppAccess.canAccessContributions) {
+          router.replace("/contributions");
           return;
         }
 
-        const roleNames = (roleRows ?? [])
-          .map((r: any) => r.emcroles?.rolename)
-          .filter(Boolean) as string[];
-
-        const allowed = roleNames.includes("emc_admin") || roleNames.includes("emc_user");
-        if (!allowed) {
-          setError("You are logged in, but you do not have access to the EMC app.");
+        if (nextAppAccess.canAccessEmc && nextAppAccess.canAccessContributions) {
+          if (!cancelled) {
+            setError(null);
+            setAppAccess(nextAppAccess);
+            setRoleSummary(access.roleSummary);
+          }
           return;
         }
 
         if (!cancelled) {
-          setRoles(roleNames);
+          setError("You are logged in, but you do not have access to any app area.");
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -74,32 +75,68 @@ export default function HomePage() {
   }, [router, supabase]);
 
   if (loading) {
-    return <main style={{ padding: 24, fontFamily: "system-ui" }}>Loading…</main>;
+    return <main className={forms.page}>Loading…</main>;
+  }
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    router.replace("/login");
   }
 
   return (
-    <main style={{ padding: 24, fontFamily: "system-ui" }}>
-      <h1>EMC Dashboard</h1>
+    <main className={forms.page}>
+      <h1 className={forms.h1}>COG PKG Management System</h1>
+      {!error && roleSummary ? <p>Logged in as {roleSummary}</p> : null}
+      {!error && (
+        <div className={forms.topGroup} style={{ marginTop: 8 }}>
+          <button
+            type="button"
+            className={`${forms.button} ${forms.buttonDanger}`}
+            onClick={handleLogout}
+          >
+            Log out
+          </button>
+        </div>
+      )}
 
       {error ? (
-        <p style={{ color: "crimson" }}>{error}</p>
+        <p className={forms.error}>{error}</p>
       ) : (
-        <>
-          <p>Logged in. Roles: {roles.join(", ")}</p>
-          <div style={{ marginTop: 16, display: "flex", gap: 12 }}>
-            <a href="/members">Members</a>
-            <button
-              onClick={async () => {
-                await supabase.auth.signOut();
-                router.replace("/login");
-              }}
-            >
-              Sign out
-            </button>
-          </div>
-        </>
+        <section className={forms.sectionCard} style={{ marginTop: 12 }}>
+          <ul
+            className={forms.listButtons}
+            style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}
+          >
+            {appAccess.canAccessEmc ? (
+              <li>
+                <Link href="/emc" className={forms.listButtonLink}>
+                  <span className={forms.listButtonIcon}>EMC</span>
+                  <span>
+                    <span style={{ display: "block" }}>Elders Management Console</span>
+                    <span style={{ display: "block", fontWeight: 400, marginTop: 4 }}>
+                      View/manage members, elders, documents, etc.
+                    </span>
+                  </span>
+                </Link>
+              </li>
+            ) : null}
+
+            {appAccess.canAccessContributions ? (
+              <li>
+                <Link href="/contributions" className={forms.listButtonLink}>
+                  <span className={forms.listButtonIcon}>CTR</span>
+                  <span>
+                    <span style={{ display: "block" }}>Contributions</span>
+                    <span style={{ display: "block", fontWeight: 400, marginTop: 4 }}>
+                      View/enter contributions, review donors, create/download reports, etc.
+                    </span>
+                  </span>
+                </Link>
+              </li>
+            ) : null}
+          </ul>
+        </section>
       )}
     </main>
   );
 }
-

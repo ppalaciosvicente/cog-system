@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../lib/supabase/client";
+import styles from "@/styles/auth.module.css";
 
 export default function LoginPage() {
   const supabase = createClient();
@@ -15,9 +17,22 @@ export default function LoginPage() {
     e.preventDefault();
     setErr(null);
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setErr(error.message);
+    const normalizedEmail = email.trim().toLowerCase();
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
+        password,
+      });
+      if (error) {
+        setErr(error.message);
+        return;
+      }
+    } catch (signInError) {
+      const message =
+        signInError instanceof Error
+          ? signInError.message
+          : "Unable to reach the authentication service. Please try again.";
+      setErr(message);
       return;
     }
 
@@ -25,30 +40,52 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={{ maxWidth: 420, margin: "60px auto", fontFamily: "system-ui" }}>
-      <h1>EMC Login</h1>
+    <div className={styles.page}>
+      <div className={styles.card}>
+        <p className={styles.brand}>
+          Management System
+          <br />
+          COG PKG
+        </p>
+        <h1 className={`${styles.title} ${styles.titleMuted}`}>Welcome back</h1>
 
-      <form onSubmit={onSubmit}>
-        <label>Email</label>
-        <input
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={{ width: "100%" }}
-        />
+        <form onSubmit={onSubmit}>
+          <div className={styles.fieldGroup}>
+            <label className={styles.label}>Email</label>
+            <input
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className={styles.input}
+              autoComplete="username"
+            />
+          </div>
 
-        <label style={{ marginTop: 12, display: "block" }}>Password</label>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={{ width: "100%" }}
-        />
+          <div className={styles.fieldGroup}>
+            <label className={styles.label}>Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={styles.input}
+              autoComplete="current-password"
+            />
+          </div>
 
-        <button style={{ marginTop: 16, width: "100%" }}>Sign in</button>
+          <button className={styles.submit}>Sign in</button>
 
-        {err && <p style={{ color: "crimson" }}>{err}</p>}
-      </form>
+          <div className={styles.links}>
+            <Link href="/forgot-password" className={styles.link}>
+              Forgot password?
+            </Link>
+          </div>
+
+          <p className={styles.subtitle} style={{ marginTop: 12 }}>
+            Invite link expired? Use <em>Forgot password</em> to receive a fresh setup link.
+          </p>
+
+          {err && <p className={styles.error}>{err}</p>}
+        </form>
+      </div>
     </div>
   );
 }
-

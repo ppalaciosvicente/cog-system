@@ -1,0 +1,41 @@
+.reviewCard {
+  margin-top: 14px;
+}
+
+.reviewText {
+  margin: 10px 0 20px;
+}
+
+.memberName {
+  font-weight: 700;
+}
+
+.splitGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.groupCard {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #f9fafb;
+}
+
+.groupFieldRow {
+  display: grid;
+  gap: 6px;
+}
+
+.fieldLabel {
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .splitGrid {
+    grid-template-columns: 1fr;
+  }
+}

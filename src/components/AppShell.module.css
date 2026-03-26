@@ -1,0 +1,165 @@
+.shell {
+  min-height: 100vh;
+}
+
+.topBar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.menuButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #111827;
+  cursor: pointer;
+}
+
+.menuButton:hover {
+  background: #f9fafb;
+}
+
+.topTitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 260px;
+  padding: 18px 14px;
+  background: #ffffff;
+  border-right: 1px solid #e5e7eb;
+  transform: translateX(-100%);
+  transition: transform 0.2s ease;
+  z-index: 40;
+  overflow-y: auto;
+}
+
+.sidebarOpen {
+  transform: translateX(0);
+}
+
+.brand {
+  margin: 4px 6px 16px;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: #111827;
+}
+
+.scopeLabel {
+  margin: 2px 6px 6px;
+  font-size: 12px;
+  font-style: italic;
+  color: #6b7280;
+}
+
+.scopeLabel:last-of-type {
+  margin-bottom: 12px;
+}
+
+.switcher {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.switcherLabel {
+  margin: 0 6px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.nav {
+  display: grid;
+  gap: 4px;
+}
+
+.navLogout {
+  margin-top: 12px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+}
+
+.navLogout:hover {
+  background: #fee2e2;
+  color: #7f1d1d;
+}
+
+.navLink {
+  display: block;
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: #374151;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.navLink:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.navLinkActive {
+  background: #eef2ff;
+  color: #1d4ed8;
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.35);
+  z-index: 35;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.content {
+  padding: 16px;
+}
+
+@media (min-width: 1024px) {
+  .topBar {
+    display: none;
+  }
+
+  .sidebar {
+    transform: translateX(0);
+  }
+
+  .backdrop {
+    display: none;
+  }
+
+  .content {
+    margin-left: 260px;
+    padding: 24px;
+  }
+}

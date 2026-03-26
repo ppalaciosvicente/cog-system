@@ -227,7 +227,7 @@ export async function PUT(request: NextRequest) {
   }
 
   const countryCodes = Array.from(
-    new Set((payload.countryCodes ?? []).map((code) => normalizeCode(code)).filter(Boolean)),
+    new Set((payload.countryCodes ?? []).map((code: unknown) => normalizeCode(String(code))).filter(Boolean)),
   );
   if (roleName === CONTRIBUTION_USER_ROLE && countryCodes.length === 0) {
     return NextResponse.json(

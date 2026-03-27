@@ -627,6 +627,7 @@ export default function EldersAreasPage() {
           countryNameByCode,
           usStateNameByCode,
           canadaStateNameByCode,
+          australiaStateNameByCode,
           congregationNameById,
         },
       );

@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
   const payload = (await request.json().catch(() => ({} as Payload))) ?? {};
   const requestedMemberIds = Array.isArray(payload.memberIds)
-    ? payload.memberIds
+    ? (payload.memberIds as unknown[])
         .map((id) => Number(id))
         .filter((id) => Number.isFinite(id) && id > 0)
     : [];

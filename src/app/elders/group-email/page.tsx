@@ -169,7 +169,12 @@ export default function EldersGroupEmailPage() {
           aErr = areaResult.error;
         }
 
-        if (aErr || areaRows.length === 0) {
+        if (aErr) {
+          setError(`Failed to load areas: ${aErr.message}`);
+          return;
+        }
+
+        if (areaRows.length === 0) {
           const fallback = await fetch("/api/elders/areas/self", {
             method: "GET",
             headers: await getAuthHeaders(),
@@ -180,13 +185,10 @@ export default function EldersGroupEmailPage() {
             areas?: AreaRow[];
           };
           if (!fallback.ok) {
-            setError(payload.error ?? aErr?.message ?? "Failed to load areas.");
+            setError(payload.error ?? "Failed to load areas.");
             return;
           }
           areaRows = Array.isArray(payload.areas) ? payload.areas : [];
-        } else if (aErr) {
-          setError(`Failed to load areas: ${aErr.message}`);
-          return;
         }
 
         if (!cancelled) {

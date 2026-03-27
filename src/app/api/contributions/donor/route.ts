@@ -274,7 +274,7 @@ export async function GET(request: NextRequest) {
         dateDeposited: row.datedeposited,
         dateEntered: row.dateentered,
         comments: row.comments,
-      };
+      } satisfies ContributionRecord;
     })
     .filter((row): row is ContributionRecord => row !== null);
 

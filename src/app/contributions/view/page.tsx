@@ -248,6 +248,7 @@ export default function ViewContributionsPage() {
       const headers = await getAuthHeaders();
       const params = new URLSearchParams({ startDate, endDate });
       if (countryCode) params.append("country", countryCode);
+      if (kind === "taxReceipts") params.append("deductibleOnly", "true");
       if (kind !== "taxReceipts" && fundType) params.append("fundType", fundType);
       if (kind !== "taxReceipts" && contributionType) {
         params.append("contributionType", contributionType);

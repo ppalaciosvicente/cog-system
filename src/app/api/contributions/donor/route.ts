@@ -276,7 +276,7 @@ export async function GET(request: NextRequest) {
         comments: row.comments,
       };
     })
-    .filter((row): row is ContributionRecord => Boolean(row));
+    .filter((row): row is ContributionRecord => row !== null);
 
   return NextResponse.json({
     donorLabel: selectedHousehold.label,

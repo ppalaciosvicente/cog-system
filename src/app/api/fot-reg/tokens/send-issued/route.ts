@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
   const payload = (await request.json().catch(() => ({} as Payload))) ?? {};
   const invites = Array.isArray(payload.invites)
     ? (payload.invites as unknown[])
-        .map((row) => normalizeInvite(row))
+        .map((row: unknown) => normalizeInvite(row))
         .filter((row): row is InviteRow => Boolean(row))
     : [];
 

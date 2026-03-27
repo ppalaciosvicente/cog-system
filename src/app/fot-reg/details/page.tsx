@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { getAuthHeaders } from "@/lib/supabase/client";
 import { BackLink } from "@/components/BackLink";
@@ -33,7 +33,7 @@ function formatRegisteredDate(value: string) {
   }).format(date);
 }
 
-export default function FotRegistrationDetailsPage() {
+function FotRegistrationDetailsInner() {
   const params = useSearchParams();
   const locationId = (params.get("locationId") ?? "").trim();
 
@@ -236,5 +236,13 @@ export default function FotRegistrationDetailsPage() {
         )
       ) : null}
     </main>
+  );
+}
+
+export default function FotRegistrationDetailsPage() {
+  return (
+    <Suspense fallback={<p>Loading registration details...</p>}>
+      <FotRegistrationDetailsInner />
+    </Suspense>
   );
 }

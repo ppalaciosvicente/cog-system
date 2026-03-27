@@ -366,7 +366,7 @@ export async function GET(request: NextRequest) {
     const donorStatusIds = await getContributionDonorStatusIds(supabase);
     const { data: eligibleData, error: eligibleErr } = await supabase
       .from("emcmember")
-      .select("id,fname,lname,statusid,baptized")
+      .select("id,fname,lname,statusid,baptized,email")
       .in("statusid", donorStatusIds)
       .eq("baptized", true);
     if (eligibleErr) {
@@ -374,7 +374,8 @@ export async function GET(request: NextRequest) {
     }
     const memberIdsWithRole = new Set(rows.filter((r) => r.roleName).map((r) => r.memberId));
     for (const row of (eligibleData ?? []) as MemberRow[]) {
-      if (!activeMemberIdSet.has(row.id)) continue; // require active account
+      const email = String((row as any).email ?? "").trim();
+      if (!email) continue;
       if (memberIdsWithRole.has(row.id)) continue;
       eligibleMembers.push({ id: row.id, name: displayName(row) });
     }

@@ -83,11 +83,13 @@ function toSiteCard(row: FotLocationRow, index: number): SiteCard | null {
   if (!id) return null;
   const numericId = /^\d+$/.test(id) ? Number(id) : null;
 
-  const name =
-    firstNonEmpty(row, ["name", "title", "locationname"]) ||
-    `Site ${index + 1}`;
+  const rawName = firstNonEmpty(row, ["name", "title", "locationname"]) || `Site ${index + 1}`;
+  const normalizedName =
+    rawName.trim().toLowerCase() === "no attending any site"
+      ? "Not attending any site"
+      : rawName;
 
-  const siteKey = inferSiteKey(name);
+  const siteKey = inferSiteKey(normalizedName);
   const manualImage = numericId
     ? (MANUAL_IMAGE_BY_LOCATION_ID[numericId] ?? "")
     : "";
@@ -96,7 +98,7 @@ function toSiteCard(row: FotLocationRow, index: number): SiteCard | null {
 
   return {
     id,
-    name,
+    name: normalizedName,
     locationId: numericId,
     imageSrc,
     siteKey,

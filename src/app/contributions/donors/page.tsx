@@ -126,18 +126,14 @@ function toEditDraft(row: ContributionRecord): EditDraft {
 export default function ContributionDonorsPage() {
   const [donorQuery, setDonorQuery] = useState("");
   const [searchResults, setSearchResults] = useState<HouseholdOption[]>([]);
-  const [editHouseholdOptions, setEditHouseholdOptions] = useState<
-    HouseholdOption[]
-  >([]);
+  const [editHouseholdOptions, setEditHouseholdOptions] = useState<HouseholdOption[]>([]);
   const [fundTypeOptions, setFundTypeOptions] = useState<string[]>([
     ...CONTRIBUTION_FUND_TYPE_NAMES,
   ]);
-  const [contributionTypeOptions, setContributionTypeOptions] = useState<
-    string[]
-  >([...CONTRIBUTION_TYPE_NAMES]);
-  const [currencyOptions, setCurrencyOptions] = useState<CurrencyOption[]>(
-    DEFAULT_CURRENCY_OPTIONS,
-  );
+  const [contributionTypeOptions, setContributionTypeOptions] = useState<string[]>([
+    ...CONTRIBUTION_TYPE_NAMES,
+  ]);
+  const [currencyOptions, setCurrencyOptions] = useState<CurrencyOption[]>(DEFAULT_CURRENCY_OPTIONS);
   const [lookupsLoaded, setLookupsLoaded] = useState(false);
   const [selectedId, setSelectedId] = useState("");
   const [loadingOptions, setLoadingOptions] = useState(false);
@@ -207,11 +203,7 @@ export default function ContributionDonorsPage() {
           return;
         }
         if (!cancelled) {
-          setError(
-            loadError instanceof Error
-              ? loadError.message
-              : "Failed to load donors.",
-          );
+          setError(loadError instanceof Error ? loadError.message : "Failed to load donors.");
         }
       } finally {
         if (!cancelled) setLoadingOptions(false);
@@ -247,17 +239,12 @@ export default function ContributionDonorsPage() {
         const params = new URLSearchParams({ memberId: selectedId });
         if (startDate) params.set("startDate", startDate);
         if (endDate) params.set("endDate", endDate);
-        const response = await fetch(
-          `/api/contributions/donor?${params.toString()}`,
-          {
-            credentials: "include",
-            headers,
-            signal: controller.signal,
-          },
-        );
-        const payload = (await response.json()) as DonorPayload & {
-          error?: string;
-        };
+        const response = await fetch(`/api/contributions/donor?${params.toString()}`, {
+          credentials: "include",
+          headers,
+          signal: controller.signal,
+        });
+        const payload = (await response.json()) as DonorPayload & { error?: string };
 
         if (!response.ok) {
           throw new Error(payload.error ?? "Failed to load donor.");
@@ -271,11 +258,7 @@ export default function ContributionDonorsPage() {
           return;
         }
         if (!cancelled) {
-          setError(
-            loadError instanceof Error
-              ? loadError.message
-              : "Failed to load donor.",
-          );
+          setError(loadError instanceof Error ? loadError.message : "Failed to load donor.");
           setDetail(null);
         }
       } finally {
@@ -298,10 +281,7 @@ export default function ContributionDonorsPage() {
       if (Array.isArray(payload.fundTypes) && payload.fundTypes.length > 0) {
         setFundTypeOptions(payload.fundTypes);
       }
-      if (
-        Array.isArray(payload.contributionTypes) &&
-        payload.contributionTypes.length > 0
-      ) {
+      if (Array.isArray(payload.contributionTypes) && payload.contributionTypes.length > 0) {
         setContributionTypeOptions(payload.contributionTypes);
       }
       if (Array.isArray(payload.currencies) && payload.currencies.length > 0) {
@@ -385,11 +365,7 @@ export default function ContributionDonorsPage() {
 
       setEditHouseholdOptions(payload.households ?? []);
     } catch (loadError) {
-      setEditError(
-        loadError instanceof Error
-          ? loadError.message
-          : "Failed to load donors.",
-      );
+      setEditError(loadError instanceof Error ? loadError.message : "Failed to load donors.");
     } finally {
       setLoadingEditOptions(false);
     }
@@ -405,26 +381,17 @@ export default function ContributionDonorsPage() {
       const params = new URLSearchParams({ memberId: selectedId });
       if (startDate) params.set("startDate", startDate);
       if (endDate) params.set("endDate", endDate);
-      const response = await fetch(
-        `/api/contributions/donor?${params.toString()}`,
-        {
-          credentials: "include",
-          headers,
-        },
-      );
-      const payload = (await response.json()) as DonorPayload & {
-        error?: string;
-      };
+      const response = await fetch(`/api/contributions/donor?${params.toString()}`, {
+        credentials: "include",
+        headers,
+      });
+      const payload = (await response.json()) as DonorPayload & { error?: string };
       if (!response.ok) {
         throw new Error(payload.error ?? "Failed to load donor.");
       }
       setDetail(payload);
     } catch (loadError) {
-      setError(
-        loadError instanceof Error
-          ? loadError.message
-          : "Failed to load donor.",
-      );
+      setError(loadError instanceof Error ? loadError.message : "Failed to load donor.");
       setDetail(null);
     } finally {
       setLoadingDetail(false);
@@ -440,9 +407,7 @@ export default function ContributionDonorsPage() {
       payload = buildEditPayload(editDraft);
     } catch (validationError) {
       setEditError(
-        validationError instanceof Error
-          ? validationError.message
-          : "Failed to validate contribution.",
+        validationError instanceof Error ? validationError.message : "Failed to validate contribution.",
       );
       return;
     }
@@ -464,11 +429,7 @@ export default function ContributionDonorsPage() {
       setEditDraft(null);
       await reloadSelectedDonor();
     } catch (saveError) {
-      setEditError(
-        saveError instanceof Error
-          ? saveError.message
-          : "Failed to update contribution.",
-      );
+      setEditError(saveError instanceof Error ? saveError.message : "Failed to update contribution.");
     } finally {
       setEditSaving(false);
     }
@@ -476,9 +437,7 @@ export default function ContributionDonorsPage() {
 
   async function downloadTaxReceipt() {
     if (!selectedId || !detail) return;
-    const contributions = detail.contributions.filter(
-      (row) => row.taxDeductible,
-    );
+    const contributions = detail.contributions.filter((row) => row.taxDeductible);
     if (!contributions.length) return;
     const effectiveStart =
       startDate ||
@@ -497,24 +456,18 @@ export default function ContributionDonorsPage() {
         endDate: effectiveEnd,
       });
       params.set("deductibleOnly", "true");
-      const response = await fetch(
-        `/api/contributions/reports/quarterly?${params.toString()}`,
-        {
-          credentials: "include",
-          headers,
-        },
-      );
+      const response = await fetch(`/api/contributions/reports/quarterly?${params.toString()}`, {
+        credentials: "include",
+        headers,
+      });
       if (!response.ok) {
-        const payload = (await response.json().catch(() => ({}))) as {
-          error?: string;
-        };
+        const payload = (await response.json().catch(() => ({}))) as { error?: string };
         throw new Error(payload.error ?? "Failed to generate tax receipt.");
       }
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
-      const contentDisposition =
-        response.headers.get("Content-Disposition") ?? "";
+      const contentDisposition = response.headers.get("Content-Disposition") ?? "";
       const filenameMatch = contentDisposition.match(/filename=\"([^\"]+)\"/);
       link.href = url;
       link.download =
@@ -552,20 +505,14 @@ export default function ContributionDonorsPage() {
       if (text.length <= max) return [text];
       const trimmed = text.slice(0, max + 1);
       const lastSpace = trimmed.lastIndexOf(" ");
-      if (lastSpace === -1)
-        return [text.slice(0, max), text.slice(max).trimStart()];
+      if (lastSpace === -1) return [text.slice(0, max), text.slice(max).trimStart()];
       return [text.slice(0, lastSpace), text.slice(lastSpace + 1).trimStart()];
     };
 
     const lines: Parameters<typeof buildSimplePdf>[0] = [
       { text: "Contributions", size: 18, bold: true, x: 30, y: 760 },
       { text: `Donor: ${detail?.donorLabel ?? ""}`, size: 12, x: 30, y: 742 },
-      {
-        text: `From ${startDate || "earliest"} to ${endDate || todayDateString()}`,
-        size: 12,
-        x: 30,
-        y: 726,
-      },
+      { text: `From ${startDate || "earliest"} to ${endDate || todayDateString()}`, size: 12, x: 30, y: 726 },
       { text: "Member", bold: true, size: 11, x: 30, y: 704 },
       { text: "Amount", bold: true, size: 11, x: 190, y: 704 },
       { text: "Fund", bold: true, size: 11, x: 255, y: 704 },
@@ -591,12 +538,7 @@ export default function ContributionDonorsPage() {
         lines.push({ text, size: 10, x: 255, y: y - idx * 11 });
       });
       checkLines.forEach((text, idx) => {
-        lines.push({
-          text,
-          size: 10,
-          x: 255,
-          y: y - (fundLines.length + idx) * 11,
-        });
+        lines.push({ text, size: 10, x: 255, y: y - (fundLines.length + idx) * 11 });
       });
       lines.push({ text: row.contributionType, size: 10, x: 360, y });
       lines.push({ text: row.dateDeposited, size: 10, x: 470, y });
@@ -606,10 +548,7 @@ export default function ContributionDonorsPage() {
       if (y < 80) break;
     }
 
-    const totalAmount = filteredContributions.reduce(
-      (sum, r) => sum + r.amount,
-      0,
-    );
+    const totalAmount = filteredContributions.reduce((sum, r) => sum + r.amount, 0);
     lines.push({ text: "Grand Total", size: 11, bold: true, x: 30, y: y - 12 });
     lines.push({
       text: `${currencySymbol(filteredContributions[0].currencyCode)} ${formatAmount(totalAmount)}`,
@@ -627,14 +566,7 @@ export default function ContributionDonorsPage() {
       year: "numeric",
     }).format(new Date());
     lines.push({ text: todayLong, size: 10, x: 30, y: footerY, italic: true });
-    lines.push({
-      text: "Page 1 of 1",
-      size: 10,
-      x: 520,
-      y: footerY,
-      align: "right",
-      italic: true,
-    });
+    lines.push({ text: "Page 1 of 1", size: 10, x: 520, y: footerY, align: "right", italic: true });
 
     const pdfBuffer = buildSimplePdf(lines);
     const blob = new Blob([pdfBuffer], { type: "application/pdf" });
@@ -649,9 +581,7 @@ export default function ContributionDonorsPage() {
   }
 
   async function handleDelete(row: ContributionRecord) {
-    const ok = window.confirm(
-      `Delete contribution for ${row.memberName} on ${row.dateDeposited}?`,
-    );
+    const ok = window.confirm(`Delete contribution for ${row.memberName} on ${row.dateDeposited}?`);
     if (!ok) return;
 
     setDeletingId(row.id);
@@ -672,18 +602,12 @@ export default function ContributionDonorsPage() {
         current
           ? {
               ...current,
-              contributions: current.contributions.filter(
-                (item) => item.id !== row.id,
-              ),
+              contributions: current.contributions.filter((item) => item.id !== row.id),
             }
           : current,
       );
     } catch (deleteError) {
-      setError(
-        deleteError instanceof Error
-          ? deleteError.message
-          : "Failed to delete contribution.",
-      );
+      setError(deleteError instanceof Error ? deleteError.message : "Failed to delete contribution.");
     } finally {
       setDeletingId(null);
     }
@@ -702,9 +626,7 @@ export default function ContributionDonorsPage() {
     <ContributionPage
       title="View Donors"
       description="Select a donor to review member details and contribution history."
-      pageClassName={
-        detail?.representative.statusid === 7 ? forms.pageWarn : undefined
-      }
+      pageClassName={detail?.representative.statusid === 7 ? forms.pageWarn : undefined}
     >
       {() => (
         <>
@@ -728,14 +650,8 @@ export default function ContributionDonorsPage() {
                       setEditDraft(null);
                     }}
                   />
-                  {!loadingOptions &&
-                  !selectedId &&
-                  searchResults.length > 0 ? (
-                    <div
-                      className={forms.autocompleteMenu}
-                      role="listbox"
-                      aria-label="Matching donors"
-                    >
+                  {!loadingOptions && !selectedId && searchResults.length > 0 ? (
+                    <div className={forms.autocompleteMenu} role="listbox" aria-label="Matching donors">
                       {searchResults.map((household) => (
                         <button
                           key={household.value}
@@ -752,13 +668,9 @@ export default function ContributionDonorsPage() {
               </div>
             </div>
             {donorQuery.trim().length < 2 ? (
-              <p style={{ marginTop: 12 }}>
-                Type at least 2 letters to search for a donor.
-              </p>
+              <p style={{ marginTop: 12 }}>Type at least 2 letters to search for a donor.</p>
             ) : null}
-            {loadingOptions ? (
-              <p style={{ marginTop: 12 }}>Searching donors...</p>
-            ) : null}
+            {loadingOptions ? <p style={{ marginTop: 12 }}>Searching donors...</p> : null}
             {!loadingOptions &&
             !selectedId &&
             donorQuery.trim().length >= 2 &&
@@ -768,9 +680,7 @@ export default function ContributionDonorsPage() {
             {error ? <p className={forms.error}>{error}</p> : null}
           </section>
 
-          {loadingDetail ? (
-            <p style={{ marginTop: 16 }}>Loading donor details...</p>
-          ) : null}
+          {loadingDetail ? <p style={{ marginTop: 16 }}>Loading donor details...</p> : null}
 
           {detail ? (
             <>
@@ -785,157 +695,117 @@ export default function ContributionDonorsPage() {
               </div>
               {showDetails ? (
                 <>
-                  <section
-                    className={forms.sectionCard}
-                    style={{ marginTop: 16 }}
-                  >
-                    <h2 style={{ marginTop: 0 }}>{detail.donorLabel}</h2>
-                    <div className={forms.formGrid}>
-                      <div className={forms.col}>
-                        <div className={forms.row}>
-                          <div className={forms.label}>Primary Member</div>
-                          <div className={forms.control}>
-                            {detail.representative.lname},{" "}
-                            {detail.representative.fname}
-                          </div>
-                        </div>
-                        <div className={forms.row}>
-                          <div className={forms.label}>Email</div>
-                          <div className={forms.control}>
-                            {detail.representative.email ?? ""}
-                          </div>
-                        </div>
-                        <div className={forms.row}>
-                          <div className={forms.label}>Cell Phone</div>
-                          <div className={forms.control}>
-                            {detail.representative.cellphone ?? ""}
-                          </div>
-                        </div>
-                        <div className={forms.row}>
-                          <div className={forms.label}>Home Phone</div>
-                          <div className={forms.control}>
-                            {detail.representative.homephone ?? ""}
-                          </div>
-                        </div>
-                        <div className={forms.row}>
-                          <div className={forms.label}>Baptized</div>
-                          <div className={forms.control}>
-                            {detail.representative.baptized ? "Yes" : "No"}
-                          </div>
-                        </div>
-                        <div className={forms.row}>
-                          <div className={forms.label}>Baptized Date</div>
-                          <div className={forms.control}>
-                            {formatDate(detail.representative.baptizeddate)}
-                          </div>
-                        </div>
-                      </div>
-                      <div className={forms.col}>
-                        <div className={forms.row}>
-                          <div className={forms.label}>Address</div>
-                          <div className={forms.control}>
-                            {[
-                              detail.representative.address,
-                              detail.representative.address2,
-                            ]
-                              .filter(Boolean)
-                              .join(", ")}
-                          </div>
-                        </div>
-                        <div className={forms.row}>
-                          <div className={forms.label}>City</div>
-                          <div className={forms.control}>
-                            {[
-                              detail.representative.city,
-                              detail.representative.statecode,
-                              detail.representative.zip,
-                            ]
-                              .filter(Boolean)
-                              .join(", ")}
-                          </div>
-                        </div>
-                        <div className={forms.row}>
-                          <div className={forms.label}>Country</div>
-                          <div className={forms.control}>
-                            {detail.representative.countryName ??
-                              detail.representative.countrycode ??
-                              ""}
-                          </div>
-                        </div>
-                        <div className={forms.row}>
-                          <div className={forms.label}>Fellowship Status</div>
-                          <div className={forms.control}>
-                            {detail.representative.statusName ?? ""}
-                          </div>
-                        </div>
-                        <div className={forms.row}>
-                          <div className={forms.label}>Tithing Status</div>
-                          <div className={forms.control}>
-                            {detail.representative.titheStatusName ?? ""}
-                          </div>
-                        </div>
+              <section className={forms.sectionCard} style={{ marginTop: 16 }}>
+                <h2 style={{ marginTop: 0 }}>{detail.donorLabel}</h2>
+                <div className={forms.formGrid}>
+                  <div className={forms.col}>
+                    <div className={forms.row}>
+                      <div className={forms.label}>Primary Member</div>
+                      <div className={forms.control}>
+                        {detail.representative.lname}, {detail.representative.fname}
                       </div>
                     </div>
-                  </section>
-
-                  {detail.representative.householdid != null &&
-                  detail.householdMembers.length > 1 ? (
-                    <section
-                      className={forms.sectionCard}
-                      style={{ marginTop: 16 }}
-                    >
-                      <h2 style={{ marginTop: 0 }}>Household Members</h2>
-                      <div className={forms.tableWrap}>
-                        <table className={forms.table}>
-                          <thead>
-                            <tr>
-                              <th className={forms.th}>Name</th>
-                              <th className={forms.th}>Email</th>
-                              <th className={forms.th}>Cell Phone</th>
-                              <th className={forms.th}>Home Phone</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {detail.householdMembers.map((member) => (
-                              <tr key={member.id}>
-                                <td className={forms.td}>{member.name}</td>
-                                <td className={forms.td}>
-                                  {member.email ?? ""}
-                                </td>
-                                <td className={forms.td}>
-                                  {member.cellphone ?? ""}
-                                </td>
-                                <td className={forms.td}>
-                                  {member.homephone ?? ""}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                    <div className={forms.row}>
+                      <div className={forms.label}>Email</div>
+                      <div className={forms.control}>{detail.representative.email ?? ""}</div>
+                    </div>
+                    <div className={forms.row}>
+                      <div className={forms.label}>Cell Phone</div>
+                      <div className={forms.control}>{detail.representative.cellphone ?? ""}</div>
+                    </div>
+                    <div className={forms.row}>
+                      <div className={forms.label}>Home Phone</div>
+                      <div className={forms.control}>{detail.representative.homephone ?? ""}</div>
+                    </div>
+                    <div className={forms.row}>
+                      <div className={forms.label}>Baptized</div>
+                      <div className={forms.control}>
+                        {detail.representative.baptized ? "Yes" : "No"}
                       </div>
-                    </section>
-                  ) : null}
+                    </div>
+                    <div className={forms.row}>
+                      <div className={forms.label}>Baptized Date</div>
+                      <div className={forms.control}>
+                        {formatDate(detail.representative.baptizeddate)}
+                      </div>
+                    </div>
+                  </div>
+                  <div className={forms.col}>
+                    <div className={forms.row}>
+                      <div className={forms.label}>Address</div>
+                      <div className={forms.control}>
+                        {[detail.representative.address, detail.representative.address2]
+                          .filter(Boolean)
+                          .join(", ")}
+                      </div>
+                    </div>
+                    <div className={forms.row}>
+                      <div className={forms.label}>City</div>
+                      <div className={forms.control}>
+                        {[detail.representative.city, detail.representative.statecode, detail.representative.zip]
+                          .filter(Boolean)
+                          .join(", ")}
+                      </div>
+                    </div>
+                    <div className={forms.row}>
+                      <div className={forms.label}>Country</div>
+                      <div className={forms.control}>
+                        {detail.representative.countryName ??
+                          detail.representative.countrycode ??
+                          ""}
+                      </div>
+                    </div>
+                    <div className={forms.row}>
+                      <div className={forms.label}>Fellowship Status</div>
+                      <div className={forms.control}>
+                        {detail.representative.statusName ?? ""}
+                      </div>
+                    </div>
+                    <div className={forms.row}>
+                      <div className={forms.label}>Tithing Status</div>
+                      <div className={forms.control}>
+                        {detail.representative.titheStatusName ?? ""}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {detail.representative.householdid != null && detail.householdMembers.length > 1 ? (
+                <section className={forms.sectionCard} style={{ marginTop: 16 }}>
+                  <h2 style={{ marginTop: 0 }}>Household Members</h2>
+                  <div className={forms.tableWrap}>
+                    <table className={forms.table}>
+                      <thead>
+                        <tr>
+                          <th className={forms.th}>Name</th>
+                          <th className={forms.th}>Email</th>
+                          <th className={forms.th}>Cell Phone</th>
+                          <th className={forms.th}>Home Phone</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {detail.householdMembers.map((member) => (
+                          <tr key={member.id}>
+                            <td className={forms.td}>{member.name}</td>
+                            <td className={forms.td}>{member.email ?? ""}</td>
+                            <td className={forms.td}>{member.cellphone ?? ""}</td>
+                            <td className={forms.td}>{member.homephone ?? ""}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              ) : null}
                 </>
               ) : null}
 
               <section className={forms.sectionCard} style={{ marginTop: 16 }}>
                 <h2 style={{ marginTop: 0 }}>Contributions</h2>
-                <div
-                  className={forms.tableWrap}
-                  style={{ padding: 12, marginBottom: 12, borderRadius: 12 }}
-                >
-                  <div
-                    className={forms.actionsRow}
-                    style={{
-                      alignItems: "flex-end",
-                      gap: 12,
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <div
-                      className={forms.row}
-                      style={{ margin: 0, gridTemplateColumns: "100px 1fr" }}
-                    >
+                <div className={forms.tableWrap} style={{ padding: 12, marginBottom: 12, borderRadius: 12 }}>
+                  <div className={forms.actionsRow} style={{ alignItems: "flex-end", gap: 12, flexWrap: "wrap" }}>
+                    <div className={forms.row} style={{ margin: 0, gridTemplateColumns: "100px 1fr" }}>
                       <label className={forms.label} htmlFor="donor-start-date">
                         Start Date
                       </label>
@@ -949,10 +819,7 @@ export default function ContributionDonorsPage() {
                         />
                       </div>
                     </div>
-                    <div
-                      className={forms.row}
-                      style={{ margin: 0, gridTemplateColumns: "100px 1fr" }}
-                    >
+                    <div className={forms.row} style={{ margin: 0, gridTemplateColumns: "100px 1fr" }}>
                       <label className={forms.label} htmlFor="donor-end-date">
                         End Date
                       </label>
@@ -966,10 +833,7 @@ export default function ContributionDonorsPage() {
                         />
                       </div>
                     </div>
-                    <div
-                      className={forms.actions}
-                      style={{ margin: 0, flexWrap: "wrap", gap: 8 }}
-                    >
+                    <div className={forms.actions} style={{ margin: 0, flexWrap: "wrap", gap: 8 }}>
                       <button
                         type="button"
                         className={`${forms.button} ${forms.actionsRowPrimaryButton}`}
@@ -981,57 +845,36 @@ export default function ContributionDonorsPage() {
                     </div>
                   </div>
                 </div>
-                {filteredContributions.length
-                  ? (() => {
-                      const countryCode = (
-                        detail?.representative.countrycode ?? ""
-                      )
-                        .trim()
-                        .toUpperCase();
-                      const canDownloadTaxReceipts = [
-                        "US",
-                        "CA",
-                        "NL",
-                        "NLD",
-                      ].includes(countryCode);
-                      return (
-                        <div
-                          className={forms.actions}
-                          style={{
-                            marginTop: 12,
-                            marginBottom: 12,
-                            gap: 8,
-                            flexWrap: "wrap",
-                          }}
-                        >
-                          <button
-                            type="button"
-                            className={`${forms.button} ${forms.actionsRowPrimaryButton}`}
-                            onClick={() => {
-                              downloadAllPdf();
-                            }}
-                            disabled={downloadingReceipt}
-                          >
-                            {downloadingReceipt
-                              ? "Downloading..."
-                              : "Download All"}
-                          </button>
-                          {canDownloadTaxReceipts ? (
-                            <button
-                              type="button"
-                              className={`${forms.button} ${forms.actionsRowPrimaryButton}`}
-                              onClick={() => void downloadTaxReceipt()}
-                              disabled={downloadingReceipt}
-                            >
-                              {downloadingReceipt
-                                ? "Downloading..."
-                                : "Download Tax Receipt"}
-                            </button>
-                          ) : null}
-                        </div>
-                      );
-                    })()
-                  : null}
+                {filteredContributions.length ? (
+                  (() => {
+                    const countryCode = (detail?.representative.countrycode ?? "").trim().toUpperCase();
+                    const canDownloadTaxReceipts = ["US", "CA", "NL", "NLD"].includes(countryCode);
+                    return (
+                  <div className={forms.actions} style={{ marginTop: 12, marginBottom: 12, gap: 8, flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      className={`${forms.button} ${forms.actionsRowPrimaryButton}`}
+                      onClick={() => {
+                        downloadAllPdf();
+                      }}
+                      disabled={downloadingReceipt}
+                    >
+                      {downloadingReceipt ? "Downloading..." : "Download All"}
+                    </button>
+                    {canDownloadTaxReceipts ? (
+                      <button
+                        type="button"
+                        className={`${forms.button} ${forms.actionsRowPrimaryButton}`}
+                        onClick={() => void downloadTaxReceipt()}
+                        disabled={downloadingReceipt}
+                      >
+                        {downloadingReceipt ? "Downloading..." : "Download Tax Receipts"}
+                      </button>
+                    ) : null}
+                  </div>
+                    );
+                  })()
+                ) : null}
                 <div className={forms.tableWrap}>
                   <table className={forms.table}>
                     <thead>
@@ -1059,17 +902,13 @@ export default function ContributionDonorsPage() {
                         filteredContributions.map((row) => (
                           <tr key={row.id}>
                             <td className={forms.td}>{row.memberName}</td>
-                            <td className={forms.td}>
-                              {formatAmount(row.amount)}
-                            </td>
+                            <td className={forms.td}>{formatAmount(row.amount)}</td>
                             <td className={forms.td}>{row.fundType}</td>
                             <td className={forms.td}>{row.currencyCode}</td>
                             <td className={forms.td}>{row.checkNo ?? ""}</td>
                             <td className={forms.td}>{row.contributionType}</td>
                             <td className={forms.td}>{row.dateDeposited}</td>
-                            <td className={forms.td}>
-                              {formatDate(row.dateEntered)}
-                            </td>
+                            <td className={forms.td}>{formatDate(row.dateEntered)}</td>
                             <td className={forms.td}>{row.comments ?? ""}</td>
                             <td className={forms.td}>
                               <div className={forms.tableActions}>
@@ -1091,9 +930,7 @@ export default function ContributionDonorsPage() {
                                   onClick={() => void handleDelete(row)}
                                   disabled={deletingId === row.id}
                                 >
-                                  {deletingId === row.id
-                                    ? "Deleting..."
-                                    : "Delete"}
+                                  {deletingId === row.id ? "Deleting..." : "Delete"}
                                 </button>
                               </div>
                             </td>
@@ -1106,25 +943,14 @@ export default function ContributionDonorsPage() {
               </section>
 
               {editDraft ? (
-                <div
-                  className={forms.modalBackdrop}
-                  role="dialog"
-                  aria-modal="true"
-                >
+                <div className={forms.modalBackdrop} role="dialog" aria-modal="true">
                   <div className={forms.modalCard}>
                     <h2 className={forms.modalTitle}>Edit Contribution</h2>
-                    <p className={forms.modalText}>
-                      Update the saved contribution and save your changes.
-                    </p>
-                    {editError ? (
-                      <p className={forms.error}>{editError}</p>
-                    ) : null}
+                    <p className={forms.modalText}>Update the saved contribution and save your changes.</p>
+                    {editError ? <p className={forms.error}>{editError}</p> : null}
                     <div className={forms.col}>
                       <div className={forms.row}>
-                        <label
-                          className={forms.label}
-                          htmlFor="donor-edit-member"
-                        >
+                        <label className={forms.label} htmlFor="donor-edit-member">
                           Donor
                         </label>
                         <div className={forms.control}>
@@ -1132,31 +958,21 @@ export default function ContributionDonorsPage() {
                             id="donor-edit-member"
                             className={forms.field}
                             value={editDraft.memberId}
-                            onChange={(event) =>
-                              updateEditField("memberId", event.target.value)
-                            }
+                            onChange={(event) => updateEditField("memberId", event.target.value)}
                             disabled={loadingEditOptions}
                           >
                             <option value="">Select donor</option>
                             {editHouseholdOptions.map((household) => (
-                              <option
-                                key={household.value}
-                                value={String(household.value)}
-                              >
+                              <option key={household.value} value={String(household.value)}>
                                 {household.label}
                               </option>
                             ))}
                           </select>
                         </div>
                       </div>
-                      {loadingEditOptions ? (
-                        <p style={{ marginTop: 12 }}>Loading donors...</p>
-                      ) : null}
+                      {loadingEditOptions ? <p style={{ marginTop: 12 }}>Loading donors...</p> : null}
                       <div className={forms.row}>
-                        <label
-                          className={forms.label}
-                          htmlFor="donor-edit-amount"
-                        >
+                        <label className={forms.label} htmlFor="donor-edit-amount">
                           Amount
                         </label>
                         <div className={forms.control}>
@@ -1167,17 +983,12 @@ export default function ContributionDonorsPage() {
                             min="0"
                             step="0.01"
                             value={editDraft.amount}
-                            onChange={(event) =>
-                              updateEditField("amount", event.target.value)
-                            }
+                            onChange={(event) => updateEditField("amount", event.target.value)}
                           />
                         </div>
                       </div>
                       <div className={forms.row}>
-                        <label
-                          className={forms.label}
-                          htmlFor="donor-edit-fund-type"
-                        >
+                        <label className={forms.label} htmlFor="donor-edit-fund-type">
                           Fund Type
                         </label>
                         <div className={forms.control}>
@@ -1185,9 +996,7 @@ export default function ContributionDonorsPage() {
                             id="donor-edit-fund-type"
                             className={forms.field}
                             value={editDraft.fundType}
-                            onChange={(event) =>
-                              updateEditField("fundType", event.target.value)
-                            }
+                            onChange={(event) => updateEditField("fundType", event.target.value)}
                           >
                             <option value="">Select fund type</option>
                             {fundTypeOptions.map((name) => (
@@ -1199,10 +1008,7 @@ export default function ContributionDonorsPage() {
                         </div>
                       </div>
                       <div className={forms.row}>
-                        <label
-                          className={forms.label}
-                          htmlFor="donor-edit-check-no"
-                        >
+                        <label className={forms.label} htmlFor="donor-edit-check-no">
                           Check No.
                         </label>
                         <div className={forms.control}>
@@ -1211,17 +1017,12 @@ export default function ContributionDonorsPage() {
                             className={forms.field}
                             value={editDraft.checkNo}
                             disabled={isCashFundType(editDraft.fundType)}
-                            onChange={(event) =>
-                              updateEditField("checkNo", event.target.value)
-                            }
+                            onChange={(event) => updateEditField("checkNo", event.target.value)}
                           />
                         </div>
                       </div>
                       <div className={forms.row}>
-                        <label
-                          className={forms.label}
-                          htmlFor="donor-edit-currency"
-                        >
+                        <label className={forms.label} htmlFor="donor-edit-currency">
                           Currency
                         </label>
                         <div className={forms.control}>
@@ -1229,12 +1030,7 @@ export default function ContributionDonorsPage() {
                             id="donor-edit-currency"
                             className={forms.field}
                             value={editDraft.currencyCode}
-                            onChange={(event) =>
-                              updateEditField(
-                                "currencyCode",
-                                event.target.value,
-                              )
-                            }
+                            onChange={(event) => updateEditField("currencyCode", event.target.value)}
                           >
                             <option value="">Select currency</option>
                             {currencyOptions.map((currency) => (
@@ -1246,10 +1042,7 @@ export default function ContributionDonorsPage() {
                         </div>
                       </div>
                       <div className={forms.row}>
-                        <label
-                          className={forms.label}
-                          htmlFor="donor-edit-contribution-type"
-                        >
+                        <label className={forms.label} htmlFor="donor-edit-contribution-type">
                           Contribution Type
                         </label>
                         <div className={forms.control}>
@@ -1258,10 +1051,7 @@ export default function ContributionDonorsPage() {
                             className={forms.field}
                             value={editDraft.contributionType}
                             onChange={(event) =>
-                              updateEditField(
-                                "contributionType",
-                                event.target.value,
-                              )
+                              updateEditField("contributionType", event.target.value)
                             }
                           >
                             <option value="">Select contribution type</option>
@@ -1274,10 +1064,7 @@ export default function ContributionDonorsPage() {
                         </div>
                       </div>
                       <div className={forms.row}>
-                        <label
-                          className={forms.label}
-                          htmlFor="donor-edit-date-deposited"
-                        >
+                        <label className={forms.label} htmlFor="donor-edit-date-deposited">
                           Date Deposited
                         </label>
                         <div className={forms.control}>
@@ -1286,20 +1073,12 @@ export default function ContributionDonorsPage() {
                             type="date"
                             className={forms.field}
                             value={editDraft.dateDeposited}
-                            onChange={(event) =>
-                              updateEditField(
-                                "dateDeposited",
-                                event.target.value,
-                              )
-                            }
+                            onChange={(event) => updateEditField("dateDeposited", event.target.value)}
                           />
                         </div>
                       </div>
                       <div className={forms.row}>
-                        <label
-                          className={forms.label}
-                          htmlFor="donor-edit-comments"
-                        >
+                        <label className={forms.label} htmlFor="donor-edit-comments">
                           Comments
                         </label>
                         <div className={forms.control}>
@@ -1307,17 +1086,12 @@ export default function ContributionDonorsPage() {
                             id="donor-edit-comments"
                             className={forms.field}
                             value={editDraft.comments}
-                            onChange={(event) =>
-                              updateEditField("comments", event.target.value)
-                            }
+                            onChange={(event) => updateEditField("comments", event.target.value)}
                           />
                         </div>
                       </div>
                     </div>
-                    <div
-                      className={forms.modalActions}
-                      style={{ marginTop: 16 }}
-                    >
+                    <div className={forms.modalActions} style={{ marginTop: 16 }}>
                       <button
                         type="button"
                         className={`${forms.button} ${forms.linkButtonLight} ${forms.linkButtonCompactTouch}`}

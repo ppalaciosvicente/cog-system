@@ -135,6 +135,32 @@ export default function ContributionsAccessPage() {
     }
   }
 
+  async function resendInvite(row: AccessRow) {
+    if (deletingId) return;
+    setDeletingId(row.memberId);
+    setError(null);
+    try {
+      const headers = await getAuthHeaders();
+      const response = await fetch("/api/contributions/access-admin", {
+        method: "POST",
+        headers: {
+          ...headers,
+          "content-type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ memberId: row.memberId, action: "resend" }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as { error?: string };
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Failed to resend invitation.");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to resend invitation.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   return (
     <ContributionPage
       title="Contributions Access"
@@ -228,6 +254,14 @@ export default function ContributionsAccessPage() {
                                   {deletingId === row.memberId ? "Removing..." : "Delete"}
                                 </button>
                               ) : null}
+                              <button
+                                type="button"
+                                className={forms.button}
+                                onClick={() => void resendInvite(row)}
+                                disabled={deletingId === row.memberId}
+                              >
+                                Resend Invite
+                              </button>
                             </div>
                           </td>
                         </tr>

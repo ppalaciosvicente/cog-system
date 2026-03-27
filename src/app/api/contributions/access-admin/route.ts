@@ -43,12 +43,168 @@ type UpdatePayload = {
   memberId?: number;
   roleName?: string | null;
   countryCodes?: string[] | null;
+  action?: "resend";
 };
 
 type EligibleMember = {
   id: number;
   name: string;
 };
+
+function resolveAppOrigin(request: NextRequest) {
+  const configured = String(process.env.NEXT_PUBLIC_APP_URL ?? "")
+    .trim()
+    .replace(/\/+$/, "");
+  if (configured) return configured;
+  return request.nextUrl.origin;
+}
+
+async function findAuthUserIdByEmail(
+  supabase: ReturnType<typeof createServiceRoleClient>,
+  email: string,
+) {
+  const target = email.trim().toLowerCase();
+  let page = 1;
+  const perPage = 200;
+
+  while (page <= 50) {
+    const { data, error } = await supabase.auth.admin.listUsers({
+      page,
+      perPage,
+    });
+    if (error) return { id: null as string | null, error };
+
+    const users = data?.users ?? [];
+    const match = users.find(
+      (u) => String(u.email ?? "").trim().toLowerCase() === target,
+    );
+    if (match?.id) return { id: match.id, error: null };
+
+    const reachedEnd = users.length < perPage;
+    if (reachedEnd) break;
+    page += 1;
+  }
+
+  return { id: null as string | null, error: null };
+}
+
+async function ensureActiveAccountForMember(
+  supabase: ReturnType<typeof createServiceRoleClient>,
+  request: NextRequest,
+  memberId: number,
+) {
+  const appOrigin = resolveAppOrigin(request);
+
+  const { data: member, error: memberErr } = await supabase
+    .from("emcmember")
+    .select("id,email")
+    .eq("id", memberId)
+    .maybeSingle();
+
+  if (memberErr) {
+    return { accountId: null as number | null, error: memberErr.message };
+  }
+  const memberEmail = String(member?.email ?? "").trim().toLowerCase();
+  if (!memberEmail) {
+    return {
+      accountId: null as number | null,
+      error: "Selected member does not have an email address.",
+    };
+  }
+
+  let accountId: number | null = null;
+  let authUserId: string | null = null;
+
+  const { data: existingAccount, error: existingErr } = await supabase
+    .from("emcaccounts")
+    .select("id, isactive, authuserid")
+    .eq("memberid", memberId)
+    .maybeSingle();
+
+  if (existingErr) {
+    return { accountId: null as number | null, error: existingErr.message };
+  }
+
+  if (existingAccount?.id) {
+    accountId = existingAccount.id as number;
+    authUserId = String(existingAccount.authuserid ?? "").trim() || null;
+    if (authUserId) {
+      const { data: linkedAuthData } = await supabase.auth.admin.getUserById(authUserId);
+      const linkedAuthEmail = String(linkedAuthData?.user?.email ?? "").trim().toLowerCase();
+      if (!linkedAuthEmail || linkedAuthEmail !== memberEmail) {
+        authUserId = null;
+      }
+    }
+    if (!existingAccount.isactive) {
+      const { error: reactivateErr } = await supabase
+        .from("emcaccounts")
+        .update({ isactive: true })
+        .eq("id", accountId);
+      if (reactivateErr) {
+        return { accountId: null as number | null, error: reactivateErr.message };
+      }
+    }
+  }
+
+  if (!authUserId) {
+    const existingAuth = await findAuthUserIdByEmail(supabase, memberEmail);
+    if (existingAuth.error) {
+      return { accountId: null as number | null, error: existingAuth.error.message };
+    }
+
+    if (existingAuth.id) {
+      authUserId = existingAuth.id;
+      const redirectTo = `${appOrigin}/auth/callback?next=/reset-password`;
+      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(memberEmail, {
+        redirectTo,
+      });
+      if (resetErr) {
+        return { accountId: null as number | null, error: resetErr.message };
+      }
+    } else {
+      const redirectTo = `${appOrigin}/auth/callback?next=/reset-password`;
+      const { data: inviteData, error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(
+        memberEmail,
+        {
+          redirectTo,
+        },
+      );
+      if (inviteErr || !inviteData.user?.id) {
+        return {
+          accountId: null as number | null,
+          error: inviteErr?.message ?? "Failed to create auth user from member email.",
+        };
+      }
+      authUserId = inviteData.user.id;
+    }
+  }
+
+  if (!accountId) {
+    const { data: created, error: createErr } = await supabase
+      .from("emcaccounts")
+      .insert({ memberid: memberId, authuserid: authUserId, isactive: true })
+      .select("id")
+      .single();
+
+    if (createErr || !created?.id) {
+      return {
+        accountId: null as number | null,
+        error: createErr?.message ?? "Failed to create account.",
+      };
+    }
+    accountId = created.id as number;
+  } else {
+    const { error: accountUpdateErr } = await supabase
+      .from("emcaccounts")
+      .update({ authuserid: authUserId, isactive: true })
+      .eq("id", accountId);
+    if (accountUpdateErr) {
+      return { accountId: null as number | null, error: accountUpdateErr.message };
+    }
+  }
+
+  return { accountId, error: null as string | null };
+}
 
 function normalizeCode(value: string | null | undefined) {
   return String(value ?? "")
@@ -267,22 +423,14 @@ export async function PUT(request: NextRequest) {
   }
 
   const supabase = createServiceRoleClient();
-  const { data: accountRows, error: accountErr } = await supabase
-    .from("emcaccounts")
-    .select("id,memberid,isactive")
-    .eq("memberid", memberId)
-    .eq("isactive", true)
-    .order("id", { ascending: false })
-    .limit(1);
-
-  if (accountErr) return NextResponse.json({ error: accountErr.message }, { status: 500 });
-  const accountId = Number((accountRows as AccountRow[] | null)?.[0]?.id ?? 0);
-  if (!Number.isFinite(accountId) || accountId <= 0) {
+  const ensured = await ensureActiveAccountForMember(supabase, request, memberId);
+  if (ensured.error || !ensured.accountId) {
     return NextResponse.json(
-      { error: "No active account found for this member." },
+      { error: ensured.error ?? "No active account found for this member." },
       { status: 400 },
     );
   }
+  const accountId = ensured.accountId;
 
   const { data: roleData, error: roleErr } = await supabase
     .from("emcroles")
@@ -347,4 +495,28 @@ export async function PUT(request: NextRequest) {
   }
 
   return NextResponse.json({ ok: true });
+}
+
+export async function POST(request: NextRequest) {
+  const roleCheck = await requireRole([CONTRIBUTION_ADMIN_ROLE], request);
+  if (!roleCheck.ok) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const payload = (await request.json().catch(() => ({} as UpdatePayload))) ?? {};
+  const memberId = Number(payload.memberId);
+  if (!Number.isFinite(memberId) || memberId <= 0) {
+    return NextResponse.json({ error: "Missing member id." }, { status: 400 });
+  }
+
+  const supabase = createServiceRoleClient();
+  const ensured = await ensureActiveAccountForMember(supabase, request, memberId);
+  if (ensured.error || !ensured.accountId) {
+    return NextResponse.json(
+      { error: ensured.error ?? "No active account found for this member." },
+      { status: 400 },
+    );
+  }
+
+  return NextResponse.json({ ok: true, accountId: ensured.accountId, sent: true });
 }

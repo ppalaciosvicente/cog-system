@@ -28,6 +28,8 @@ export default function ContributionsAccessPage() {
   const [error, setError] = useState<string | null>(null);
   const [rows, setRows] = useState<AccessRow[]>([]);
   const [countryOptions, setCountryOptions] = useState<CountryOption[]>([]);
+  const [selectedMemberId, setSelectedMemberId] = useState<string>("");
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const countryNameByCode = useMemo(() => {
     const map: Record<string, string> = {};
@@ -69,6 +71,9 @@ export default function ContributionsAccessPage() {
         if (!cancelled) {
           setRows(nextRows);
           setCountryOptions(nextCountries);
+          if (!selectedMemberId && nextRows.length) {
+            setSelectedMemberId(String(nextRows[0].memberId));
+          }
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -87,6 +92,43 @@ export default function ContributionsAccessPage() {
     return "-";
   }
 
+  async function deleteAccess(row: AccessRow) {
+    if (deletingId) return;
+    const confirm = window.confirm(`Remove contributions access for ${row.memberName}?`);
+    if (!confirm) return;
+    setDeletingId(row.memberId);
+    setError(null);
+    try {
+      const headers = await getAuthHeaders();
+      const response = await fetch("/api/contributions/access-admin", {
+        method: "PUT",
+        headers: {
+          ...headers,
+          "content-type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          memberId: row.memberId,
+          roleName: null,
+          countryCodes: [],
+        }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as { error?: string };
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Failed to remove access.");
+      }
+      setRows((current) =>
+        current.map((item) =>
+          item.memberId === row.memberId ? { ...item, roleName: null, countryCodes: [] } : item,
+        ),
+      );
+    } catch (deleteErr) {
+      setError(deleteErr instanceof Error ? deleteErr.message : "Failed to remove access.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   return (
     <ContributionPage
       title="Contributions Access"
@@ -102,6 +144,34 @@ export default function ContributionsAccessPage() {
         return (
           <div>
             {error ? <p className={forms.error}>{error}</p> : null}
+
+            <div className={forms.actions} style={{ marginBottom: 12, gap: 8, flexWrap: "wrap" }}>
+              <label className={forms.label}>
+                Select member
+                <select
+                  className={forms.field}
+                  value={selectedMemberId}
+                  onChange={(event) => setSelectedMemberId(event.target.value)}
+                  style={{ minWidth: 240, marginLeft: 8 }}
+                >
+                  {rows.map((row) => (
+                    <option key={row.memberId} value={row.memberId}>
+                      {row.memberName}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <Link
+                href={
+                  selectedMemberId
+                    ? `/contributions/access/edit?memberId=${encodeURIComponent(selectedMemberId)}`
+                    : "/contributions/access/edit"
+                }
+                className={`${forms.button} ${forms.actionsRowPrimaryButton}`}
+              >
+                Add
+              </Link>
+            </div>
 
             {rows.length ? (
               <div className={forms.tableWrap}>
@@ -135,6 +205,15 @@ export default function ContributionsAccessPage() {
                             >
                               Edit
                             </Link>
+                            <button
+                              type="button"
+                              className={`${forms.button} ${forms.buttonDanger}`}
+                              style={{ marginLeft: 8 }}
+                              onClick={() => void deleteAccess(row)}
+                              disabled={deletingId === row.memberId}
+                            >
+                              {deletingId === row.memberId ? "Removing..." : "Delete"}
+                            </button>
                           </td>
                         </tr>
                       );

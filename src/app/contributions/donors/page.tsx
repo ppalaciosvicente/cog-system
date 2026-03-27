@@ -868,7 +868,7 @@ export default function ContributionDonorsPage() {
                         onClick={() => void downloadTaxReceipt()}
                         disabled={downloadingReceipt}
                       >
-                        {downloadingReceipt ? "Downloading..." : "Download Tax Receipts"}
+                        {downloadingReceipt ? "Downloading..." : "Download Tax Receipt"}
                       </button>
                     ) : null}
                   </div>

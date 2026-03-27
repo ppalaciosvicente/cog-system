@@ -48,11 +48,7 @@ function cacheKey(access: Extract<Awaited<ReturnType<typeof getContributionAcces
   });
 }
 
-function applyScopeFilters(
-  query: ReturnType<ReturnType<typeof createServiceRoleClient>["from"]>,
-  access: Extract<Awaited<ReturnType<typeof getContributionAccess>>, { ok: true }>,
-  donorStatusIds: number[],
-) {
+function applyScopeFilters(query: any, access: Extract<Awaited<ReturnType<typeof getContributionAccess>>, { ok: true }>, donorStatusIds: number[]) {
   let scopedQuery = (query as any).in("statusid", donorStatusIds as number[]);
   if (!access.isAdmin) {
     scopedQuery = scopedQuery.in("countrycode", access.allowedCountryCodes as string[]);

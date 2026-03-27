@@ -30,6 +30,7 @@ export default function ContributionsAccessPage() {
   const [countryOptions, setCountryOptions] = useState<CountryOption[]>([]);
   const [eligibleMembers, setEligibleMembers] = useState<Array<{ id: number; name: string }>>([]);
   const [selectedMemberId, setSelectedMemberId] = useState<string>("");
+  const [memberSearch, setMemberSearch] = useState("");
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const countryNameByCode = useMemo(() => {
@@ -180,20 +181,37 @@ export default function ContributionsAccessPage() {
             {eligibleMembers.length ? (
               <div className={forms.actions} style={{ marginBottom: 12, gap: 8, flexWrap: "wrap" }}>
                 <label className={forms.label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  Select member to add
+                  Member name
+                  <input
+                    className={forms.field}
+                    type="text"
+                    value={memberSearch}
+                    placeholder="Type 2+ letters to filter"
+                    onChange={(event) => setMemberSearch(event.target.value)}
+                    style={{ minWidth: 260 }}
+                  />
+                </label>
+                {memberSearch.trim().length >= 2 ? (
                   <select
                     className={forms.field}
                     value={selectedMemberId}
                     onChange={(event) => setSelectedMemberId(event.target.value)}
-                    style={{ minWidth: 260 }}
+                    style={{ minWidth: 280 }}
                   >
-                    {eligibleMembers.map((member) => (
-                      <option key={member.id} value={member.id}>
-                        {member.name}
-                      </option>
-                    ))}
+                    {eligibleMembers
+                      .filter((member) =>
+                        member.name.toLowerCase().includes(memberSearch.trim().toLowerCase()),
+                      )
+                      .slice(0, 25)
+                      .map((member) => (
+                        <option key={member.id} value={member.id}>
+                          {member.name}
+                        </option>
+                      ))}
                   </select>
-                </label>
+                ) : (
+                  <span style={{ color: "#6b7280" }}>Enter at least 2 characters to search.</span>
+                )}
                 <Link
                   href={
                     selectedMemberId
@@ -201,6 +219,8 @@ export default function ContributionsAccessPage() {
                       : "/contributions/access/edit"
                   }
                   className={`${forms.button} ${forms.actionsRowPrimaryButton}`}
+                  aria-disabled={!selectedMemberId}
+                  style={{ pointerEvents: selectedMemberId ? "auto" : "none", opacity: selectedMemberId ? 1 : 0.6 }}
                 >
                   Add
                 </Link>

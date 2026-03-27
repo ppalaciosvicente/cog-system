@@ -136,9 +136,9 @@ export default function ContributionsAccessPage() {
     }
   }
 
-  async function resendInvite(row: AccessRow) {
+  async function resendInvite(memberId: number) {
     if (deletingId) return;
-    setDeletingId(row.memberId);
+    setDeletingId(memberId);
     setError(null);
     try {
       const headers = await getAuthHeaders();
@@ -149,7 +149,7 @@ export default function ContributionsAccessPage() {
           "content-type": "application/json",
         },
         credentials: "include",
-        body: JSON.stringify({ memberId: row.memberId, action: "resend" }),
+        body: JSON.stringify({ memberId, action: "resend" }),
       });
       const payload = (await response.json().catch(() => ({}))) as { error?: string };
       if (!response.ok) {
@@ -212,18 +212,28 @@ export default function ContributionsAccessPage() {
                 ) : (
                   <span style={{ color: "#6b7280" }}>Enter at least 2 characters to search.</span>
                 )}
-                <Link
-                  href={
-                    selectedMemberId
-                      ? `/contributions/access/edit?memberId=${encodeURIComponent(selectedMemberId)}`
-                      : "/contributions/access/edit"
-                  }
-                  className={`${forms.button} ${forms.actionsRowPrimaryButton}`}
-                  aria-disabled={!selectedMemberId}
-                  style={{ pointerEvents: selectedMemberId ? "auto" : "none", opacity: selectedMemberId ? 1 : 0.6 }}
-                >
-                  Add
-                </Link>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <Link
+                    href={
+                      selectedMemberId
+                        ? `/contributions/access/edit?memberId=${encodeURIComponent(selectedMemberId)}`
+                        : "/contributions/access/edit"
+                    }
+                    className={`${forms.button} ${forms.actionsRowPrimaryButton}`}
+                    aria-disabled={!selectedMemberId}
+                    style={{ pointerEvents: selectedMemberId ? "auto" : "none", opacity: selectedMemberId ? 1 : 0.6 }}
+                  >
+                    Add
+                  </Link>
+                  <button
+                    type="button"
+                    className={forms.button}
+                    disabled={!selectedMemberId || deletingId !== null}
+                    onClick={() => selectedMemberId && void resendInvite(Number(selectedMemberId))}
+                  >
+                    {deletingId && Number(selectedMemberId) === deletingId ? "Sending…" : "Resend Invite"}
+                  </button>
+                </div>
               </div>
             ) : (
               <p style={{ marginBottom: 12 }}>
@@ -274,14 +284,6 @@ export default function ContributionsAccessPage() {
                                   {deletingId === row.memberId ? "Removing..." : "Delete"}
                                 </button>
                               ) : null}
-                              <button
-                                type="button"
-                                className={forms.button}
-                                onClick={() => void resendInvite(row)}
-                                disabled={deletingId === row.memberId}
-                              >
-                                Resend Invite
-                              </button>
                             </div>
                           </td>
                         </tr>

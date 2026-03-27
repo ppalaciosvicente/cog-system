@@ -252,12 +252,12 @@ export async function GET(request: NextRequest) {
   const householdLabelByMemberId = new Map<number, string>();
   selectedHousehold.memberIds.forEach((id) => householdLabelByMemberId.set(id, selectedHousehold.label));
 
-  const contributions: ContributionRecord[] = ((contributionRows ?? []) as ContributionBaseRow[])
+  const contributions = ((contributionRows ?? []) as ContributionBaseRow[])
     .map((row) => {
       const member = memberById.get(row.memberid);
       if (!member) return null;
 
-      return {
+      const record: ContributionRecord = {
         id: row.id,
         memberId: row.memberid,
         memberName:
@@ -275,6 +275,8 @@ export async function GET(request: NextRequest) {
         dateEntered: row.dateentered,
         comments: row.comments,
       } satisfies ContributionRecord;
+
+      return record;
     })
     .filter((row): row is ContributionRecord => row !== null);
 

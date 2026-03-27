@@ -21,6 +21,8 @@ type CountryOption = {
   name: string;
 };
 
+type EligibleMember = { id: number; name: string };
+
 function normalizeCode(value: string) {
   return value.trim().toUpperCase();
 }
@@ -29,18 +31,20 @@ function ContributionAccessEditInner() {
   const params = useSearchParams();
   const memberIdParam = Number(params.get("memberId") ?? "");
 
-const [loading, setLoading] = useState(true);
-const [saving, setSaving] = useState(false);
-const [error, setError] = useState<string | null>(null);
-const [saveMsg, setSaveMsg] = useState<string | null>(null);
-const [row, setRow] = useState<AccessRow | null>(null);
-const [accessRows, setAccessRows] = useState<AccessRow[]>([]);
-const [countryOptions, setCountryOptions] = useState<CountryOption[]>([]);
-const [eligibleMembers, setEligibleMembers] = useState<Array<{ id: number; name: string }>>([]);
-const [memberSearch, setMemberSearch] = useState("");
-const [selectedMemberId, setSelectedMemberId] = useState<number | null>(Number.isFinite(memberIdParam) && memberIdParam > 0 ? memberIdParam : null);
-const [roleName, setRoleName] = useState<"contrib_admin" | "contrib_user" | "">("");
-const [countryCodes, setCountryCodes] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saveMsg, setSaveMsg] = useState<string | null>(null);
+  const [row, setRow] = useState<AccessRow | null>(null);
+  const [accessRows, setAccessRows] = useState<AccessRow[]>([]);
+  const [countryOptions, setCountryOptions] = useState<CountryOption[]>([]);
+  const [eligibleMembers, setEligibleMembers] = useState<EligibleMember[]>([]);
+  const [memberId, setMemberId] = useState<number | null>(
+    Number.isFinite(memberIdParam) && memberIdParam > 0 ? memberIdParam : null,
+  );
+  const [memberSearch, setMemberSearch] = useState("");
+  const [roleName, setRoleName] = useState<"contrib_admin" | "contrib_user" | "">("");
+  const [countryCodes, setCountryCodes] = useState<string[]>([]);
 
   const countryNameByCode = useMemo(() => {
     const map: Record<string, string> = {};
@@ -55,14 +59,29 @@ const [countryCodes, setCountryCodes] = useState<string[]>([]);
     [countryOptions],
   );
 
+  const memberOptions = useMemo(() => {
+    const map = new Map<number, string>();
+    accessRows.forEach((r) =>
+      map.set(r.memberId, r.memberName + (r.roleName ? " (has access)" : "")),
+    );
+    eligibleMembers.forEach((m) => {
+      if (!map.has(m.id)) map.set(m.id, m.name);
+    });
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [accessRows, eligibleMembers]);
+
+  const filteredMembers = useMemo(() => {
+    const term = memberSearch.trim().toLowerCase();
+    if (!term) return memberOptions;
+    return memberOptions.filter((m) => m.name.toLowerCase().includes(term)).slice(0, 50);
+  }, [memberOptions, memberSearch]);
+
   useEffect(() => {
     let cancelled = false;
-
     async function load() {
       setLoading(true);
       setError(null);
       setSaveMsg(null);
-
       try {
         const headers = await getAuthHeaders();
         const response = await fetch("/api/contributions/access-admin", {
@@ -74,56 +93,24 @@ const [countryCodes, setCountryCodes] = useState<string[]>([]);
           error?: string;
           rows?: AccessRow[];
           countryOptions?: CountryOption[];
-          eligibleMembers?: Array<{ id: number; name: string }>;
+          eligibleMembers?: EligibleMember[];
         };
         if (!response.ok) {
           setError(payload.error ?? "Failed to load contributions access.");
           return;
         }
-
-        const allRows = Array.isArray(payload.rows) ? payload.rows : [];
-        const allEligible = Array.isArray(payload.eligibleMembers) ? payload.eligibleMembers : [];
-
-        if (!cancelled) {
-          setAccessRows(allRows);
-          setCountryOptions(Array.isArray(payload.countryOptions) ? payload.countryOptions : []);
-          setEligibleMembers(allEligible);
-          const initialId =
-            Number.isFinite(memberIdParam) && memberIdParam > 0
-              ? memberIdParam
-              : allEligible[0]?.id ?? null;
-          setSelectedMemberId(initialId);
-
-          const targetId = initialId;
-          if (targetId) {
-            const foundRow = allRows.find((candidate) => candidate.memberId === targetId) ?? null;
-            let nextRow: AccessRow | null = foundRow;
-            if (!nextRow) {
-              const eligibleName = allEligible.find((m) => m.id === targetId)?.name;
-              if (!eligibleName) {
-                setError("Member was not found or is not eligible for contributions access.");
-              } else {
-                nextRow = {
-                  memberId: targetId,
-                  accountId: targetId,
-                  memberName: eligibleName,
-                  roleName: null,
-                  countryCodes: [],
-                };
-              }
-            }
-            if (nextRow) {
-              setRow(nextRow);
-              setRoleName(nextRow.roleName ?? "");
-              setCountryCodes(nextRow.countryCodes ?? []);
-            }
-          }
+        const rows = Array.isArray(payload.rows) ? payload.rows : [];
+        const elig = Array.isArray(payload.eligibleMembers) ? payload.eligibleMembers : [];
+        setAccessRows(rows);
+        setCountryOptions(Array.isArray(payload.countryOptions) ? payload.countryOptions : []);
+        setEligibleMembers(elig);
+        if (!memberId && (memberIdParam || elig.length)) {
+          setMemberId(memberIdParam > 0 ? memberIdParam : elig[0]?.id ?? null);
         }
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
-
     void load();
     return () => {
       cancelled = true;
@@ -131,32 +118,32 @@ const [countryCodes, setCountryCodes] = useState<string[]>([]);
   }, [memberIdParam]);
 
   useEffect(() => {
-    if (!selectedMemberId) {
+    if (!memberId) {
       setRow(null);
       setRoleName("");
       setCountryCodes([]);
       return;
     }
-    const foundRow = accessRows.find((candidate) => candidate.memberId === selectedMemberId) ?? null;
-    let nextRow: AccessRow | null = foundRow;
-    if (!nextRow) {
-      const eligibleName = eligibleMembers.find((m) => m.id === selectedMemberId)?.name;
-      if (!eligibleName) {
-        setError("Member was not found or is not eligible for contributions access.");
-        return;
-      }
-      nextRow = {
-        memberId: selectedMemberId,
-        accountId: selectedMemberId,
-        memberName: eligibleName,
-        roleName: null,
-        countryCodes: [],
-      };
+    const existing = accessRows.find((r) => r.memberId === memberId);
+    const eligibleName = eligibleMembers.find((m) => m.id === memberId)?.name;
+    const name = existing?.memberName ?? eligibleName;
+    if (!name) {
+      setRow(null);
+      setRoleName("");
+      setCountryCodes([]);
+      return;
     }
-    setRow(nextRow);
-    setRoleName(nextRow.roleName ?? "");
-    setCountryCodes(nextRow.countryCodes ?? []);
-  }, [selectedMemberId, accessRows, eligibleMembers]);
+    const next: AccessRow = {
+      memberId,
+      accountId: existing?.accountId ?? memberId,
+      memberName: name,
+      roleName: existing?.roleName ?? null,
+      countryCodes: existing?.countryCodes ?? [],
+    };
+    setRow(next);
+    setRoleName(next.roleName ?? "");
+    setCountryCodes(next.countryCodes ?? []);
+  }, [memberId, accessRows, eligibleMembers]);
 
   async function saveChanges() {
     if (!row || saving) return;
@@ -164,7 +151,6 @@ const [countryCodes, setCountryCodes] = useState<string[]>([]);
       setError("Contrib user requires at least one country.");
       return;
     }
-
     setSaving(true);
     setError(null);
     setSaveMsg(null);
@@ -172,10 +158,7 @@ const [countryCodes, setCountryCodes] = useState<string[]>([]);
       const headers = await getAuthHeaders();
       const response = await fetch("/api/contributions/access-admin", {
         method: "PUT",
-        headers: {
-          ...headers,
-          "content-type": "application/json",
-        },
+        headers: { ...headers, "content-type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
           memberId: row.memberId,
@@ -189,23 +172,16 @@ const [countryCodes, setCountryCodes] = useState<string[]>([]);
         return;
       }
       setSaveMsg("Saved.");
-      setRow((prev) =>
-        prev
-          ? {
-              ...prev,
-              roleName: roleName || null,
-              countryCodes: roleName === "contrib_user" ? countryCodes : [],
-            }
-          : prev,
-      );
     } finally {
       setSaving(false);
     }
   }
 
+  const pageTitle = row?.roleName ? "Edit Contributions Access" : "Add Contributions Access";
+
   return (
     <ContributionPage
-      title="Edit Contributions Access"
+      title={pageTitle}
       description="Configure role and country scope for this user."
       backHref="/contributions/access"
     >
@@ -213,10 +189,9 @@ const [countryCodes, setCountryCodes] = useState<string[]>([]);
         if (!access.isAdmin) {
           return <p className={forms.error}>Only contrib_admin can access this page.</p>;
         }
-
         if (loading) return <p>Loading access details...</p>;
         if (error && !row) return <p className={forms.error}>{error}</p>;
-        if (!row) return <p className={forms.error}>Could not load this member.</p>;
+        if (!row) return <p className={forms.error}>Select a member to edit.</p>;
 
         const selectedCountryLabels = [...countryCodes]
           .map((code) => countryNameByCode[normalizeCode(code)] ?? code)
@@ -227,48 +202,46 @@ const [countryCodes, setCountryCodes] = useState<string[]>([]);
           <div style={{ display: "grid", gap: 12, maxWidth: 640 }}>
             <div style={{ display: "grid", gap: 8 }}>
               <label className={forms.label}>Select member</label>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                <input
-                  type="text"
-                  className={forms.field}
-                  placeholder="Type to filter members"
-                  value={memberSearch}
-                  onChange={(e) => setMemberSearch(e.target.value)}
-                  style={{ minWidth: 240 }}
-                />
-                <select
-                  className={forms.field}
-                  value={selectedMemberId ?? ""}
-                  onChange={(e) => setSelectedMemberId(Number(e.target.value) || null)}
-                  style={{ minWidth: 260 }}
-                >
-                  <option value="">Select a member</option>
-                  {eligibleMembers
-                    .filter((m) =>
-                      m.name.toLowerCase().includes(memberSearch.trim().toLowerCase()),
-                    )
-                    .map((member) => (
-                      <option key={member.id} value={member.id}>
-                        {member.name}
-                      </option>
-                    ))}
-                  {accessRows
-                    .filter((m) => m.roleName && !eligibleMembers.find((e) => e.id === m.memberId))
-                    .filter((m) =>
-                      m.memberName.toLowerCase().includes(memberSearch.trim().toLowerCase()),
-                    )
-                    .map((member) => (
-                      <option key={member.memberId} value={member.memberId}>
-                        {member.memberName} (has access)
-                      </option>
-                    ))}
-                </select>
+              <input
+                type="text"
+                className={forms.field}
+                placeholder="Type to search members"
+                value={memberSearch}
+                onChange={(e) => setMemberSearch(e.target.value)}
+                style={{ minWidth: 260 }}
+              />
+              <div
+                style={{
+                  maxHeight: 220,
+                  overflowY: "auto",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 8,
+                  padding: 8,
+                  background: "#fff",
+                }}
+              >
+                {filteredMembers.length ? (
+                  filteredMembers.map((member) => (
+                    <label
+                      key={member.id}
+                      style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}
+                    >
+                      <input
+                        type="radio"
+                        name="member"
+                        checked={memberId === member.id}
+                        onChange={() => setMemberId(member.id)}
+                      />
+                      <span>{member.name}</span>
+                    </label>
+                  ))
+                ) : (
+                  <p style={{ margin: 0, color: "#6b7280" }}>No matches. Try another name.</p>
+                )}
               </div>
-              {row ? (
-                <div>
-                  <strong>Editing:</strong> {row.memberName}
-                </div>
-              ) : null}
+              <div>
+                <strong>Editing:</strong> {row.memberName}
+              </div>
             </div>
 
             <div className={forms.row}>
@@ -281,9 +254,7 @@ const [countryCodes, setCountryCodes] = useState<string[]>([]);
                   onChange={(event) => {
                     const nextRole = event.target.value as "contrib_admin" | "contrib_user" | "";
                     setRoleName(nextRole);
-                    if (nextRole !== "contrib_user") {
-                      setCountryCodes([]);
-                    }
+                    if (nextRole !== "contrib_user") setCountryCodes([]);
                     setError(null);
                     setSaveMsg(null);
                   }}
@@ -350,8 +321,13 @@ const [countryCodes, setCountryCodes] = useState<string[]>([]);
             {saveMsg ? <p style={{ color: "#166534" }}>{saveMsg}</p> : null}
 
             <div className={forms.actions}>
-              <button type="button" className={forms.button} onClick={() => void saveChanges()} disabled={saving}>
-                {saving ? "Saving..." : "Save"}
+              <button
+                type="button"
+                className={`${forms.button} ${forms.actionsRowPrimaryButton}`}
+                onClick={() => void saveChanges()}
+                disabled={saving}
+              >
+                {saving ? "Saving..." : "Save & Send Email Invitation"}
               </button>
             </div>
           </div>

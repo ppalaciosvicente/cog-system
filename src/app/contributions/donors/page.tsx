@@ -509,7 +509,7 @@ export default function ContributionDonorsPage() {
       return [text.slice(0, lastSpace), text.slice(lastSpace + 1).trimStart()];
     };
 
-    const lines = [
+    const lines: Parameters<typeof buildSimplePdf>[0] = [
       { text: "Contributions", size: 18, bold: true, x: 30, y: 760 },
       { text: `Donor: ${detail?.donorLabel ?? ""}`, size: 12, x: 30, y: 742 },
       { text: `From ${startDate || "earliest"} to ${endDate || todayDateString()}`, size: 12, x: 30, y: 726 },

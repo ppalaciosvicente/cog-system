@@ -359,7 +359,7 @@ export default function ViewContributionsPage() {
     }
 
     const filterLines = filterParts;
-    const lines = [];
+    const lines: Parameters<typeof buildSimplePdf>[0] = [];
     let headerY = 760;
     lines.push({ text: "Contributions", size: 18, bold: true, x: 30, y: headerY });
     headerY -= 18;

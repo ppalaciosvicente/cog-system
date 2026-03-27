@@ -6,6 +6,8 @@ import { ContributionPage } from "@/components/contributions/ContributionPage";
 import { getAuthHeaders } from "@/lib/supabase/client";
 import forms from "@/styles/forms.module.css";
 
+export const dynamic = "force-dynamic";
+
 type AccessRow = {
   memberId: number;
   accountId: number;

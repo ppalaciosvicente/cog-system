@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ContributionPage } from "@/components/contributions/ContributionPage";
 import { getAuthHeaders } from "@/lib/supabase/client";
@@ -25,7 +25,7 @@ function normalizeCode(value: string) {
   return value.trim().toUpperCase();
 }
 
-export default function ContributionAccessEditPage() {
+function ContributionAccessEditInner() {
   const params = useSearchParams();
   const memberId = Number(params.get("memberId") ?? "");
 
@@ -266,5 +266,13 @@ export default function ContributionAccessEditPage() {
         );
       }}
     </ContributionPage>
+  );
+}
+
+export default function ContributionAccessEditPage() {
+  return (
+    <Suspense fallback={<p>Loading access details...</p>}>
+      <ContributionAccessEditInner />
+    </Suspense>
   );
 }

@@ -29,8 +29,6 @@ export default function ContributionsAccessPage() {
   const [rows, setRows] = useState<AccessRow[]>([]);
   const [countryOptions, setCountryOptions] = useState<CountryOption[]>([]);
   const [eligibleMembers, setEligibleMembers] = useState<Array<{ id: number; name: string }>>([]);
-  const [selectedMemberId, setSelectedMemberId] = useState<string>("");
-  const [memberSearch, setMemberSearch] = useState("");
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const countryNameByCode = useMemo(() => {
@@ -78,9 +76,6 @@ export default function ContributionsAccessPage() {
           setRows(nextRows);
           setCountryOptions(nextCountries);
           setEligibleMembers(nextEligible);
-          if (!selectedMemberId && nextEligible.length) {
-            setSelectedMemberId(String(nextEligible[0].id));
-          }
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -178,68 +173,14 @@ export default function ContributionsAccessPage() {
           <div>
             {error ? <p className={forms.error}>{error}</p> : null}
 
-            {eligibleMembers.length ? (
-              <div className={forms.actions} style={{ marginBottom: 12, gap: 8, flexWrap: "wrap" }}>
-                <label className={forms.label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  Member name
-                  <input
-                    className={forms.field}
-                    type="text"
-                    value={memberSearch}
-                    placeholder="Type 2+ letters to filter"
-                    onChange={(event) => setMemberSearch(event.target.value)}
-                    style={{ minWidth: 260 }}
-                  />
-                </label>
-                {memberSearch.trim().length >= 2 ? (
-                  <select
-                    className={forms.field}
-                    value={selectedMemberId}
-                    onChange={(event) => setSelectedMemberId(event.target.value)}
-                    style={{ minWidth: 280 }}
-                  >
-                    {eligibleMembers
-                      .filter((member) =>
-                        member.name.toLowerCase().includes(memberSearch.trim().toLowerCase()),
-                      )
-                      .slice(0, 25)
-                      .map((member) => (
-                        <option key={member.id} value={member.id}>
-                          {member.name}
-                        </option>
-                      ))}
-                  </select>
-                ) : (
-                  <span style={{ color: "#6b7280" }}>Enter at least 2 characters to search.</span>
-                )}
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <Link
-                    href={
-                      selectedMemberId
-                        ? `/contributions/access/edit?memberId=${encodeURIComponent(selectedMemberId)}`
-                        : "/contributions/access/edit"
-                    }
-                    className={`${forms.button} ${forms.actionsRowPrimaryButton}`}
-                    aria-disabled={!selectedMemberId}
-                    style={{ pointerEvents: selectedMemberId ? "auto" : "none", opacity: selectedMemberId ? 1 : 0.6 }}
-                  >
-                    Add
-                  </Link>
-                  <button
-                    type="button"
-                    className={forms.button}
-                    disabled={!selectedMemberId || deletingId !== null}
-                    onClick={() => selectedMemberId && void resendInvite(Number(selectedMemberId))}
-                  >
-                    {deletingId && Number(selectedMemberId) === deletingId ? "Sending…" : "Resend Invite"}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <p style={{ marginBottom: 12 }}>
-                No additional eligible members without contributions access were found.
-              </p>
-            )}
+            <div className={forms.actions} style={{ marginBottom: 12, gap: 8, flexWrap: "wrap" }}>
+              <Link
+                href="/contributions/access/edit"
+                className={`${forms.button} ${forms.actionsRowPrimaryButton}`}
+              >
+                Add
+              </Link>
+            </div>
 
             {rows.length ? (
               <div className={forms.tableWrap}>
@@ -274,6 +215,14 @@ export default function ContributionsAccessPage() {
                               >
                                 Edit
                               </Link>
+                              <button
+                                type="button"
+                                className={forms.button}
+                                onClick={() => void resendInvite(row.memberId)}
+                                disabled={deletingId === row.memberId}
+                              >
+                                {deletingId === row.memberId ? "Sending…" : "Resend Invite"}
+                              </button>
                               {row.memberId !== access.memberId ? (
                                 <button
                                   type="button"

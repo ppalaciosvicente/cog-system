@@ -27,16 +27,20 @@ function normalizeCode(value: string) {
 
 function ContributionAccessEditInner() {
   const params = useSearchParams();
-  const memberId = Number(params.get("memberId") ?? "");
+  const memberIdParam = Number(params.get("memberId") ?? "");
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [saveMsg, setSaveMsg] = useState<string | null>(null);
-  const [row, setRow] = useState<AccessRow | null>(null);
-  const [countryOptions, setCountryOptions] = useState<CountryOption[]>([]);
-  const [roleName, setRoleName] = useState<"contrib_admin" | "contrib_user" | "">("");
-  const [countryCodes, setCountryCodes] = useState<string[]>([]);
+const [loading, setLoading] = useState(true);
+const [saving, setSaving] = useState(false);
+const [error, setError] = useState<string | null>(null);
+const [saveMsg, setSaveMsg] = useState<string | null>(null);
+const [row, setRow] = useState<AccessRow | null>(null);
+const [accessRows, setAccessRows] = useState<AccessRow[]>([]);
+const [countryOptions, setCountryOptions] = useState<CountryOption[]>([]);
+const [eligibleMembers, setEligibleMembers] = useState<Array<{ id: number; name: string }>>([]);
+const [memberSearch, setMemberSearch] = useState("");
+const [selectedMemberId, setSelectedMemberId] = useState<number | null>(Number.isFinite(memberIdParam) && memberIdParam > 0 ? memberIdParam : null);
+const [roleName, setRoleName] = useState<"contrib_admin" | "contrib_user" | "">("");
+const [countryCodes, setCountryCodes] = useState<string[]>([]);
 
   const countryNameByCode = useMemo(() => {
     const map: Record<string, string> = {};
@@ -55,12 +59,6 @@ function ContributionAccessEditInner() {
     let cancelled = false;
 
     async function load() {
-      if (!Number.isFinite(memberId) || memberId <= 0) {
-        setError("Missing member id.");
-        setLoading(false);
-        return;
-      }
-
       setLoading(true);
       setError(null);
       setSaveMsg(null);
@@ -83,32 +81,43 @@ function ContributionAccessEditInner() {
           return;
         }
 
-        const foundRow =
-          (Array.isArray(payload.rows) ? payload.rows : []).find(
-            (candidate) => candidate.memberId === memberId,
-          ) ?? null;
-
-        let nextRow: AccessRow | null = foundRow;
-        if (!nextRow) {
-          const eligibleName = (payload.eligibleMembers ?? []).find((m) => m.id === memberId)?.name;
-          if (!eligibleName) {
-            setError("Member was not found or is not eligible for contributions access.");
-            return;
-          }
-          nextRow = {
-            memberId,
-            accountId: memberId, // placeholder; API will resolve on save
-            memberName: eligibleName,
-            roleName: null,
-            countryCodes: [],
-          };
-        }
+        const allRows = Array.isArray(payload.rows) ? payload.rows : [];
+        const allEligible = Array.isArray(payload.eligibleMembers) ? payload.eligibleMembers : [];
 
         if (!cancelled) {
-          setRow(nextRow);
+          setAccessRows(allRows);
           setCountryOptions(Array.isArray(payload.countryOptions) ? payload.countryOptions : []);
-          setRoleName(nextRow.roleName ?? "");
-          setCountryCodes(nextRow.countryCodes ?? []);
+          setEligibleMembers(allEligible);
+          const initialId =
+            Number.isFinite(memberIdParam) && memberIdParam > 0
+              ? memberIdParam
+              : allEligible[0]?.id ?? null;
+          setSelectedMemberId(initialId);
+
+          const targetId = initialId;
+          if (targetId) {
+            const foundRow = allRows.find((candidate) => candidate.memberId === targetId) ?? null;
+            let nextRow: AccessRow | null = foundRow;
+            if (!nextRow) {
+              const eligibleName = allEligible.find((m) => m.id === targetId)?.name;
+              if (!eligibleName) {
+                setError("Member was not found or is not eligible for contributions access.");
+              } else {
+                nextRow = {
+                  memberId: targetId,
+                  accountId: targetId,
+                  memberName: eligibleName,
+                  roleName: null,
+                  countryCodes: [],
+                };
+              }
+            }
+            if (nextRow) {
+              setRow(nextRow);
+              setRoleName(nextRow.roleName ?? "");
+              setCountryCodes(nextRow.countryCodes ?? []);
+            }
+          }
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -119,7 +128,35 @@ function ContributionAccessEditInner() {
     return () => {
       cancelled = true;
     };
-  }, [memberId]);
+  }, [memberIdParam]);
+
+  useEffect(() => {
+    if (!selectedMemberId) {
+      setRow(null);
+      setRoleName("");
+      setCountryCodes([]);
+      return;
+    }
+    const foundRow = accessRows.find((candidate) => candidate.memberId === selectedMemberId) ?? null;
+    let nextRow: AccessRow | null = foundRow;
+    if (!nextRow) {
+      const eligibleName = eligibleMembers.find((m) => m.id === selectedMemberId)?.name;
+      if (!eligibleName) {
+        setError("Member was not found or is not eligible for contributions access.");
+        return;
+      }
+      nextRow = {
+        memberId: selectedMemberId,
+        accountId: selectedMemberId,
+        memberName: eligibleName,
+        roleName: null,
+        countryCodes: [],
+      };
+    }
+    setRow(nextRow);
+    setRoleName(nextRow.roleName ?? "");
+    setCountryCodes(nextRow.countryCodes ?? []);
+  }, [selectedMemberId, accessRows, eligibleMembers]);
 
   async function saveChanges() {
     if (!row || saving) return;
@@ -188,8 +225,50 @@ function ContributionAccessEditInner() {
 
         return (
           <div style={{ display: "grid", gap: 12, maxWidth: 640 }}>
-            <div>
-              <strong>Member:</strong> {row.memberName}
+            <div style={{ display: "grid", gap: 8 }}>
+              <label className={forms.label}>Select member</label>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                <input
+                  type="text"
+                  className={forms.field}
+                  placeholder="Type to filter members"
+                  value={memberSearch}
+                  onChange={(e) => setMemberSearch(e.target.value)}
+                  style={{ minWidth: 240 }}
+                />
+                <select
+                  className={forms.field}
+                  value={selectedMemberId ?? ""}
+                  onChange={(e) => setSelectedMemberId(Number(e.target.value) || null)}
+                  style={{ minWidth: 260 }}
+                >
+                  <option value="">Select a member</option>
+                  {eligibleMembers
+                    .filter((m) =>
+                      m.name.toLowerCase().includes(memberSearch.trim().toLowerCase()),
+                    )
+                    .map((member) => (
+                      <option key={member.id} value={member.id}>
+                        {member.name}
+                      </option>
+                    ))}
+                  {accessRows
+                    .filter((m) => m.roleName && !eligibleMembers.find((e) => e.id === m.memberId))
+                    .filter((m) =>
+                      m.memberName.toLowerCase().includes(memberSearch.trim().toLowerCase()),
+                    )
+                    .map((member) => (
+                      <option key={member.memberId} value={member.memberId}>
+                        {member.memberName} (has access)
+                      </option>
+                    ))}
+                </select>
+              </div>
+              {row ? (
+                <div>
+                  <strong>Editing:</strong> {row.memberName}
+                </div>
+              ) : null}
             </div>
 
             <div className={forms.row}>

@@ -76,6 +76,7 @@ function ContributionAccessEditInner() {
           error?: string;
           rows?: AccessRow[];
           countryOptions?: CountryOption[];
+          eligibleMembers?: Array<{ id: number; name: string }>;
         };
         if (!response.ok) {
           setError(payload.error ?? "Failed to load contributions access.");
@@ -86,13 +87,25 @@ function ContributionAccessEditInner() {
           (Array.isArray(payload.rows) ? payload.rows : []).find(
             (candidate) => candidate.memberId === memberId,
           ) ?? null;
-        if (!foundRow) {
-          setError("Member was not found in contributions access list.");
-          return;
+
+        let nextRow: AccessRow | null = foundRow;
+        if (!nextRow) {
+          const eligibleName = (payload.eligibleMembers ?? []).find((m) => m.id === memberId)?.name;
+          if (!eligibleName) {
+            setError("Member was not found or is not eligible for contributions access.");
+            return;
+          }
+          nextRow = {
+            memberId,
+            accountId: memberId, // placeholder; API will resolve on save
+            memberName: eligibleName,
+            roleName: null,
+            countryCodes: [],
+          };
         }
 
         if (!cancelled) {
-          setRow(foundRow);
+          setRow(nextRow);
           setCountryOptions(Array.isArray(payload.countryOptions) ? payload.countryOptions : []);
           setRoleName(foundRow.roleName ?? "");
           setCountryCodes(foundRow.countryCodes ?? []);

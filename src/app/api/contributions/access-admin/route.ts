@@ -3,6 +3,7 @@ import { requireRole } from "@/lib/authz";
 import {
   CONTRIBUTION_ADMIN_ROLE,
   CONTRIBUTION_USER_ROLE,
+  getContributionDonorStatusIds,
 } from "@/lib/contributions";
 import { createServiceRoleClient } from "@/lib/supabase/service";
 
@@ -42,6 +43,11 @@ type UpdatePayload = {
   memberId?: number;
   roleName?: string | null;
   countryCodes?: string[] | null;
+};
+
+type EligibleMember = {
+  id: number;
+  name: string;
 };
 
 function normalizeCode(value: string | null | undefined) {
@@ -197,6 +203,28 @@ export async function GET(request: NextRequest) {
     .filter((row): row is NonNullable<typeof row> => row !== null)
     .sort((a, b) => a.memberName.localeCompare(b.memberName));
 
+  // Eligible members: baptized + in-fellowship statuses, excluding those who already have a contrib role
+  const eligibleMembers: EligibleMember[] = [];
+  try {
+    const donorStatusIds = await getContributionDonorStatusIds(supabase);
+    const { data: eligibleData, error: eligibleErr } = await supabase
+      .from("emcmember")
+      .select("id,fname,lname,statusid,baptized")
+      .in("statusid", donorStatusIds)
+      .eq("baptized", true);
+    if (eligibleErr) {
+      throw new Error(eligibleErr.message);
+    }
+    const memberIdsWithRole = new Set(rows.filter((r) => r.roleName).map((r) => r.memberId));
+    for (const row of (eligibleData ?? []) as MemberRow[]) {
+      if (memberIdsWithRole.has(row.id)) continue;
+      eligibleMembers.push({ id: row.id, name: displayName(row) });
+    }
+    eligibleMembers.sort((a, b) => a.name.localeCompare(b.name));
+  } catch (eligibleError) {
+    // Non-fatal; leave list empty if lookup fails
+  }
+
   const countryOptions = ((countryData ?? []) as CountryRow[])
     .map((row) => {
       const code = normalizeCode(row.code);
@@ -206,7 +234,7 @@ export async function GET(request: NextRequest) {
     })
     .filter((row): row is NonNullable<typeof row> => row !== null);
 
-  return NextResponse.json({ rows, countryOptions });
+  return NextResponse.json({ rows, countryOptions, eligibleMembers });
 }
 
 export async function PUT(request: NextRequest) {

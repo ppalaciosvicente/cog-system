@@ -28,6 +28,7 @@ export default function ContributionsAccessPage() {
   const [error, setError] = useState<string | null>(null);
   const [rows, setRows] = useState<AccessRow[]>([]);
   const [countryOptions, setCountryOptions] = useState<CountryOption[]>([]);
+  const [eligibleMembers, setEligibleMembers] = useState<Array<{ id: number; name: string }>>([]);
   const [selectedMemberId, setSelectedMemberId] = useState<string>("");
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
@@ -57,6 +58,7 @@ export default function ContributionsAccessPage() {
           error?: string;
           rows?: AccessRow[];
           countryOptions?: CountryOption[];
+          eligibleMembers?: Array<{ id: number; name: string }>;
         };
         if (!response.ok) {
           setError(payload.error ?? "Failed to load contributions access.");
@@ -67,12 +69,16 @@ export default function ContributionsAccessPage() {
         const nextCountries = Array.isArray(payload.countryOptions)
           ? payload.countryOptions
           : [];
+        const nextEligible = Array.isArray(payload.eligibleMembers)
+          ? payload.eligibleMembers
+          : [];
 
         if (!cancelled) {
           setRows(nextRows);
           setCountryOptions(nextCountries);
-          if (!selectedMemberId && nextRows.length) {
-            setSelectedMemberId(String(nextRows[0].memberId));
+          setEligibleMembers(nextEligible);
+          if (!selectedMemberId && nextEligible.length) {
+            setSelectedMemberId(String(nextEligible[0].id));
           }
         }
       } finally {
@@ -145,33 +151,39 @@ export default function ContributionsAccessPage() {
           <div>
             {error ? <p className={forms.error}>{error}</p> : null}
 
-            <div className={forms.actions} style={{ marginBottom: 12, gap: 8, flexWrap: "wrap" }}>
-              <label className={forms.label}>
-                Select member
-                <select
-                  className={forms.field}
-                  value={selectedMemberId}
-                  onChange={(event) => setSelectedMemberId(event.target.value)}
-                  style={{ minWidth: 240, marginLeft: 8 }}
+            {eligibleMembers.length ? (
+              <div className={forms.actions} style={{ marginBottom: 12, gap: 8, flexWrap: "wrap" }}>
+                <label className={forms.label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  Select member to add
+                  <select
+                    className={forms.field}
+                    value={selectedMemberId}
+                    onChange={(event) => setSelectedMemberId(event.target.value)}
+                    style={{ minWidth: 260 }}
+                  >
+                    {eligibleMembers.map((member) => (
+                      <option key={member.id} value={member.id}>
+                        {member.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <Link
+                  href={
+                    selectedMemberId
+                      ? `/contributions/access/edit?memberId=${encodeURIComponent(selectedMemberId)}`
+                      : "/contributions/access/edit"
+                  }
+                  className={`${forms.button} ${forms.actionsRowPrimaryButton}`}
                 >
-                  {rows.map((row) => (
-                    <option key={row.memberId} value={row.memberId}>
-                      {row.memberName}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <Link
-                href={
-                  selectedMemberId
-                    ? `/contributions/access/edit?memberId=${encodeURIComponent(selectedMemberId)}`
-                    : "/contributions/access/edit"
-                }
-                className={`${forms.button} ${forms.actionsRowPrimaryButton}`}
-              >
-                Add
-              </Link>
-            </div>
+                  Add
+                </Link>
+              </div>
+            ) : (
+              <p style={{ marginBottom: 12 }}>
+                No additional eligible members without contributions access were found.
+              </p>
+            )}
 
             {rows.length ? (
               <div className={forms.tableWrap}>

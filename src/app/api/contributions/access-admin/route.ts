@@ -117,6 +117,7 @@ export async function GET(request: NextRequest) {
   );
   const accountIds = accounts.map((row) => row.id);
   const memberIds = accounts.map((row) => Number(row.memberid));
+  const activeMemberIdSet = new Set(memberIds);
 
   const [
     { data: memberData, error: memberErr },
@@ -217,6 +218,7 @@ export async function GET(request: NextRequest) {
     }
     const memberIdsWithRole = new Set(rows.filter((r) => r.roleName).map((r) => r.memberId));
     for (const row of (eligibleData ?? []) as MemberRow[]) {
+      if (!activeMemberIdSet.has(row.id)) continue; // require active account
       if (memberIdsWithRole.has(row.id)) continue;
       eligibleMembers.push({ id: row.id, name: displayName(row) });
     }

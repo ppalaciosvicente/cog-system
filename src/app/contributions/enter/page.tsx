@@ -132,7 +132,7 @@ export default function EnterContributionsPage() {
   const [editDraft, setEditDraft] = useState<EditDraft | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
   const [editSaving, setEditSaving] = useState(false);
-  const searchTimeoutsRef = useRef<Map<number, ReturnType<typeof window.setTimeout>>>(new Map());
+  const searchTimeoutsRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
   const searchControllersRef = useRef<Map<number, AbortController>>(new Map());
   const dailyEntryRequestIdRef = useRef(0);
 
@@ -166,7 +166,7 @@ export default function EnterContributionsPage() {
 
   useEffect(() => {
     return () => {
-      searchTimeoutsRef.current.forEach((timeoutId) => window.clearTimeout(timeoutId));
+      searchTimeoutsRef.current.forEach((timeoutId) => clearTimeout(timeoutId));
       searchControllersRef.current.forEach((controller) => controller.abort());
       searchTimeoutsRef.current.clear();
       searchControllersRef.current.clear();
@@ -182,7 +182,7 @@ export default function EnterContributionsPage() {
 
     searchTimeoutsRef.current.forEach((timeoutId, rowId) => {
       if (!activeRowIds.has(rowId)) {
-        window.clearTimeout(timeoutId);
+        clearTimeout(timeoutId);
         searchTimeoutsRef.current.delete(rowId);
       }
     });
@@ -232,7 +232,7 @@ export default function EnterContributionsPage() {
   function clearRowSearch(rowId: number) {
     const timeoutId = searchTimeoutsRef.current.get(rowId);
     if (timeoutId != null) {
-      window.clearTimeout(timeoutId);
+      clearTimeout(timeoutId);
       searchTimeoutsRef.current.delete(rowId);
     }
 
@@ -270,7 +270,7 @@ export default function EnterContributionsPage() {
 
     setSearchLoadingByRowId((current) => ({ ...current, [rowId]: true }));
 
-    const timeoutId = window.setTimeout(async () => {
+    const timeoutId = setTimeout(async () => {
       searchTimeoutsRef.current.delete(rowId);
       const controller = new AbortController();
       searchControllersRef.current.set(rowId, controller);

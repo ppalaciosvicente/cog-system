@@ -199,21 +199,24 @@ export default function ContributionsAccessPage() {
                             {row.roleName === "contrib_user" ? selectedCountryLabels || "-" : "-"}
                           </td>
                           <td className={forms.td}>
-                            <Link
-                              href={`/contributions/access/edit?memberId=${encodeURIComponent(String(row.memberId))}`}
-                              className={forms.button}
-                            >
-                              Edit
-                            </Link>
-                            <button
-                              type="button"
-                              className={`${forms.button} ${forms.buttonDanger}`}
-                              style={{ marginLeft: 8 }}
-                              onClick={() => void deleteAccess(row)}
-                              disabled={deletingId === row.memberId}
-                            >
-                              {deletingId === row.memberId ? "Removing..." : "Delete"}
-                            </button>
+                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                              <Link
+                                href={`/contributions/access/edit?memberId=${encodeURIComponent(String(row.memberId))}`}
+                                className={forms.button}
+                              >
+                                Edit
+                              </Link>
+                              {row.memberId !== access.memberId ? (
+                                <button
+                                  type="button"
+                                  className={`${forms.button} ${forms.buttonDanger}`}
+                                  onClick={() => void deleteAccess(row)}
+                                  disabled={deletingId === row.memberId}
+                                >
+                                  {deletingId === row.memberId ? "Removing..." : "Delete"}
+                                </button>
+                              ) : null}
+                            </div>
                           </td>
                         </tr>
                       );

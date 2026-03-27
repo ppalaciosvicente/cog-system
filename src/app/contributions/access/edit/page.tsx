@@ -107,8 +107,8 @@ function ContributionAccessEditInner() {
         if (!cancelled) {
           setRow(nextRow);
           setCountryOptions(Array.isArray(payload.countryOptions) ? payload.countryOptions : []);
-          setRoleName(foundRow.roleName ?? "");
-          setCountryCodes(foundRow.countryCodes ?? []);
+          setRoleName(nextRow.roleName ?? "");
+          setCountryCodes(nextRow.countryCodes ?? []);
         }
       } finally {
         if (!cancelled) setLoading(false);

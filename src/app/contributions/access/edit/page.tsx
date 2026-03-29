@@ -59,22 +59,9 @@ function ContributionAccessEditInner() {
     [countryOptions],
   );
 
-  const memberOptions = useMemo(() => {
-    const map = new Map<number, string>();
-    accessRows.forEach((r) =>
-      map.set(r.memberId, r.memberName + (r.roleName ? " (has access)" : "")),
-    );
-    eligibleMembers.forEach((m) => {
-      if (!map.has(m.id)) map.set(m.id, m.name);
-    });
-    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
-  }, [accessRows, eligibleMembers]);
-
-  const filteredMembers = useMemo(() => {
-    const term = memberSearch.trim().toLowerCase();
-    if (term.length < 2) return [];
-    return memberOptions.filter((m) => m.name.toLowerCase().includes(term)).slice(0, 50);
-  }, [memberOptions, memberSearch, memberId]);
+  const [searchResults, setSearchResults] = useState<Array<{ id: number; name: string }>>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [selectedName, setSelectedName] = useState<string>("");
 
   useEffect(() => {
     let cancelled = false;
@@ -118,6 +105,47 @@ function ContributionAccessEditInner() {
   }, [memberIdParam]);
 
   useEffect(() => {
+    const controller = new AbortController();
+    let cancelled = false;
+    const term = memberSearch.trim();
+    if (term.length < 2) {
+      setSearchResults([]);
+      setSearchLoading(false);
+      return;
+    }
+    setSearchLoading(true);
+    (async () => {
+      try {
+        const headers = await getAuthHeaders();
+        const resp = await fetch(
+          `/api/contributions/donor-options?q=${encodeURIComponent(term)}&limit=25`,
+          { credentials: "include", headers, signal: controller.signal },
+        );
+        const payload = (await resp.json().catch(() => ({}))) as {
+          households?: Array<{ value: number; label: string }>;
+          error?: string;
+        };
+        if (!resp.ok) throw new Error(payload.error ?? "Failed to search members.");
+        if (!cancelled) {
+          const opts =
+            payload.households?.map((h) => ({ id: h.value, name: h.label })) ?? [];
+          setSearchResults(opts);
+        }
+      } catch (err) {
+        if (!cancelled && !controller.signal.aborted) {
+          setError(err instanceof Error ? err.message : "Failed to search members.");
+        }
+      } finally {
+        if (!cancelled) setSearchLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [memberSearch]);
+
+  useEffect(() => {
     if (!memberId) {
       setRow(null);
       setRoleName("");
@@ -126,7 +154,7 @@ function ContributionAccessEditInner() {
     }
     const existing = accessRows.find((r) => r.memberId === memberId);
     const eligibleName = eligibleMembers.find((m) => m.id === memberId)?.name;
-    const name = existing?.memberName ?? eligibleName;
+    const name = existing?.memberName ?? eligibleName ?? selectedName;
     if (!name) {
       setRow(null);
       setRoleName("");
@@ -143,7 +171,7 @@ function ContributionAccessEditInner() {
     setRow(next);
     setRoleName(next.roleName ?? "");
     setCountryCodes(next.countryCodes ?? []);
-  }, [memberId, accessRows, eligibleMembers]);
+  }, [memberId, accessRows, eligibleMembers, selectedName]);
 
   async function saveChanges() {
     if (!row || saving) return;
@@ -210,19 +238,24 @@ function ContributionAccessEditInner() {
                 style={{ minWidth: 260 }}
               />
               {memberSearch.trim().length >= 2 ? (
-                filteredMembers.length ? (
+                searchResults.length ? (
                   <div className={forms.autocompleteMenu} role="listbox" aria-label="Matching members">
-                    {filteredMembers.map((member) => (
+                    {searchResults.map((member) => (
                       <button
                         key={member.id}
                         type="button"
                         className={forms.autocompleteOption}
-                        onClick={() => setMemberId(member.id)}
+                        onClick={() => {
+                          setMemberId(member.id);
+                          setSelectedName(member.name);
+                        }}
                       >
                         {member.name}
                       </button>
                     ))}
                   </div>
+                ) : searchLoading ? (
+                  <p style={{ margin: 0, color: "#6b7280" }}>Searching members…</p>
                 ) : (
                   <p style={{ margin: 0, color: "#6b7280" }}>No matches. Try another name.</p>
                 )

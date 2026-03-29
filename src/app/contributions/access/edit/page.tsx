@@ -60,6 +60,7 @@ function ContributionAccessEditInner() {
   );
 
   const [searchResults, setSearchResults] = useState<Array<{ id: number; name: string }>>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -103,24 +104,60 @@ function ContributionAccessEditInner() {
   }, [memberIdParam]);
 
   useEffect(() => {
-    const term = memberSearch.trim().toLowerCase();
-    if (term.length < 2) {
+    const searchTerm = memberSearch.trim();
+    if (searchTerm.length < 2) {
       setSearchResults([]);
       return;
     }
-    const combined = [
-      ...eligibleMembers.map((m) => ({ id: m.id, name: m.name })),
-      ...accessRows.map((m) => ({ id: m.memberId, name: m.memberName })),
-    ];
-    const seen = new Set<number>();
-    const unique = combined.filter((m) => {
-      if (seen.has(m.id)) return false;
-      seen.add(m.id);
-      return true;
-    });
-    setSearchResults(
-      unique.filter((m) => m.name.toLowerCase().includes(term)).slice(0, 50),
-    );
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const headers = await getAuthHeaders();
+        const response = await fetch(
+          `/api/contributions/donor-options?q=${encodeURIComponent(searchTerm)}&limit=25`,
+          {
+            method: "GET",
+            headers,
+            credentials: "include",
+            signal: controller.signal,
+          },
+        );
+        const payload = (await response.json().catch(() => ({}))) as {
+          households?: Array<{ value: number; label: string }>;
+          error?: string;
+        };
+        if (!response.ok) {
+          throw new Error(payload.error ?? "Failed to search members.");
+        }
+        const households = Array.isArray(payload.households) ? payload.households : [];
+        setSearchResults(households.map((h) => ({ id: h.value, name: h.label })));
+      } catch (searchErr) {
+        if (controller.signal.aborted) return;
+        // Fallback to local search if remote search fails
+        const term = searchTerm.toLowerCase();
+        const combined = [
+          ...eligibleMembers.map((m) => ({ id: m.id, name: m.name })),
+          ...accessRows.map((m) => ({ id: m.memberId, name: m.memberName })),
+        ];
+        const seen = new Set<number>();
+        const unique = combined.filter((m) => {
+          if (seen.has(m.id)) return false;
+          seen.add(m.id);
+          return true;
+        });
+        setSearchResults(unique.filter((m) => m.name.toLowerCase().includes(term)).slice(0, 50));
+        setError(searchErr instanceof Error ? searchErr.message : "Failed to search members.");
+      } finally {
+        if (!controller.signal.aborted) setSearchLoading(false);
+      }
+    }, 200);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeoutId);
+    };
   }, [memberSearch, eligibleMembers, accessRows]);
 
   useEffect(() => {
@@ -216,6 +253,9 @@ function ContributionAccessEditInner() {
                 onChange={(e) => setMemberSearch(e.target.value)}
                 style={{ minWidth: 260 }}
               />
+              {memberSearch.trim().length >= 2 && searchLoading ? (
+                <p style={{ margin: 0, color: "#6b7280" }}>Searching members...</p>
+              ) : null}
               {memberSearch.trim().length >= 2 ? (
                 searchResults.length ? (
                   <div className={forms.autocompleteMenu} role="listbox" aria-label="Matching members">

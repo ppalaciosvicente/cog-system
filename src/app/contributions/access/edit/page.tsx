@@ -150,7 +150,7 @@ function ContributionAccessEditInner() {
     setRow(next);
     setRoleName(next.roleName ?? "");
     setCountryCodes(next.countryCodes ?? []);
-  }, [memberId, accessRows, eligibleMembers, selectedName]);
+  }, [memberId, accessRows, eligibleMembers, searchResults]);
 
   async function saveChanges() {
     if (!row || saving) return;

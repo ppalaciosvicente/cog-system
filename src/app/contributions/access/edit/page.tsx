@@ -260,7 +260,7 @@ function ContributionAccessEditInner() {
                 onChange={(e) => setMemberSearch(e.target.value)}
                 style={{ minWidth: 260 }}
               />
-              {memberSearch.trim().length >= 2 && (searchLoading || memberOptionsLoading) ? (
+              {memberSearch.trim().length >= 2 && searchLoading ? (
                 <p style={{ margin: 0, color: "#6b7280" }}>Searching members...</p>
               ) : null}
               {memberSearch.trim().length >= 2 ? (

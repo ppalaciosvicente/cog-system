@@ -72,7 +72,7 @@ function ContributionAccessEditInner() {
 
   const filteredMembers = useMemo(() => {
     const term = memberSearch.trim().toLowerCase();
-    if (!term) return memberId ? memberOptions.filter((m) => m.id === memberId) : [];
+    if (term.length < 2) return [];
     return memberOptions.filter((m) => m.name.toLowerCase().includes(term)).slice(0, 50);
   }, [memberOptions, memberSearch, memberId]);
 
@@ -104,8 +104,8 @@ function ContributionAccessEditInner() {
         setAccessRows(rows);
         setCountryOptions(Array.isArray(payload.countryOptions) ? payload.countryOptions : []);
         setEligibleMembers(elig);
-        if (!memberId && (memberIdParam || elig.length)) {
-          setMemberId(memberIdParam > 0 ? memberIdParam : elig[0]?.id ?? null);
+        if (!memberId && memberIdParam > 0) {
+          setMemberId(memberIdParam);
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -205,40 +205,31 @@ function ContributionAccessEditInner() {
               <input
                 type="text"
                 className={forms.field}
-                placeholder="Type to search members"
+                placeholder="Type at least 2 letters to search members"
                 value={memberSearch}
                 onChange={(e) => setMemberSearch(e.target.value)}
                 style={{ minWidth: 260 }}
               />
-              <div
-                style={{
-                  maxHeight: 220,
-                  overflowY: "auto",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 8,
-                  padding: 8,
-                  background: "#fff",
-                }}
-              >
-                {filteredMembers.length ? (
-                  filteredMembers.map((member) => (
-                    <label
-                      key={member.id}
-                      style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}
-                    >
-                      <input
-                        type="radio"
-                        name="member"
-                        checked={memberId === member.id}
-                        onChange={() => setMemberId(member.id)}
-                      />
-                      <span>{member.name}</span>
-                    </label>
-                  ))
+              {memberSearch.trim().length >= 2 ? (
+                filteredMembers.length ? (
+                  <select
+                    className={forms.field}
+                    size={Math.min(8, filteredMembers.length)}
+                    value={memberId ?? ""}
+                    onChange={(e) => setMemberId(Number(e.target.value) || null)}
+                    style={{ maxWidth: 360 }}
+                  >
+                    <option value="">Select a member</option>
+                    {filteredMembers.map((member) => (
+                      <option key={member.id} value={member.id}>
+                        {member.name}
+                      </option>
+                    ))}
+                  </select>
                 ) : (
                   <p style={{ margin: 0, color: "#6b7280" }}>No matches. Try another name.</p>
-                )}
-              </div>
+                )
+              ) : null}
               <div>
                 <strong>Editing:</strong> {row.memberName}
               </div>

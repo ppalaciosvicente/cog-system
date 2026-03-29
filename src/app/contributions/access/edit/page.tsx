@@ -211,24 +211,24 @@ function ContributionAccessEditInner() {
               />
               {memberSearch.trim().length >= 2 ? (
                 filteredMembers.length ? (
-                  <select
-                    className={forms.field}
-                    size={Math.min(8, filteredMembers.length)}
-                    value={memberId ?? ""}
-                    onChange={(e) => setMemberId(Number(e.target.value) || null)}
-                    style={{ maxWidth: 360 }}
-                  >
-                    <option value="">Select a member</option>
+                  <div className={forms.autocompleteMenu} role="listbox" aria-label="Matching members">
                     {filteredMembers.map((member) => (
-                      <option key={member.id} value={member.id}>
+                      <button
+                        key={member.id}
+                        type="button"
+                        className={forms.autocompleteOption}
+                        onClick={() => setMemberId(member.id)}
+                      >
                         {member.name}
-                      </option>
+                      </button>
                     ))}
-                  </select>
+                  </div>
                 ) : (
                   <p style={{ margin: 0, color: "#6b7280" }}>No matches. Try another name.</p>
                 )
-              ) : null}
+              ) : (
+                <p style={{ margin: 0, color: "#6b7280" }}>Type at least 2 letters to search for a member.</p>
+              )}
               <div>
                 <strong>Editing:</strong>{" "}
                 {row ? row.memberName : <span style={{ color: "#6b7280" }}>No member selected</span>}

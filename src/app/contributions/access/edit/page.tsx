@@ -39,8 +39,6 @@ function ContributionAccessEditInner() {
   const [accessRows, setAccessRows] = useState<AccessRow[]>([]);
   const [countryOptions, setCountryOptions] = useState<CountryOption[]>([]);
   const [eligibleMembers, setEligibleMembers] = useState<EligibleMember[]>([]);
-  const [memberOptions, setMemberOptions] = useState<Array<{ id: number; name: string }>>([]);
-  const [memberOptionsLoading, setMemberOptionsLoading] = useState(false);
   const [memberId, setMemberId] = useState<number | null>(
     Number.isFinite(memberIdParam) && memberIdParam > 0 ? memberIdParam : null,
   );
@@ -106,43 +104,6 @@ function ContributionAccessEditInner() {
   }, [memberIdParam]);
 
   useEffect(() => {
-    let cancelled = false;
-    async function loadMemberOptions() {
-      setMemberOptionsLoading(true);
-      try {
-        const headers = await getAuthHeaders();
-        const response = await fetch("/api/contributions/member-options", {
-          method: "GET",
-          headers,
-          credentials: "include",
-        });
-        const payload = (await response.json().catch(() => ({}))) as {
-          households?: Array<{ value: number; label: string }>;
-          error?: string;
-        };
-        if (!response.ok) {
-          throw new Error(payload.error ?? "Failed to load members.");
-        }
-        const households = Array.isArray(payload.households) ? payload.households : [];
-        if (!cancelled) {
-          setMemberOptions(households.map((h) => ({ id: h.value, name: h.label })));
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Failed to load members.");
-        }
-      } finally {
-        if (!cancelled) setMemberOptionsLoading(false);
-      }
-    }
-
-    void loadMemberOptions();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
     const searchTerm = memberSearch.trim().toLowerCase();
     if (searchTerm.length < 2) {
       setSearchResults([]);
@@ -183,12 +144,10 @@ function ContributionAccessEditInner() {
         setError(searchErr instanceof Error ? searchErr.message : "Failed to search members.");
       }
 
-      const pool = memberOptions.length
-        ? memberOptions
-        : [
-            ...eligibleMembers.map((m) => ({ id: m.id, name: m.name })),
-            ...accessRows.map((m) => ({ id: m.memberId, name: m.memberName })),
-          ];
+      const pool = [
+        ...eligibleMembers.map((m) => ({ id: m.id, name: m.name })),
+        ...accessRows.map((m) => ({ id: m.memberId, name: m.memberName })),
+      ];
       const seen = new Set<number>();
       const unique = pool.filter((m) => {
         if (seen.has(m.id)) return false;
@@ -206,7 +165,7 @@ function ContributionAccessEditInner() {
       controller.abort();
       window.clearTimeout(timeoutId);
     };
-  }, [memberSearch, eligibleMembers, accessRows, memberOptions]);
+  }, [memberSearch, eligibleMembers, accessRows]);
 
   useEffect(() => {
     if (!memberId) {

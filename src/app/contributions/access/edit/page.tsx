@@ -72,9 +72,9 @@ function ContributionAccessEditInner() {
 
   const filteredMembers = useMemo(() => {
     const term = memberSearch.trim().toLowerCase();
-    if (!term) return memberOptions;
+    if (!term) return memberId ? memberOptions.filter((m) => m.id === memberId) : [];
     return memberOptions.filter((m) => m.name.toLowerCase().includes(term)).slice(0, 50);
-  }, [memberOptions, memberSearch]);
+  }, [memberOptions, memberSearch, memberId]);
 
   useEffect(() => {
     let cancelled = false;

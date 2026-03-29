@@ -128,6 +128,24 @@ export function AppShell({ children }: AppShellProps) {
     return !AUTH_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix));
   }, [pathname]);
 
+  useEffect(() => {
+    clearPersistedAppShellIdentityCache();
+    appShellIdentityCache = {
+      canAccessEmc: false,
+      canAccessContributions: false,
+      roleSummary: null,
+      contributionScopeLabel: null,
+      isContributionAdmin: false,
+      emcAreasLabel: null,
+    };
+    setCanAccessEmc(false);
+    setCanAccessContributions(false);
+    setRoleSummary(null);
+    setContributionScopeLabel(null);
+    setIsContributionAdmin(false);
+    setEmcAreasLabel(null);
+  }, []);
+
   const rehydrateShellIdentity = useCallback(() => {
     const nextCache = loadPersistedAppShellIdentityCache();
     appShellIdentityCache = nextCache;

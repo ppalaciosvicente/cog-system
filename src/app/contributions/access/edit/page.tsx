@@ -190,8 +190,7 @@ function ContributionAccessEditInner() {
           return <p className={forms.error}>Only contrib_admin can access this page.</p>;
         }
         if (loading) return <p>Loading access details...</p>;
-        if (error && !row) return <p className={forms.error}>{error}</p>;
-        if (!row) return <p className={forms.error}>Select a member to edit.</p>;
+        if (error) return <p className={forms.error}>{error}</p>;
 
         const selectedCountryLabels = [...countryCodes]
           .map((code) => countryNameByCode[normalizeCode(code)] ?? code)
@@ -231,7 +230,8 @@ function ContributionAccessEditInner() {
                 )
               ) : null}
               <div>
-                <strong>Editing:</strong> {row.memberName}
+                <strong>Editing:</strong>{" "}
+                {row ? row.memberName : <span style={{ color: "#6b7280" }}>No member selected</span>}
               </div>
             </div>
 
@@ -241,7 +241,7 @@ function ContributionAccessEditInner() {
                 <select
                   className={forms.field}
                   value={roleName}
-                  disabled={saving}
+                  disabled={saving || !row}
                   onChange={(event) => {
                     const nextRole = event.target.value as "contrib_admin" | "contrib_user" | "";
                     setRoleName(nextRole);
@@ -316,7 +316,7 @@ function ContributionAccessEditInner() {
                 type="button"
                 className={`${forms.button} ${forms.actionsRowPrimaryButton}`}
                 onClick={() => void saveChanges()}
-                disabled={saving}
+                disabled={saving || !row}
               >
                 {saving ? "Saving..." : "Save & Send Email Invitation"}
               </button>

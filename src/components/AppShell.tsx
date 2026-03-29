@@ -52,6 +52,7 @@ const AUTH_PATH_PREFIXES = [
   "/forgot-password",
   "/reset-password",
   "/fot-reg/register",
+  "/api",
 ];
 
 let appShellIdentityCache: AppShellIdentityCache = {

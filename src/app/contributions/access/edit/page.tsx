@@ -39,6 +39,8 @@ function ContributionAccessEditInner() {
   const [accessRows, setAccessRows] = useState<AccessRow[]>([]);
   const [countryOptions, setCountryOptions] = useState<CountryOption[]>([]);
   const [eligibleMembers, setEligibleMembers] = useState<EligibleMember[]>([]);
+  const [memberOptions, setMemberOptions] = useState<Array<{ id: number; name: string }>>([]);
+  const [memberOptionsLoading, setMemberOptionsLoading] = useState(false);
   const [memberId, setMemberId] = useState<number | null>(
     Number.isFinite(memberIdParam) && memberIdParam > 0 ? memberIdParam : null,
   );
@@ -104,61 +106,74 @@ function ContributionAccessEditInner() {
   }, [memberIdParam]);
 
   useEffect(() => {
-    const searchTerm = memberSearch.trim();
-    if (searchTerm.length < 2) {
-      setSearchResults([]);
-      return;
-    }
-
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(async () => {
-      setSearchLoading(true);
+    let cancelled = false;
+    async function loadMemberOptions() {
+      setMemberOptionsLoading(true);
       try {
         const headers = await getAuthHeaders();
-        const response = await fetch(
-          `/api/contributions/donor-options?q=${encodeURIComponent(searchTerm)}&limit=25`,
-          {
-            method: "GET",
-            headers,
-            credentials: "include",
-            signal: controller.signal,
-          },
-        );
+        const response = await fetch("/api/contributions/member-options", {
+          method: "GET",
+          headers,
+          credentials: "include",
+        });
         const payload = (await response.json().catch(() => ({}))) as {
           households?: Array<{ value: number; label: string }>;
           error?: string;
         };
         if (!response.ok) {
-          throw new Error(payload.error ?? "Failed to search members.");
+          throw new Error(payload.error ?? "Failed to load members.");
         }
         const households = Array.isArray(payload.households) ? payload.households : [];
-        setSearchResults(households.map((h) => ({ id: h.value, name: h.label })));
-      } catch (searchErr) {
-        if (controller.signal.aborted) return;
-        // Fallback to local search if remote search fails
-        const term = searchTerm.toLowerCase();
-        const combined = [
-          ...eligibleMembers.map((m) => ({ id: m.id, name: m.name })),
-          ...accessRows.map((m) => ({ id: m.memberId, name: m.memberName })),
-        ];
-        const seen = new Set<number>();
-        const unique = combined.filter((m) => {
-          if (seen.has(m.id)) return false;
-          seen.add(m.id);
-          return true;
-        });
-        setSearchResults(unique.filter((m) => m.name.toLowerCase().includes(term)).slice(0, 50));
-        setError(searchErr instanceof Error ? searchErr.message : "Failed to search members.");
+        if (!cancelled) {
+          setMemberOptions(households.map((h) => ({ id: h.value, name: h.label })));
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Failed to load members.");
+        }
       } finally {
-        if (!controller.signal.aborted) setSearchLoading(false);
+        if (!cancelled) setMemberOptionsLoading(false);
       }
-    }, 200);
+    }
+
+    void loadMemberOptions();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const searchTerm = memberSearch.trim().toLowerCase();
+    if (searchTerm.length < 2) {
+      setSearchResults([]);
+      setSearchLoading(false);
+      return;
+    }
+
+    setSearchLoading(true);
+    const timeoutId = window.setTimeout(() => {
+      const pool = memberOptions.length
+        ? memberOptions
+        : [
+            ...eligibleMembers.map((m) => ({ id: m.id, name: m.name })),
+            ...accessRows.map((m) => ({ id: m.memberId, name: m.memberName })),
+          ];
+
+      const seen = new Set<number>();
+      const unique = pool.filter((m) => {
+        if (seen.has(m.id)) return false;
+        seen.add(m.id);
+        return true;
+      });
+
+      setSearchResults(unique.filter((m) => m.name.toLowerCase().includes(searchTerm)).slice(0, 50));
+      setSearchLoading(false);
+    }, 150);
 
     return () => {
-      controller.abort();
       window.clearTimeout(timeoutId);
     };
-  }, [memberSearch, eligibleMembers, accessRows]);
+  }, [memberSearch, eligibleMembers, accessRows, memberOptions]);
 
   useEffect(() => {
     if (!memberId) {
@@ -253,7 +268,7 @@ function ContributionAccessEditInner() {
                 onChange={(e) => setMemberSearch(e.target.value)}
                 style={{ minWidth: 260 }}
               />
-              {memberSearch.trim().length >= 2 && searchLoading ? (
+              {memberSearch.trim().length >= 2 && (searchLoading || memberOptionsLoading) ? (
                 <p style={{ margin: 0, color: "#6b7280" }}>Searching members...</p>
               ) : null}
               {memberSearch.trim().length >= 2 ? (

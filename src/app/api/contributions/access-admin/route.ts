@@ -540,22 +540,19 @@ export async function POST(request: NextRequest) {
     redirectTo,
   });
 
-  if (inviteErr) {
-    const msg = inviteErr.message ?? "Invite failed";
-    // If already registered, fall back to reset password
-    if (msg.toLowerCase().includes("already registered") || msg.toLowerCase().includes("user already exists")) {
-      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(memberEmail, {
-        redirectTo,
-      });
-      if (resetErr) {
-        return NextResponse.json({ error: resetErr.message }, { status: 500 });
-      }
-    } else if (inviteErr.status === 429 || msg.toLowerCase().includes("rate")) {
-      return NextResponse.json({ error: msg }, { status: 429 });
-    } else {
-      return NextResponse.json({ error: msg }, { status: 500 });
-    }
+  if (!inviteErr) {
+    return NextResponse.json({ ok: true, accountId: ensured.accountId, sent: true, mode: "invite" });
   }
 
-  return NextResponse.json({ ok: true, accountId: ensured.accountId, sent: true });
+  // Fallback: user already exists or invite blocked; try reset password instead
+  const { error: resetErr } = await supabase.auth.resetPasswordForEmail(memberEmail, {
+    redirectTo,
+  });
+  if (resetErr) {
+    const msg = resetErr.message ?? inviteErr.message ?? "Failed to send email.";
+    const status = resetErr.status === 429 || msg.toLowerCase().includes("rate") ? 429 : 500;
+    return NextResponse.json({ error: msg }, { status });
+  }
+
+  return NextResponse.json({ ok: true, accountId: ensured.accountId, sent: true, mode: "reset" });
 }

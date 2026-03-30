@@ -23,7 +23,9 @@ export default function ResetPasswordPage() {
       setLoading(true);
       setError(null);
       try {
-        const urlError = new URLSearchParams(window.location.search).get("error");
+        const urlError = new URLSearchParams(window.location.search).get(
+          "error",
+        );
         if (urlError && !cancelled) setError(urlError);
 
         const { data } = await supabase.auth.getSession();
@@ -97,7 +99,7 @@ export default function ResetPasswordPage() {
     return (
       <div className={styles.page}>
         <div className={styles.card}>
-          <p className={styles.brand}>Elders Management Console</p>
+          <p className={styles.brand}>COG PKG Management System</p>
           <h1 className={styles.title}>Loading</h1>
           <p className={styles.subtitle}>Preparing your reset session…</p>
         </div>
@@ -109,7 +111,7 @@ export default function ResetPasswordPage() {
     return (
       <div className={styles.page}>
         <div className={styles.card}>
-          <p className={styles.brand}>Elders Management Console</p>
+          <p className={styles.brand}>COG PKG Management System</p>
           <h1 className={styles.title}>Set password</h1>
           <p className={styles.error}>
             {error ?? "Reset link is invalid or expired. Request a new one."}
@@ -127,7 +129,7 @@ export default function ResetPasswordPage() {
   return (
     <div className={styles.page}>
       <div className={styles.card}>
-        <p className={styles.brand}>Elders Management Console</p>
+        <p className={styles.brand}>COG PKG Management System</p>
         <h1 className={styles.title}>Set password</h1>
         <p className={styles.subtitle}>
           Invite accepted. Please set your password to finish account setup.

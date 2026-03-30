@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
+import net from "node:net";
+import tls from "node:tls";
 import { requireRole } from "@/lib/authz";
 import {
   CONTRIBUTION_ADMIN_ROLE,
@@ -76,7 +79,10 @@ async function findAuthUserIdByEmail(
 
     const users = data?.users ?? [];
     const match = users.find(
-      (u) => String(u.email ?? "").trim().toLowerCase() === target,
+      (u) =>
+        String(u.email ?? "")
+          .trim()
+          .toLowerCase() === target,
     );
     if (match?.id) return { id: match.id, error: null };
 
@@ -105,7 +111,9 @@ async function ensureActiveAccountForMember(
   if (memberErr) {
     return { accountId: null as number | null, error: memberErr.message };
   }
-  const memberEmail = String(member?.email ?? "").trim().toLowerCase();
+  const memberEmail = String(member?.email ?? "")
+    .trim()
+    .toLowerCase();
   if (!memberEmail) {
     return {
       accountId: null as number | null,
@@ -130,8 +138,11 @@ async function ensureActiveAccountForMember(
     accountId = existingAccount.id as number;
     authUserId = String(existingAccount.authuserid ?? "").trim() || null;
     if (authUserId) {
-      const { data: linkedAuthData } = await supabase.auth.admin.getUserById(authUserId);
-      const linkedAuthEmail = String(linkedAuthData?.user?.email ?? "").trim().toLowerCase();
+      const { data: linkedAuthData } =
+        await supabase.auth.admin.getUserById(authUserId);
+      const linkedAuthEmail = String(linkedAuthData?.user?.email ?? "")
+        .trim()
+        .toLowerCase();
       if (!linkedAuthEmail || linkedAuthEmail !== memberEmail) {
         authUserId = null;
       }
@@ -142,7 +153,10 @@ async function ensureActiveAccountForMember(
         .update({ isactive: true })
         .eq("id", accountId);
       if (reactivateErr) {
-        return { accountId: null as number | null, error: reactivateErr.message };
+        return {
+          accountId: null as number | null,
+          error: reactivateErr.message,
+        };
       }
     }
   }
@@ -150,32 +164,38 @@ async function ensureActiveAccountForMember(
   if (!authUserId) {
     const existingAuth = await findAuthUserIdByEmail(supabase, memberEmail);
     if (existingAuth.error) {
-      return { accountId: null as number | null, error: existingAuth.error.message };
+      return {
+        accountId: null as number | null,
+        error: existingAuth.error.message,
+      };
     }
 
     if (existingAuth.id) {
       authUserId = existingAuth.id;
       if (sendEmail) {
         const redirectTo = `${appOrigin}/auth/callback?next=/reset-password`;
-        const { error: resetErr } = await supabase.auth.resetPasswordForEmail(memberEmail, {
-          redirectTo,
-        });
+        const { error: resetErr } = await supabase.auth.resetPasswordForEmail(
+          memberEmail,
+          {
+            redirectTo,
+          },
+        );
         if (resetErr) {
           return { accountId: null as number | null, error: resetErr.message };
         }
       }
     } else {
       const redirectTo = `${appOrigin}/auth/callback?next=/reset-password`;
-      const { data: inviteData, error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(
-        memberEmail,
-        {
+      const { data: inviteData, error: inviteErr } =
+        await supabase.auth.admin.inviteUserByEmail(memberEmail, {
           redirectTo,
-        },
-      );
+        });
       if (inviteErr || !inviteData.user?.id) {
         return {
           accountId: null as number | null,
-          error: inviteErr?.message ?? "Failed to create auth user from member email.",
+          error:
+            inviteErr?.message ??
+            "Failed to create auth user from member email.",
         };
       }
       authUserId = inviteData.user.id;
@@ -204,7 +224,10 @@ async function ensureActiveAccountForMember(
       .update({ authuserid: authUserId, isactive: true })
       .eq("id", accountId);
     if (accountUpdateErr) {
-      return { accountId: null as number | null, error: accountUpdateErr.message };
+      return {
+        accountId: null as number | null,
+        error: accountUpdateErr.message,
+      };
     }
   }
 
@@ -215,6 +238,105 @@ function normalizeCode(value: string | null | undefined) {
   return String(value ?? "")
     .trim()
     .toUpperCase();
+}
+
+async function sendSmtpEmail(to: string, subject: string, html: string) {
+  const smtpHost = String(process.env.SMTP_HOST ?? "").trim();
+  const smtpPort = Number(process.env.SMTP_PORT ?? 465);
+  const smtpUser = String(process.env.SMTP_USER ?? "").trim();
+  const smtpPass = String(process.env.SMTP_PASS ?? "").trim();
+  const smtpSecure =
+    String(process.env.SMTP_SECURE ?? "true").toLowerCase() !== "false";
+  const fromEmail = String(process.env.FOT_EMAIL_FROM ?? "").trim();
+
+  if (
+    !smtpHost ||
+    !smtpUser ||
+    !smtpPass ||
+    !fromEmail ||
+    !Number.isFinite(smtpPort)
+  ) {
+    throw new Error("SMTP configuration missing");
+  }
+
+  const fromAddress = fromEmail.includes("<")
+    ? fromEmail.slice(fromEmail.indexOf("<") + 1, fromEmail.indexOf(">")).trim()
+    : fromEmail;
+
+  const socket = smtpSecure
+    ? tls.connect({ host: smtpHost, port: smtpPort, servername: smtpHost })
+    : net.connect({ host: smtpHost, port: smtpPort });
+
+  await new Promise<void>((resolve, reject) => {
+    socket.once("connect", () => resolve());
+    socket.once("error", (err) => reject(err));
+  });
+
+  const state = { buffer: "" } as { buffer: string };
+  const readResponse = (expected: string[]) =>
+    new Promise<void>((resolve, reject) => {
+      const onData = (chunk: Buffer) => {
+        state.buffer += chunk.toString("utf8");
+        if (!state.buffer.includes("\r\n")) return;
+        const lines = state.buffer.split("\r\n");
+        state.buffer = lines.pop() ?? "";
+        const complete = lines.filter(Boolean);
+        if (!complete.length) return;
+        const last = complete[complete.length - 1];
+        const code = last.slice(0, 3);
+        const done = last.length >= 4 && last[3] === " ";
+        if (!done) return;
+        socket.off("data", onData);
+        socket.off("error", onErr);
+        if (!expected.includes(code)) {
+          reject(new Error(`SMTP unexpected response ${code}`));
+        } else {
+          resolve();
+        }
+      };
+      const onErr = (err: Error) => {
+        socket.off("data", onData);
+        socket.off("error", onErr);
+        reject(err);
+      };
+      socket.on("data", onData);
+      socket.on("error", onErr);
+    });
+
+  const send = (cmd: string, expected: string[]) => {
+    socket.write(`${cmd}\r\n`);
+    return readResponse(expected);
+  };
+
+  try {
+    await readResponse(["220"]);
+    await send("EHLO emc.local", ["250"]);
+    await send("AUTH LOGIN", ["334"]);
+    await send(Buffer.from(smtpUser).toString("base64"), ["334"]);
+    await send(Buffer.from(smtpPass).toString("base64"), ["235"]);
+    await send(`MAIL FROM:<${fromAddress}>`, ["250"]);
+    await send(`RCPT TO:<${to}>`, ["250", "251"]);
+    await send("DATA", ["354"]);
+
+    const data = [
+      `From: ${fromEmail}`,
+      `To: ${to}`,
+      `Subject: ${subject}`,
+      "MIME-Version: 1.0",
+      'Content-Type: text/html; charset="UTF-8"',
+      `Message-ID: <${randomUUID()}@emc.local>`,
+      "",
+      html,
+      ".",
+      "",
+    ].join("\r\n");
+
+    socket.write(data);
+    await readResponse(["250"]);
+    await send("QUIT", ["221"]);
+  } finally {
+    socket.destroy();
+  }
 }
 
 function normalizeRoleName(value: string | null | undefined) {
@@ -233,7 +355,8 @@ function displayName(member: MemberRow) {
 }
 
 function highestContributionRole(roleNames: string[]) {
-  if (roleNames.includes(CONTRIBUTION_ADMIN_ROLE)) return CONTRIBUTION_ADMIN_ROLE;
+  if (roleNames.includes(CONTRIBUTION_ADMIN_ROLE))
+    return CONTRIBUTION_ADMIN_ROLE;
   if (roleNames.includes(CONTRIBUTION_USER_ROLE)) return CONTRIBUTION_USER_ROLE;
   return null;
 }
@@ -254,13 +377,22 @@ export async function GET(request: NextRequest) {
       .from("emcroles")
       .select("id,rolename")
       .in("rolename", [CONTRIBUTION_ADMIN_ROLE, CONTRIBUTION_USER_ROLE]),
-    supabase.from("emccountry").select("code,name").order("name", { ascending: true }),
-    supabase.from("emcaccounts").select("id,memberid,isactive").eq("isactive", true),
+    supabase
+      .from("emccountry")
+      .select("code,name")
+      .order("name", { ascending: true }),
+    supabase
+      .from("emcaccounts")
+      .select("id,memberid,isactive")
+      .eq("isactive", true),
   ]);
 
-  if (roleErr) return NextResponse.json({ error: roleErr.message }, { status: 500 });
-  if (countryErr) return NextResponse.json({ error: countryErr.message }, { status: 500 });
-  if (accountErr) return NextResponse.json({ error: accountErr.message }, { status: 500 });
+  if (roleErr)
+    return NextResponse.json({ error: roleErr.message }, { status: 500 });
+  if (countryErr)
+    return NextResponse.json({ error: countryErr.message }, { status: 500 });
+  if (accountErr)
+    return NextResponse.json({ error: accountErr.message }, { status: 500 });
 
   const roleIdByName = new Map<string, number>();
   ((roleData ?? []) as RoleRow[]).forEach((row) => {
@@ -271,10 +403,17 @@ export async function GET(request: NextRequest) {
 
   const contribRoleIds = [CONTRIBUTION_ADMIN_ROLE, CONTRIBUTION_USER_ROLE]
     .map((roleName) => roleIdByName.get(roleName))
-    .filter((id): id is number => typeof id === "number" && Number.isFinite(id) && id > 0);
+    .filter(
+      (id): id is number =>
+        typeof id === "number" && Number.isFinite(id) && id > 0,
+    );
 
   const accounts = ((accountData ?? []) as AccountRow[]).filter(
-    (row) => Number.isFinite(row.id) && row.id > 0 && Number.isFinite(row.memberid) && (row.memberid ?? 0) > 0,
+    (row) =>
+      Number.isFinite(row.id) &&
+      row.id > 0 &&
+      Number.isFinite(row.memberid) &&
+      (row.memberid ?? 0) > 0,
   );
   const accountIds = accounts.map((row) => row.id);
   const memberIds = accounts.map((row) => Number(row.memberid));
@@ -301,13 +440,22 @@ export async function GET(request: NextRequest) {
           .in("roleid", contribRoleIds)
       : Promise.resolve({ data: [] as AccountRoleRow[], error: null }),
     accountIds.length
-      ? supabase.from("contribaccountregion").select("accountid,countrycode").in("accountid", accountIds)
+      ? supabase
+          .from("contribaccountregion")
+          .select("accountid,countrycode")
+          .in("accountid", accountIds)
       : Promise.resolve({ data: [] as RegionRow[], error: null }),
   ]);
 
-  if (memberErr) return NextResponse.json({ error: memberErr.message }, { status: 500 });
-  if (accountRoleErr) return NextResponse.json({ error: accountRoleErr.message }, { status: 500 });
-  if (regionErr) return NextResponse.json({ error: regionErr.message }, { status: 500 });
+  if (memberErr)
+    return NextResponse.json({ error: memberErr.message }, { status: 500 });
+  if (accountRoleErr)
+    return NextResponse.json(
+      { error: accountRoleErr.message },
+      { status: 500 },
+    );
+  if (regionErr)
+    return NextResponse.json({ error: regionErr.message }, { status: 500 });
 
   const accountIdByMemberId = new Map<number, number>();
   accounts.forEach((row) => {
@@ -358,8 +506,12 @@ export async function GET(request: NextRequest) {
         memberId,
         accountId,
         memberName: displayName(member),
-        roleName: highestContributionRole(roleNamesByAccountId.get(accountId) ?? []),
-        countryCodes: (countryCodesByAccountId.get(accountId) ?? []).sort((a, b) => a.localeCompare(b)),
+        roleName: highestContributionRole(
+          roleNamesByAccountId.get(accountId) ?? [],
+        ),
+        countryCodes: (countryCodesByAccountId.get(accountId) ?? []).sort(
+          (a, b) => a.localeCompare(b),
+        ),
       };
     })
     .filter((row): row is NonNullable<typeof row> => row !== null)
@@ -377,7 +529,9 @@ export async function GET(request: NextRequest) {
     if (eligibleErr) {
       throw new Error(eligibleErr.message);
     }
-    const memberIdsWithRole = new Set(rows.filter((r) => r.roleName).map((r) => r.memberId));
+    const memberIdsWithRole = new Set(
+      rows.filter((r) => r.roleName).map((r) => r.memberId),
+    );
     for (const row of (eligibleData ?? []) as MemberRow[]) {
       const email = String((row as any).email ?? "").trim();
       if (!email) continue;
@@ -407,19 +561,31 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const payload = (await request.json().catch(() => ({} as UpdatePayload))) ?? {};
+  const payload =
+    (await request.json().catch(() => ({}) as UpdatePayload)) ?? {};
   const memberId = Number(payload.memberId);
   if (!Number.isFinite(memberId) || memberId <= 0) {
     return NextResponse.json({ error: "Missing member id." }, { status: 400 });
   }
 
   const roleName = normalizeRoleName(payload.roleName);
-  if (roleName && roleName !== CONTRIBUTION_ADMIN_ROLE && roleName !== CONTRIBUTION_USER_ROLE) {
-    return NextResponse.json({ error: "Invalid contributions role." }, { status: 400 });
+  if (
+    roleName &&
+    roleName !== CONTRIBUTION_ADMIN_ROLE &&
+    roleName !== CONTRIBUTION_USER_ROLE
+  ) {
+    return NextResponse.json(
+      { error: "Invalid contributions role." },
+      { status: 400 },
+    );
   }
 
   const countryCodes = Array.from(
-    new Set((payload.countryCodes ?? []).map((code: unknown) => normalizeCode(String(code))).filter(Boolean)),
+    new Set(
+      (payload.countryCodes ?? [])
+        .map((code: unknown) => normalizeCode(String(code)))
+        .filter(Boolean),
+    ),
   );
   if (roleName === CONTRIBUTION_USER_ROLE && countryCodes.length === 0) {
     return NextResponse.json(
@@ -429,7 +595,11 @@ export async function PUT(request: NextRequest) {
   }
 
   const supabase = createServiceRoleClient();
-  const ensured = await ensureActiveAccountForMember(supabase, request, memberId);
+  const ensured = await ensureActiveAccountForMember(
+    supabase,
+    request,
+    memberId,
+  );
   if (ensured.error || !ensured.accountId) {
     return NextResponse.json(
       { error: ensured.error ?? "No active account found for this member." },
@@ -442,7 +612,8 @@ export async function PUT(request: NextRequest) {
     .from("emcroles")
     .select("id,rolename")
     .in("rolename", [CONTRIBUTION_ADMIN_ROLE, CONTRIBUTION_USER_ROLE]);
-  if (roleErr) return NextResponse.json({ error: roleErr.message }, { status: 500 });
+  if (roleErr)
+    return NextResponse.json({ error: roleErr.message }, { status: 500 });
 
   const roleIdByName = new Map<string, number>();
   ((roleData ?? []) as RoleRow[]).forEach((row) => {
@@ -452,7 +623,10 @@ export async function PUT(request: NextRequest) {
   });
   const managedRoleIds = [CONTRIBUTION_ADMIN_ROLE, CONTRIBUTION_USER_ROLE]
     .map((name) => roleIdByName.get(name))
-    .filter((id): id is number => typeof id === "number" && Number.isFinite(id) && id > 0);
+    .filter(
+      (id): id is number =>
+        typeof id === "number" && Number.isFinite(id) && id > 0,
+    );
 
   const { error: deleteRoleErr } = await supabase
     .from("emcaccountroles")
@@ -466,13 +640,19 @@ export async function PUT(request: NextRequest) {
   if (roleName) {
     const roleId = roleIdByName.get(roleName);
     if (!roleId) {
-      return NextResponse.json({ error: `Role ${roleName} was not found.` }, { status: 500 });
+      return NextResponse.json(
+        { error: `Role ${roleName} was not found.` },
+        { status: 500 },
+      );
     }
     const { error: insertRoleErr } = await supabase
       .from("emcaccountroles")
       .insert({ accountid: accountId, roleid: roleId });
     if (insertRoleErr) {
-      return NextResponse.json({ error: insertRoleErr.message }, { status: 500 });
+      return NextResponse.json(
+        { error: insertRoleErr.message },
+        { status: 500 },
+      );
     }
   }
 
@@ -481,7 +661,10 @@ export async function PUT(request: NextRequest) {
     .delete()
     .eq("accountid", accountId);
   if (deleteScopeErr) {
-    return NextResponse.json({ error: deleteScopeErr.message }, { status: 500 });
+    return NextResponse.json(
+      { error: deleteScopeErr.message },
+      { status: 500 },
+    );
   }
 
   if (roleName === CONTRIBUTION_USER_ROLE && countryCodes.length > 0) {
@@ -496,7 +679,10 @@ export async function PUT(request: NextRequest) {
       .from("contribaccountregion")
       .insert(scopeRows);
     if (insertScopeErr) {
-      return NextResponse.json({ error: insertScopeErr.message }, { status: 500 });
+      return NextResponse.json(
+        { error: insertScopeErr.message },
+        { status: 500 },
+      );
     }
   }
 
@@ -509,14 +695,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const payload = (await request.json().catch(() => ({} as UpdatePayload))) ?? {};
+  const payload =
+    (await request.json().catch(() => ({}) as UpdatePayload)) ?? {};
   const memberId = Number(payload.memberId);
   if (!Number.isFinite(memberId) || memberId <= 0) {
     return NextResponse.json({ error: "Missing member id." }, { status: 400 });
   }
 
   const supabase = createServiceRoleClient();
-  const ensured = await ensureActiveAccountForMember(supabase, request, memberId, false);
+  const ensured = await ensureActiveAccountForMember(
+    supabase,
+    request,
+    memberId,
+    false,
+  );
   if (ensured.error || !ensured.accountId) {
     return NextResponse.json(
       { error: ensured.error ?? "No active account found for this member." },
@@ -529,29 +721,50 @@ export async function POST(request: NextRequest) {
     .select("email")
     .eq("id", memberId)
     .maybeSingle();
-  const memberEmail = String(memberRow?.email ?? "").trim().toLowerCase();
+  const memberEmail = String(memberRow?.email ?? "")
+    .trim()
+    .toLowerCase();
   if (memberErr || !memberEmail) {
-    return NextResponse.json({ error: "Member email not found." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Member email not found." },
+      { status: 400 },
+    );
   }
 
   const redirectTo = `${resolveAppOrigin(request)}/auth/callback?next=/reset-password`;
 
-  const { error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(memberEmail, {
-    redirectTo,
-  });
-
-  if (!inviteErr) {
-    return NextResponse.json({ ok: true, accountId: ensured.accountId, sent: true, mode: "invite" });
+  const { data: linkData, error: linkErr } =
+    await supabase.auth.admin.generateLink({
+      type: "recovery",
+      email: memberEmail,
+      options: { redirectTo },
+    });
+  if (linkErr || !linkData?.action_link) {
+    return NextResponse.json(
+      { error: linkErr?.message ?? "Failed to generate link." },
+      { status: 500 },
+    );
   }
 
-  // Fallback: user already exists or invite blocked; try reset password instead
-  const { error: resetErr } = await supabase.auth.resetPasswordForEmail(memberEmail, {
-    redirectTo,
-  });
-  if (resetErr) {
-    const msg = resetErr.message ?? inviteErr.message ?? "Failed to send email.";
-    return NextResponse.json({ error: msg }, { status: 500 });
+  const subject = "COG PKG - Access to Contributions System";
+  const html = `<!doctype html><html><body><p>Hello,</p><p>Use this link to access the Contributions System:</p><p><a href="${linkData.action_link}">${linkData.action_link}</a></p><p>If you did not request this, you can ignore this email.</p></body></html>`;
+
+  try {
+    await sendSmtpEmail(memberEmail, subject, html);
+  } catch (mailErr) {
+    return NextResponse.json(
+      {
+        error:
+          mailErr instanceof Error ? mailErr.message : "Email send failed.",
+      },
+      { status: 500 },
+    );
   }
 
-  return NextResponse.json({ ok: true, accountId: ensured.accountId, sent: true, mode: "reset" });
+  return NextResponse.json({
+    ok: true,
+    accountId: ensured.accountId,
+    sent: true,
+    mode: "smtp",
+  });
 }

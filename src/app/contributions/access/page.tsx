@@ -152,7 +152,12 @@ export default function ContributionsAccessPage() {
       }
       setSaveMsg("Invitation resent.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to resend invitation.");
+      const message = err instanceof Error ? err.message : "Failed to resend invitation.";
+      if (message.toLowerCase().includes("rate limit")) {
+        setError("Email rate limit exceeded, please retry after a minute.");
+      } else {
+        setError(message);
+      }
     } finally {
       setDeletingId(null);
     }

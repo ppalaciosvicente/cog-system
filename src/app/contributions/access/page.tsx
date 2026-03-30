@@ -134,6 +134,7 @@ export default function ContributionsAccessPage() {
     if (deletingId) return;
     setDeletingId(memberId);
     setError(null);
+    setSaveMsg(null);
     try {
       const headers = await getAuthHeaders();
       const response = await fetch("/api/contributions/access-admin", {
@@ -149,6 +150,7 @@ export default function ContributionsAccessPage() {
       if (!response.ok) {
         throw new Error(payload.error ?? "Failed to resend invitation.");
       }
+      setSaveMsg("Invitation resent.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to resend invitation.");
     } finally {

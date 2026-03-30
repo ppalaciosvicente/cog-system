@@ -51,8 +51,6 @@ type EligibleMember = {
   name: string;
 };
 
-const rateLimitUntilByEmail = new Map<string, number>();
-
 function resolveAppOrigin(request: NextRequest) {
   const configured = String(process.env.NEXT_PUBLIC_APP_URL ?? "")
     .trim()
@@ -538,22 +536,11 @@ export async function POST(request: NextRequest) {
 
   const redirectTo = `${resolveAppOrigin(request)}/auth/callback?next=/reset-password`;
 
-  const until = rateLimitUntilByEmail.get(memberEmail) ?? 0;
-  const now = Date.now();
-  if (now < until) {
-    const retryAfterSec = Math.ceil((until - now) / 1000);
-    return NextResponse.json(
-      { error: `Email rate limit exceeded, please retry after ${retryAfterSec} seconds.` },
-      { status: 429 },
-    );
-  }
-
   const { error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(memberEmail, {
     redirectTo,
   });
 
   if (!inviteErr) {
-    rateLimitUntilByEmail.delete(memberEmail);
     return NextResponse.json({ ok: true, accountId: ensured.accountId, sent: true, mode: "invite" });
   }
 
@@ -563,19 +550,8 @@ export async function POST(request: NextRequest) {
   });
   if (resetErr) {
     const msg = resetErr.message ?? inviteErr.message ?? "Failed to send email.";
-    const isRate = resetErr.status === 429 || msg.toLowerCase().includes("rate");
-    if (isRate) {
-      const retryMs = 10 * 60 * 1000;
-      rateLimitUntilByEmail.set(memberEmail, now + retryMs);
-      const retryAfterSec = Math.ceil(retryMs / 1000);
-      return NextResponse.json(
-        { error: `Email rate limit exceeded, please retry after ${retryAfterSec} seconds.` },
-        { status: 429 },
-      );
-    }
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 
-  rateLimitUntilByEmail.delete(memberEmail);
   return NextResponse.json({ ok: true, accountId: ensured.accountId, sent: true, mode: "reset" });
 }

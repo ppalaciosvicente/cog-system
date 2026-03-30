@@ -519,5 +519,23 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const { data: memberRow, error: memberErr } = await supabase
+    .from("emcmember")
+    .select("email")
+    .eq("id", memberId)
+    .maybeSingle();
+  const memberEmail = String(memberRow?.email ?? "").trim().toLowerCase();
+  if (memberErr || !memberEmail) {
+    return NextResponse.json({ error: "Member email not found." }, { status: 400 });
+  }
+
+  const redirectTo = `${resolveAppOrigin(request)}/auth/callback?next=/reset-password`;
+  const { error: resetErr } = await supabase.auth.resetPasswordForEmail(memberEmail, {
+    redirectTo,
+  });
+  if (resetErr) {
+    return NextResponse.json({ error: resetErr.message }, { status: 500 });
+  }
+
   return NextResponse.json({ ok: true, accountId: ensured.accountId, sent: true });
 }

@@ -51,6 +51,9 @@ type EligibleMember = {
   name: string;
 };
 
+const resendCooldownMs = 60_000;
+const lastResetByEmail = new Map<string, number>();
+
 function resolveAppOrigin(request: NextRequest) {
   const configured = String(process.env.NEXT_PUBLIC_APP_URL ?? "")
     .trim()
@@ -534,6 +537,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Member email not found." }, { status: 400 });
   }
 
+  const now = Date.now();
+  const lastSent = lastResetByEmail.get(memberEmail) ?? 0;
+  if (now - lastSent < resendCooldownMs) {
+    const retryAfter = Math.ceil((resendCooldownMs - (now - lastSent)) / 1000);
+    return NextResponse.json(
+      { error: `Email rate limit exceeded, please retry after ${retryAfter} seconds.` },
+      { status: 429 },
+    );
+  }
+
   const redirectTo = `${resolveAppOrigin(request)}/auth/callback?next=/reset-password`;
   const { error: resetErr } = await supabase.auth.resetPasswordForEmail(memberEmail, {
     redirectTo,
@@ -541,6 +554,7 @@ export async function POST(request: NextRequest) {
   if (resetErr) {
     return NextResponse.json({ error: resetErr.message }, { status: 500 });
   }
+  lastResetByEmail.set(memberEmail, now);
 
   return NextResponse.json({ ok: true, accountId: ensured.accountId, sent: true });
 }

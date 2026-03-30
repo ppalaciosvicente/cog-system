@@ -31,7 +31,6 @@ export default function ContributionsAccessPage() {
   const [eligibleMembers, setEligibleMembers] = useState<Array<{ id: number; name: string }>>([]);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
-  const [inviteCooldown, setInviteCooldown] = useState<Record<number, number>>({});
 
   const countryNameByCode = useMemo(() => {
     const map: Record<string, string> = {};
@@ -135,13 +134,6 @@ export default function ContributionsAccessPage() {
 
   async function resendInvite(memberId: number) {
     if (deletingId) return;
-    const now = Date.now();
-    const retryAfter = inviteCooldown[memberId];
-    if (retryAfter && now < retryAfter) {
-      const seconds = Math.ceil((retryAfter - now) / 1000);
-      setError(`Please wait ${seconds}s before resending.`);
-      return;
-    }
     setDeletingId(memberId);
     setError(null);
     setSaveMsg(null);
@@ -161,17 +153,9 @@ export default function ContributionsAccessPage() {
         throw new Error(payload.error ?? "Failed to resend invitation.");
       }
       setSaveMsg("Invitation resent.");
-      setInviteCooldown((prev) => ({ ...prev, [memberId]: Date.now() + 60_000 }));
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to resend invitation.";
-      if (message.toLowerCase().includes("rate limit")) {
-        const until = Date.now() + 90_000;
-        setInviteCooldown((prev) => ({ ...prev, [memberId]: until }));
-        setError(null);
-        setSaveMsg("Email already sent recently. Please retry after about a minute.");
-      } else {
-        setError(message);
-      }
+      setError(message);
     } finally {
       setDeletingId(null);
     }

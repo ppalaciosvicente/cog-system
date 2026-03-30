@@ -65,7 +65,9 @@ export default function ContributionsAccessPage() {
           return;
         }
 
-        const nextRows = Array.isArray(payload.rows) ? payload.rows : [];
+        const nextRows = Array.isArray(payload.rows)
+          ? payload.rows.filter((row) => row.roleName)
+          : [];
         const nextCountries = Array.isArray(payload.countryOptions)
           ? payload.countryOptions
           : [];

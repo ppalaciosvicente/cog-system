@@ -92,6 +92,7 @@ async function ensureActiveAccountForMember(
   supabase: ReturnType<typeof createServiceRoleClient>,
   request: NextRequest,
   memberId: number,
+  sendEmail: boolean = true,
 ) {
   const appOrigin = resolveAppOrigin(request);
 
@@ -154,12 +155,14 @@ async function ensureActiveAccountForMember(
 
     if (existingAuth.id) {
       authUserId = existingAuth.id;
-      const redirectTo = `${appOrigin}/auth/callback?next=/reset-password`;
-      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(memberEmail, {
-        redirectTo,
-      });
-      if (resetErr) {
-        return { accountId: null as number | null, error: resetErr.message };
+      if (sendEmail) {
+        const redirectTo = `${appOrigin}/auth/callback?next=/reset-password`;
+        const { error: resetErr } = await supabase.auth.resetPasswordForEmail(memberEmail, {
+          redirectTo,
+        });
+        if (resetErr) {
+          return { accountId: null as number | null, error: resetErr.message };
+        }
       }
     } else {
       const redirectTo = `${appOrigin}/auth/callback?next=/reset-password`;
@@ -176,6 +179,8 @@ async function ensureActiveAccountForMember(
         };
       }
       authUserId = inviteData.user.id;
+      // invite already sends email; no extra mail needed
+      sendEmail = false;
     }
   }
 
@@ -511,7 +516,7 @@ export async function POST(request: NextRequest) {
   }
 
   const supabase = createServiceRoleClient();
-  const ensured = await ensureActiveAccountForMember(supabase, request, memberId);
+  const ensured = await ensureActiveAccountForMember(supabase, request, memberId, false);
   if (ensured.error || !ensured.accountId) {
     return NextResponse.json(
       { error: ensured.error ?? "No active account found for this member." },

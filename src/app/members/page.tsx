@@ -290,6 +290,10 @@ export default function MembersPage() {
       return;
     }
     const term = memberSearch.trim().toLowerCase();
+    if (term && term === selectedLabel.trim().toLowerCase()) {
+      setSearchResults([]);
+      return;
+    }
     if (term.length < 2) {
       setSearchResults([]);
       return;

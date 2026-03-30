@@ -62,6 +62,24 @@ function ContributionAccessEditInner() {
   const [searchResults, setSearchResults] = useState<Array<{ id: number; name: string }>>([]);
   const [searchLoading, setSearchLoading] = useState(false);
 
+  function handleSelectMember(memberId: number, memberName: string) {
+    setMemberId(memberId);
+    const existing = accessRows.find((r) => r.memberId === memberId);
+    const next: AccessRow = {
+      memberId,
+      accountId: existing?.accountId ?? memberId,
+      memberName,
+      roleName: existing?.roleName ?? null,
+      countryCodes: existing?.countryCodes ?? [],
+    };
+    setRow(next);
+    setRoleName(next.roleName ?? "");
+    setCountryCodes(next.countryCodes ?? []);
+    setMemberSearch(memberName);
+    setSearchLoading(false);
+    setSearchResults([]);
+  }
+
   useEffect(() => {
     let cancelled = false;
     async function load() {
@@ -258,6 +276,13 @@ function ContributionAccessEditInner() {
                   placeholder="Type at least 2 letters to search members"
                   value={memberSearch}
                   onChange={(e) => setMemberSearch(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && searchResults[0]) {
+                      e.preventDefault();
+                      const first = searchResults[0];
+                      handleSelectMember(first.id, first.name);
+                    }
+                  }}
                   style={{ minWidth: 260 }}
                 />
                 {memberSearch.trim().length >= 2 && searchLoading ? (
@@ -271,7 +296,7 @@ function ContributionAccessEditInner() {
                           key={member.id}
                           type="button"
                           className={forms.autocompleteOption}
-                          onClick={() => setMemberId(member.id)}
+                          onClick={() => handleSelectMember(member.id, member.name)}
                         >
                           {member.name}
                         </button>

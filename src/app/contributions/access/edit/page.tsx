@@ -105,15 +105,14 @@ function ContributionAccessEditInner() {
 
   useEffect(() => {
     const searchTerm = memberSearch.trim().toLowerCase();
+    setSearchLoading(searchTerm.length >= 2);
     if (searchTerm.length < 2) {
       setSearchResults([]);
-      setSearchLoading(false);
       return;
     }
 
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(async () => {
-      setSearchLoading(true);
+    let cancelled = false;
+    async function search() {
       try {
         const headers = await getAuthHeaders();
         const response = await fetch(
@@ -122,7 +121,6 @@ function ContributionAccessEditInner() {
             method: "GET",
             headers,
             credentials: "include",
-            signal: controller.signal,
           },
         );
         const payload = (await response.json().catch(() => ({}))) as {
@@ -133,37 +131,38 @@ function ContributionAccessEditInner() {
           throw new Error(payload.error ?? "Failed to search members.");
         }
         const households = Array.isArray(payload.households) ? payload.households : [];
-        if (households.length > 0) {
-          setSearchResults(households.map((h) => ({ id: h.value, name: h.label })));
-          setSearchLoading(false);
-          return;
+        if (!cancelled) {
+          if (households.length > 0) {
+            setSearchResults(households.map((h) => ({ id: h.value, name: h.label })));
+          } else {
+            const pool = [
+              ...eligibleMembers.map((m) => ({ id: m.id, name: m.name })),
+              ...accessRows.map((m) => ({ id: m.memberId, name: m.memberName })),
+            ];
+            const seen = new Set<number>();
+            const unique = pool.filter((m) => {
+              if (seen.has(m.id)) return false;
+              seen.add(m.id);
+              return true;
+            });
+            setSearchResults(
+              unique.filter((m) => m.name.toLowerCase().includes(searchTerm)).slice(0, 50),
+            );
+          }
         }
-        // fallthrough to local pool if remote returns empty
       } catch (searchErr) {
-        if (controller.signal.aborted) return;
-        setError(searchErr instanceof Error ? searchErr.message : "Failed to search members.");
+        if (!cancelled) {
+          setError(searchErr instanceof Error ? searchErr.message : "Failed to search members.");
+        }
+      } finally {
+        if (!cancelled) setSearchLoading(false);
       }
+    }
 
-      const pool = [
-        ...eligibleMembers.map((m) => ({ id: m.id, name: m.name })),
-        ...accessRows.map((m) => ({ id: m.memberId, name: m.memberName })),
-      ];
-      const seen = new Set<number>();
-      const unique = pool.filter((m) => {
-        if (seen.has(m.id)) return false;
-        seen.add(m.id);
-        return true;
-      });
-      setSearchResults(unique.filter((m) => m.name.toLowerCase().includes(searchTerm)).slice(0, 50));
-      setSearchLoading(false);
-    }, 200);
-
-    const stop = () => setSearchLoading(false);
+    void search();
 
     return () => {
-      stop();
-      controller.abort();
-      window.clearTimeout(timeoutId);
+      cancelled = true;
     };
   }, [memberSearch, eligibleMembers, accessRows]);
 
@@ -252,37 +251,39 @@ function ContributionAccessEditInner() {
           <div style={{ display: "grid", gap: 12, maxWidth: 640 }}>
             <div style={{ display: "grid", gap: 8 }}>
               <label className={forms.label}>Select member</label>
-              <input
-                type="text"
-                className={forms.field}
-                placeholder="Type at least 2 letters to search members"
-                value={memberSearch}
-                onChange={(e) => setMemberSearch(e.target.value)}
-                style={{ minWidth: 260 }}
-              />
-              {memberSearch.trim().length >= 2 && searchLoading ? (
-                <p style={{ margin: 0, color: "#6b7280" }}>Searching members...</p>
-              ) : null}
-              {memberSearch.trim().length >= 2 ? (
-                searchResults.length ? (
-                  <div className={forms.autocompleteMenu} role="listbox" aria-label="Matching members">
-                    {searchResults.map((member) => (
-                      <button
-                        key={member.id}
-                        type="button"
-                        className={forms.autocompleteOption}
-                        onClick={() => setMemberId(member.id)}
-                      >
-                        {member.name}
-                      </button>
-                    ))}
-                  </div>
+              <div className={forms.autocompleteWrap}>
+                <input
+                  type="text"
+                  className={forms.field}
+                  placeholder="Type at least 2 letters to search members"
+                  value={memberSearch}
+                  onChange={(e) => setMemberSearch(e.target.value)}
+                  style={{ minWidth: 260 }}
+                />
+                {memberSearch.trim().length >= 2 && searchLoading ? (
+                  <p style={{ margin: 0, color: "#6b7280" }}>Searching members...</p>
+                ) : null}
+                {memberSearch.trim().length >= 2 ? (
+                  searchResults.length ? (
+                    <div className={forms.autocompleteMenu} role="listbox" aria-label="Matching members">
+                      {searchResults.map((member) => (
+                        <button
+                          key={member.id}
+                          type="button"
+                          className={forms.autocompleteOption}
+                          onClick={() => setMemberId(member.id)}
+                        >
+                          {member.name}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <p style={{ margin: 0, color: "#6b7280" }}>No matches. Try another name.</p>
+                  )
                 ) : (
-                  <p style={{ margin: 0, color: "#6b7280" }}>No matches. Try another name.</p>
-                )
-              ) : (
-                <p style={{ margin: 0, color: "#6b7280" }}>Type at least 2 letters to search for a member.</p>
-              )}
+                  <p style={{ margin: 0, color: "#6b7280" }}>Type at least 2 letters to search for a member.</p>
+                )}
+              </div>
               <div>
                 <strong>Editing:</strong>{" "}
                 {row ? row.memberName : <span style={{ color: "#6b7280" }}>No member selected</span>}

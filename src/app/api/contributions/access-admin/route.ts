@@ -553,6 +553,7 @@ export async function POST(request: NextRequest) {
   });
 
   if (!inviteErr) {
+    rateLimitUntilByEmail.delete(memberEmail);
     return NextResponse.json({ ok: true, accountId: ensured.accountId, sent: true, mode: "invite" });
   }
 
@@ -564,11 +565,17 @@ export async function POST(request: NextRequest) {
     const msg = resetErr.message ?? inviteErr.message ?? "Failed to send email.";
     const isRate = resetErr.status === 429 || msg.toLowerCase().includes("rate");
     if (isRate) {
-      rateLimitUntilByEmail.set(memberEmail, now + 10 * 60 * 1000);
-      return NextResponse.json({ error: msg }, { status: 429 });
+      const retryMs = 10 * 60 * 1000;
+      rateLimitUntilByEmail.set(memberEmail, now + retryMs);
+      const retryAfterSec = Math.ceil(retryMs / 1000);
+      return NextResponse.json(
+        { error: `Email rate limit exceeded, please retry after ${retryAfterSec} seconds.` },
+        { status: 429 },
+      );
     }
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 
+  rateLimitUntilByEmail.delete(memberEmail);
   return NextResponse.json({ ok: true, accountId: ensured.accountId, sent: true, mode: "reset" });
 }

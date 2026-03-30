@@ -158,6 +158,8 @@ export default function MembersPage() {
   const [backHref, setBackHref] = useState("/");
   const [memberSearch, setMemberSearch] = useState("");
   const [searchResults, setSearchResults] = useState<HouseholdOption[]>([]);
+  const [selectedLabel, setSelectedLabel] = useState("");
+  const [skipMemberSearch, setSkipMemberSearch] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [member, setMember] = useState<MemberDetail | null>(null);
 
@@ -282,6 +284,11 @@ export default function MembersPage() {
   }, [householdOptions]);
 
   useEffect(() => {
+    if (skipMemberSearch) {
+      setSkipMemberSearch(false);
+      setSearchResults([]);
+      return;
+    }
     const term = memberSearch.trim().toLowerCase();
     if (term.length < 2) {
       setSearchResults([]);
@@ -291,7 +298,7 @@ export default function MembersPage() {
       .filter((option) => option.searchText.includes(term))
       .slice(0, 50);
     setSearchResults(results);
-  }, [householdOptions, memberSearch]);
+  }, [householdOptions, memberSearch, skipMemberSearch]);
 
   const linkableMemberOptions = useMemo(
     () => sortedMemberOptions.filter((row) => row.householdid == null),
@@ -648,6 +655,17 @@ export default function MembersPage() {
     }
     setSelectedId(null);
   }, [householdOptions, householdOptionValueByMemberId, selectedId]);
+
+  useEffect(() => {
+    if (selectedId == null) return;
+    const match = householdOptions.find(
+      (row) => row.value === selectedId || row.memberIds.includes(selectedId),
+    );
+    if (match) {
+      setSelectedLabel(match.label);
+      setMemberSearch(match.label);
+    }
+  }, [householdOptions, selectedId]);
 
   const fetchMemberDetail = useCallback(async (
     id: number,
@@ -1095,9 +1113,6 @@ export default function MembersPage() {
               value={memberSearch}
               onChange={(e) => setMemberSearch(e.target.value)}
             />
-            {memberSearch.trim().length < 2 ? (
-              <p style={{ margin: 4, color: "#6b7280" }}>Type at least 2 letters to search.</p>
-            ) : null}
             {memberSearch.trim().length >= 2 ? (
               searchResults.length ? (
                 <div className={forms.autocompleteMenu} role="listbox" aria-label="Matching contacts">
@@ -1108,17 +1123,19 @@ export default function MembersPage() {
                       className={forms.autocompleteOption}
                       onClick={() => {
                         setSelectedId(option.value);
+                        setSelectedLabel(option.label);
                         setMemberSearch(option.label);
                         setSearchResults([]);
+                        setSkipMemberSearch(true);
                       }}
                     >
                       {option.label}
                     </button>
                   ))}
                 </div>
-              ) : (
+              ) : memberSearch.trim() !== selectedLabel.trim() ? (
                 <p style={{ margin: 4, color: "#6b7280" }}>No matches.</p>
-              )
+              ) : null
             ) : null}
           </div>
 

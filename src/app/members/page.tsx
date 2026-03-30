@@ -156,8 +156,8 @@ export default function MembersPage() {
   const [memberOptions, setMemberOptions] = useState<MemberOption[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [backHref, setBackHref] = useState("/");
-
-  const [search] = useState("");
+  const [memberSearch, setMemberSearch] = useState("");
+  const [searchResults, setSearchResults] = useState<HouseholdOption[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
   const [member, setMember] = useState<MemberDetail | null>(null);
 
@@ -281,20 +281,17 @@ export default function MembersPage() {
     return map;
   }, [householdOptions]);
 
-  const filteredOptions = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return householdOptions;
-
-    return householdOptions.filter((option) => {
-      const members = option.memberIds
-        .map((id) => memberOptions.find((m) => m.id === id))
-        .filter((m): m is MemberOption => Boolean(m));
-      const locationText = members
-        .map((m) => `${(m.statecode ?? "").toLowerCase()} ${(m.countrycode ?? "").toLowerCase()}`)
-        .join(" ");
-      return option.searchText.includes(q) || locationText.includes(q);
-    });
-  }, [householdOptions, memberOptions, search]);
+  useEffect(() => {
+    const term = memberSearch.trim().toLowerCase();
+    if (term.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    const results = householdOptions
+      .filter((option) => option.searchText.includes(term))
+      .slice(0, 50);
+    setSearchResults(results);
+  }, [householdOptions, memberSearch]);
 
   const linkableMemberOptions = useMemo(
     () => sortedMemberOptions.filter((row) => row.householdid == null),
@@ -1089,23 +1086,41 @@ export default function MembersPage() {
             Select Contact:
           </label>
 
-          <select
-            id="memberSelect"
-            value={selectedHouseholdValue ?? ""}
-            onChange={(e) =>
-              setSelectedId(e.target.value ? Number(e.target.value) : null)
-            }
-            className={forms.selectContact}
-          >
-            <option value="">
-              {filteredOptions.length === 0 ? "(no members)" : "Select a contact..."}
-            </option>
-            {filteredOptions.map((m) => (
-              <option key={m.value} value={m.value}>
-                {m.label}
-              </option>
-            ))}
-          </select>
+          <div className={forms.autocompleteWrap} style={{ minWidth: 320 }}>
+            <input
+              id="memberSelect"
+              type="search"
+              className={forms.field}
+              placeholder="Type at least 2 letters to search contacts"
+              value={memberSearch}
+              onChange={(e) => setMemberSearch(e.target.value)}
+            />
+            {memberSearch.trim().length < 2 ? (
+              <p style={{ margin: 4, color: "#6b7280" }}>Type at least 2 letters to search.</p>
+            ) : null}
+            {memberSearch.trim().length >= 2 ? (
+              searchResults.length ? (
+                <div className={forms.autocompleteMenu} role="listbox" aria-label="Matching contacts">
+                  {searchResults.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={forms.autocompleteOption}
+                      onClick={() => {
+                        setSelectedId(option.value);
+                        setMemberSearch(option.label);
+                        setSearchResults([]);
+                      }}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ margin: 4, color: "#6b7280" }}>No matches.</p>
+              )
+            ) : null}
+          </div>
 
           {selectedHouseholdMembers.length > 1 && (
             <>

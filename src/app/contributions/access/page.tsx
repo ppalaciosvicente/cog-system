@@ -165,9 +165,10 @@ export default function ContributionsAccessPage() {
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to resend invitation.";
       if (message.toLowerCase().includes("rate limit")) {
-        const until = Date.now() + 60_000;
+        const until = Date.now() + 90_000;
         setInviteCooldown((prev) => ({ ...prev, [memberId]: until }));
-        setError("Email rate limit exceeded, please retry after a minute.");
+        setError(null);
+        setSaveMsg("Email already sent recently. Please retry after about a minute.");
       } else {
         setError(message);
       }

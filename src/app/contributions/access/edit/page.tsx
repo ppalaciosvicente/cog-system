@@ -61,6 +61,7 @@ function ContributionAccessEditInner() {
 
   const [searchResults, setSearchResults] = useState<Array<{ id: number; name: string }>>([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [skipNextSearch, setSkipNextSearch] = useState(false);
 
   function handleSelectMember(memberId: number, memberName: string) {
     setMemberId(memberId);
@@ -75,6 +76,7 @@ function ContributionAccessEditInner() {
     setRow(next);
     setRoleName(next.roleName ?? "");
     setCountryCodes(next.countryCodes ?? []);
+    setSkipNextSearch(true);
     setMemberSearch(memberName);
     setSearchLoading(false);
     setSearchResults([]);
@@ -122,6 +124,13 @@ function ContributionAccessEditInner() {
   }, [memberIdParam]);
 
   useEffect(() => {
+    if (skipNextSearch) {
+      setSkipNextSearch(false);
+      setSearchResults([]);
+      setSearchLoading(false);
+      return;
+    }
+
     const searchTerm = memberSearch.trim().toLowerCase();
     setSearchLoading(searchTerm.length >= 2);
     if (searchTerm.length < 2) {

@@ -647,7 +647,7 @@ export default function MembersPage() {
       return;
     }
     setSelectedId(null);
-  }, [filteredOptions, householdOptionValueByMemberId, selectedId]);
+  }, [householdOptions, householdOptionValueByMemberId, selectedId]);
 
   const fetchMemberDetail = useCallback(async (
     id: number,

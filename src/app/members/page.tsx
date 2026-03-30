@@ -643,7 +643,7 @@ export default function MembersPage() {
   useEffect(() => {
     if (selectedId == null) return;
     const householdOptionValue = householdOptionValueByMemberId.get(selectedId);
-    if (householdOptionValue && filteredOptions.some((row) => row.value === householdOptionValue)) {
+    if (householdOptionValue && householdOptions.some((row) => row.value === householdOptionValue)) {
       return;
     }
     setSelectedId(null);

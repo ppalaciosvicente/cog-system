@@ -108,6 +108,18 @@ export default function LinkSpousesPage() {
   const [memberOptions, setMemberOptions] = useState<MemberOption[]>([]);
   const [memberAId, setMemberAId] = useState<number | null>(null);
   const [memberBId, setMemberBId] = useState<number | null>(null);
+  const [memberASearch, setMemberASearch] = useState("");
+  const [memberBSearch, setMemberBSearch] = useState("");
+  const [memberASearchResults, setMemberASearchResults] = useState<
+    { value: number; label: string }[]
+  >([]);
+  const [memberBSearchResults, setMemberBSearchResults] = useState<
+    { value: number; label: string }[]
+  >([]);
+  const [selectedALabel, setSelectedALabel] = useState("");
+  const [selectedBLabel, setSelectedBLabel] = useState("");
+  const [skipMemberASearch, setSkipMemberASearch] = useState(false);
+  const [skipMemberBSearch, setSkipMemberBSearch] = useState(false);
 
   const [memberADetail, setMemberADetail] =
     useState<LinkableMemberDetail | null>(null);
@@ -127,8 +139,6 @@ export default function LinkSpousesPage() {
   const [australiaStateOptions, setAustraliaStateOptions] = useState<
     { value: string; label: string }[]
   >([]);
-  const member1Options = memberOptions.filter((m) => m.id !== memberBId);
-  const member2Options = memberOptions.filter((m) => m.id !== memberAId);
 
   useEffect(() => {
     let cancelled = false;
@@ -215,6 +225,10 @@ export default function LinkSpousesPage() {
           setMemberOptions((members ?? []) as MemberOption[]);
           setMemberAId(null);
           setMemberBId(null);
+          setMemberASearch("");
+          setMemberBSearch("");
+          setSelectedALabel("");
+          setSelectedBLabel("");
         }
       } finally {
         if (!cancelled) setPageLoading(false);
@@ -280,6 +294,72 @@ export default function LinkSpousesPage() {
       cancelled = true;
     };
   }, [memberAId, memberBId, supabase]);
+
+  useEffect(() => {
+    if (skipMemberASearch) {
+      setSkipMemberASearch(false);
+      setMemberASearchResults([]);
+      return;
+    }
+    const term = memberASearch.trim().toLowerCase();
+    if (term && term === selectedALabel.trim().toLowerCase()) {
+      setMemberASearchResults([]);
+      return;
+    }
+    if (term.length < 2) {
+      setMemberASearchResults([]);
+      return;
+    }
+    const results = memberOptions
+      .filter((m) => m.id !== memberBId)
+      .filter((m) => displayName(m).toLowerCase().includes(term))
+      .slice(0, 50)
+      .map((m) => ({ value: m.id, label: displayName(m) }));
+    setMemberASearchResults(results);
+  }, [memberASearch, memberBId, memberOptions, selectedALabel, skipMemberASearch]);
+
+  useEffect(() => {
+    if (skipMemberBSearch) {
+      setSkipMemberBSearch(false);
+      setMemberBSearchResults([]);
+      return;
+    }
+    const term = memberBSearch.trim().toLowerCase();
+    if (term && term === selectedBLabel.trim().toLowerCase()) {
+      setMemberBSearchResults([]);
+      return;
+    }
+    if (term.length < 2) {
+      setMemberBSearchResults([]);
+      return;
+    }
+    const results = memberOptions
+      .filter((m) => m.id !== memberAId)
+      .filter((m) => displayName(m).toLowerCase().includes(term))
+      .slice(0, 50)
+      .map((m) => ({ value: m.id, label: displayName(m) }));
+    setMemberBSearchResults(results);
+  }, [memberAId, memberBSearch, memberOptions, selectedBLabel, skipMemberBSearch]);
+
+  useEffect(() => {
+    if (memberAId == null) return;
+    const match = memberOptions.find((m) => m.id === memberAId);
+    if (match) {
+      const label = displayName(match);
+      setSelectedALabel(label);
+      setMemberASearch(label);
+    }
+  }, [memberAId, memberOptions]);
+
+  useEffect(() => {
+    if (memberBId == null) return;
+    const match = memberOptions.find((m) => m.id === memberBId);
+    if (match) {
+      const label = displayName(match);
+      setSelectedBLabel(label);
+      setMemberBSearch(label);
+    }
+  }, [memberBId, memberOptions]);
 
   function setFormField(
     side: "left" | "right",
@@ -496,39 +576,85 @@ export default function LinkSpousesPage() {
       <div className={forms.sectionCard}>
         <div className={styles.selectRow}>
           <Row label="Member 1">
-            <select
-              className={forms.field}
-              value={memberAId ?? ""}
-              disabled={saving}
-              onChange={(e) =>
-                setMemberAId(e.target.value ? Number(e.target.value) : null)
-              }
-            >
-              <option value="">Select member</option>
-              {member1Options.map((m) => (
-                <option key={`member-a-${m.id}`} value={m.id}>
-                  {displayName(m)}
-                </option>
-              ))}
-            </select>
+            <div className={forms.autocompleteWrap} style={{ minWidth: 260 }}>
+              <input
+                type="search"
+                className={forms.field}
+                placeholder="Type at least 2 letters to search"
+                value={memberASearch}
+                disabled={saving}
+                onChange={(e) => setMemberASearch(e.target.value)}
+              />
+              {memberASearch.trim().length >= 2 ? (
+                memberASearchResults.length ? (
+                  <div
+                    className={forms.autocompleteMenu}
+                    role="listbox"
+                    aria-label="Matching members"
+                  >
+                    {memberASearchResults.map((option) => (
+                      <button
+                        key={`member-a-${option.value}`}
+                        type="button"
+                        className={forms.autocompleteOption}
+                        onClick={() => {
+                          setMemberAId(option.value);
+                          setSelectedALabel(option.label);
+                          setMemberASearch(option.label);
+                          setMemberASearchResults([]);
+                          setSkipMemberASearch(true);
+                        }}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                ) : memberASearch.trim() !== selectedALabel.trim() ? (
+                  <p style={{ margin: 4, color: "#6b7280" }}>No matches.</p>
+                ) : null
+              ) : null}
+            </div>
           </Row>
 
           <Row label="Member 2">
-            <select
-              className={forms.field}
-              value={memberBId ?? ""}
-              disabled={saving}
-              onChange={(e) =>
-                setMemberBId(e.target.value ? Number(e.target.value) : null)
-              }
-            >
-              <option value="">Select member</option>
-              {member2Options.map((m) => (
-                <option key={`member-b-${m.id}`} value={m.id}>
-                  {displayName(m)}
-                </option>
-              ))}
-            </select>
+            <div className={forms.autocompleteWrap} style={{ minWidth: 260 }}>
+              <input
+                type="search"
+                className={forms.field}
+                placeholder="Type at least 2 letters to search"
+                value={memberBSearch}
+                disabled={saving}
+                onChange={(e) => setMemberBSearch(e.target.value)}
+              />
+              {memberBSearch.trim().length >= 2 ? (
+                memberBSearchResults.length ? (
+                  <div
+                    className={forms.autocompleteMenu}
+                    role="listbox"
+                    aria-label="Matching members"
+                  >
+                    {memberBSearchResults.map((option) => (
+                      <button
+                        key={`member-b-${option.value}`}
+                        type="button"
+                        className={forms.autocompleteOption}
+                        onClick={() => {
+                          setMemberBId(option.value);
+                          setSelectedBLabel(option.label);
+                          setMemberBSearch(option.label);
+                          setMemberBSearchResults([]);
+                          setSkipMemberBSearch(true);
+                        }}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                ) : memberBSearch.trim() !== selectedBLabel.trim() ? (
+                  <p style={{ margin: 4, color: "#6b7280" }}>No matches.</p>
+                ) : null
+              ) : null}
+            </div>
           </Row>
         </div>
       </div>

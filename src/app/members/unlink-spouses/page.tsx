@@ -163,6 +163,10 @@ export default function UnlinkSpousesPage() {
   const [rowsById, setRowsById] = useState<Map<number, LinkedMember>>(new Map());
   const [householdOptions, setHouseholdOptions] = useState<HouseholdOption[]>([]);
   const [selectedHouseholdId, setSelectedHouseholdId] = useState<number | null>(null);
+  const [householdSearch, setHouseholdSearch] = useState("");
+  const [householdSearchResults, setHouseholdSearchResults] = useState<HouseholdOption[]>([]);
+  const [selectedHouseholdLabel, setSelectedHouseholdLabel] = useState("");
+  const [skipHouseholdSearch, setSkipHouseholdSearch] = useState(false);
 
   const [memberADetail, setMemberADetail] = useState<LinkedMember | null>(null);
   const [memberBDetail, setMemberBDetail] = useState<LinkedMember | null>(null);
@@ -299,6 +303,11 @@ export default function UnlinkSpousesPage() {
           } else {
             setSelectedHouseholdId(null);
           }
+          const initial = options.find((opt) => opt.householdId === selectedHouseholdParam);
+          if (initial) {
+            setSelectedHouseholdLabel(initial.label);
+            setHouseholdSearch(initial.label);
+          }
         }
       } finally {
         if (!cancelled) setPageLoading(false);
@@ -345,6 +354,36 @@ export default function UnlinkSpousesPage() {
     setMemberBForm(toForm(b));
     setSaveError(null);
   }, [selectedHouseholdId, householdOptions, rowsById]);
+
+  useEffect(() => {
+    if (skipHouseholdSearch) {
+      setSkipHouseholdSearch(false);
+      setHouseholdSearchResults([]);
+      return;
+    }
+    const term = householdSearch.trim().toLowerCase();
+    if (term && term === selectedHouseholdLabel.trim().toLowerCase()) {
+      setHouseholdSearchResults([]);
+      return;
+    }
+    if (term.length < 2) {
+      setHouseholdSearchResults([]);
+      return;
+    }
+    const results = householdOptions
+      .filter((opt) => opt.label.toLowerCase().includes(term))
+      .slice(0, 50);
+    setHouseholdSearchResults(results);
+  }, [householdOptions, householdSearch, selectedHouseholdLabel, skipHouseholdSearch]);
+
+  useEffect(() => {
+    if (selectedHouseholdId == null) return;
+    const match = householdOptions.find((o) => o.householdId === selectedHouseholdId);
+    if (match) {
+      setSelectedHouseholdLabel(match.label);
+      setHouseholdSearch(match.label);
+    }
+  }, [householdOptions, selectedHouseholdId]);
 
   function setFormField(side: "left" | "right", key: ContactKey, value: string) {
     if (side === "left") {
@@ -503,19 +542,44 @@ export default function UnlinkSpousesPage() {
 
       <div className={forms.sectionCard}>
         <Row label="Household">
-          <select
-            className={forms.field}
-            value={selectedHouseholdId ?? ""}
-            disabled={saving}
-            onChange={(e) => setSelectedHouseholdId(e.target.value ? Number(e.target.value) : null)}
-          >
-            <option value="">Select household</option>
-            {householdOptions.map((option) => (
-              <option key={`household-${option.householdId}-${option.memberAId}`} value={option.householdId}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+          <div className={forms.autocompleteWrap} style={{ minWidth: 320 }}>
+            <input
+              type="search"
+              className={forms.field}
+              placeholder="Type at least 2 letters to search households"
+              value={householdSearch}
+              disabled={saving}
+              onChange={(e) => setHouseholdSearch(e.target.value)}
+            />
+            {householdSearch.trim().length >= 2 ? (
+              householdSearchResults.length ? (
+                <div
+                  className={forms.autocompleteMenu}
+                  role="listbox"
+                  aria-label="Matching households"
+                >
+                  {householdSearchResults.map((option) => (
+                    <button
+                      key={`household-${option.householdId}-${option.memberAId}`}
+                      type="button"
+                      className={forms.autocompleteOption}
+                      onClick={() => {
+                        setSelectedHouseholdId(option.householdId);
+                        setSelectedHouseholdLabel(option.label);
+                        setHouseholdSearch(option.label);
+                        setHouseholdSearchResults([]);
+                        setSkipHouseholdSearch(true);
+                      }}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              ) : householdSearch.trim() !== selectedHouseholdLabel.trim() ? (
+                <p style={{ margin: 4, color: "#6b7280" }}>No matches.</p>
+              ) : null
+            ) : null}
+          </div>
         </Row>
       </div>
 

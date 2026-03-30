@@ -30,6 +30,7 @@ function normalizeCode(value: string) {
 function ContributionAccessEditInner() {
   const params = useSearchParams();
   const memberIdParam = Number(params.get("memberId") ?? "");
+  const prefilledFromQuery = Number.isFinite(memberIdParam) && memberIdParam > 0;
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -179,6 +180,10 @@ function ContributionAccessEditInner() {
     setRow(next);
     setRoleName(next.roleName ?? "");
     setCountryCodes(next.countryCodes ?? []);
+    if (prefilledFromQuery && memberSearch.trim().length === 0) {
+      setMemberSearch(name);
+      setSkipNextSearch(true);
+    }
   }, [memberId, accessRows, eligibleMembers, searchResults]);
 
   async function saveChanges() {
@@ -252,30 +257,31 @@ function ContributionAccessEditInner() {
                     }
                   }}
                   style={{ minWidth: 260 }}
+                  disabled={prefilledFromQuery}
                 />
                 {memberSearch.trim().length >= 2 && searchLoading ? (
                   <p style={{ margin: 0, color: "#6b7280" }}>Searching members...</p>
                 ) : null}
-                {memberSearch.trim().length >= 2 ? (
-                  searchResults.length ? (
-                    <div className={forms.autocompleteMenu} role="listbox" aria-label="Matching members">
-                      {searchResults.map((member) => (
-                        <button
-                          key={member.id}
-                          type="button"
-                          className={forms.autocompleteOption}
-                          onClick={() => handleSelectMember(member.id, member.name)}
-                        >
-                          {member.name}
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <p style={{ margin: 0, color: "#6b7280" }}>No matches. Try another name.</p>
-                  )
-                ) : (
-                  <p style={{ margin: 0, color: "#6b7280" }}>Type at least 2 letters to search for a member.</p>
-                )}
+              {memberSearch.trim().length >= 2 ? (
+                searchResults.length ? (
+                  <div className={forms.autocompleteMenu} role="listbox" aria-label="Matching members">
+                    {searchResults.map((member) => (
+                      <button
+                        key={member.id}
+                        type="button"
+                        className={forms.autocompleteOption}
+                        onClick={() => handleSelectMember(member.id, member.name)}
+                      >
+                        {member.name}
+                      </button>
+                    ))}
+                  </div>
+                ) : row && memberSearch.trim() === row.memberName ? null : (
+                  <p style={{ margin: 0, color: "#6b7280" }}>No matches. Try another name.</p>
+                )
+              ) : (
+                <p style={{ margin: 0, color: "#6b7280" }}>Type at least 2 letters to search for a member.</p>
+              )}
               </div>
               <div>
                 <strong>Editing:</strong>{" "}

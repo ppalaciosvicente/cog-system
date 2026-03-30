@@ -733,13 +733,13 @@ export async function POST(request: NextRequest) {
 
   const redirectTo = `${resolveAppOrigin(request)}/auth/callback?next=/reset-password`;
 
-  const { data: linkData, error: linkErr } =
-    await supabase.auth.admin.generateLink({
-      type: "recovery",
-      email: memberEmail,
-      options: { redirectTo },
-    });
-  if (linkErr || !linkData?.action_link) {
+  const { data: linkData, error: linkErr } = await supabase.auth.admin.generateLink({
+    type: "recovery",
+    email: memberEmail,
+    options: { redirectTo },
+  });
+  const actionLink = (linkData as any)?.properties?.action_link ?? (linkData as any)?.action_link;
+  if (linkErr || !actionLink) {
     return NextResponse.json(
       { error: linkErr?.message ?? "Failed to generate link." },
       { status: 500 },
@@ -747,7 +747,7 @@ export async function POST(request: NextRequest) {
   }
 
   const subject = "COG PKG - Access to Contributions System";
-  const html = `<!doctype html><html><body><p>Hello,</p><p>Use this link to access the Contributions System:</p><p><a href="${linkData.action_link}">${linkData.action_link}</a></p><p>If you did not request this, you can ignore this email.</p></body></html>`;
+  const html = `<!doctype html><html><body><p>Hello,</p><p>Use this link to access the Contributions System:</p><p><a href="${actionLink}">${actionLink}</a></p><p>If you did not request this, you can ignore this email.</p></body></html>`;
 
   try {
     await sendSmtpEmail(memberEmail, subject, html);

@@ -138,59 +138,18 @@ function ContributionAccessEditInner() {
       return;
     }
 
-    let cancelled = false;
-    async function search() {
-      try {
-        const headers = await getAuthHeaders();
-        const response = await fetch(
-          `/api/contributions/donor-options?q=${encodeURIComponent(searchTerm)}&limit=25`,
-          {
-            method: "GET",
-            headers,
-            credentials: "include",
-          },
-        );
-        const payload = (await response.json().catch(() => ({}))) as {
-          households?: Array<{ value: number; label: string }>;
-          error?: string;
-        };
-        if (!response.ok) {
-          throw new Error(payload.error ?? "Failed to search members.");
-        }
-        const households = Array.isArray(payload.households) ? payload.households : [];
-        if (!cancelled) {
-          if (households.length > 0) {
-            setSearchResults(households.map((h) => ({ id: h.value, name: h.label })));
-          } else {
-            const pool = [
-              ...eligibleMembers.map((m) => ({ id: m.id, name: m.name })),
-              ...accessRows.map((m) => ({ id: m.memberId, name: m.memberName })),
-            ];
-            const seen = new Set<number>();
-            const unique = pool.filter((m) => {
-              if (seen.has(m.id)) return false;
-              seen.add(m.id);
-              return true;
-            });
-            setSearchResults(
-              unique.filter((m) => m.name.toLowerCase().includes(searchTerm)).slice(0, 50),
-            );
-          }
-        }
-      } catch (searchErr) {
-        if (!cancelled) {
-          setError(searchErr instanceof Error ? searchErr.message : "Failed to search members.");
-        }
-      } finally {
-        if (!cancelled) setSearchLoading(false);
-      }
-    }
-
-    void search();
-
-    return () => {
-      cancelled = true;
-    };
+    const pool = [
+      ...eligibleMembers.map((m) => ({ id: m.id, name: m.name })),
+      ...accessRows.map((m) => ({ id: m.memberId, name: m.memberName })),
+    ];
+    const seen = new Set<number>();
+    const unique = pool.filter((m) => {
+      if (seen.has(m.id)) return false;
+      seen.add(m.id);
+      return true;
+    });
+    setSearchResults(unique.filter((m) => m.name.toLowerCase().includes(searchTerm)).slice(0, 50));
+    setSearchLoading(false);
   }, [memberSearch, eligibleMembers, accessRows]);
 
   useEffect(() => {

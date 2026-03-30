@@ -30,6 +30,7 @@ export default function ContributionsAccessPage() {
   const [countryOptions, setCountryOptions] = useState<CountryOption[]>([]);
   const [eligibleMembers, setEligibleMembers] = useState<Array<{ id: number; name: string }>>([]);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [saveMsg, setSaveMsg] = useState<string | null>(null);
 
   const countryNameByCode = useMemo(() => {
     const map: Record<string, string> = {};
@@ -100,6 +101,7 @@ export default function ContributionsAccessPage() {
     if (!confirm) return;
     setDeletingId(row.memberId);
     setError(null);
+    setSaveMsg(null);
     try {
       const headers = await getAuthHeaders();
       const response = await fetch("/api/contributions/access-admin", {
@@ -119,11 +121,8 @@ export default function ContributionsAccessPage() {
       if (!response.ok) {
         throw new Error(payload.error ?? "Failed to remove access.");
       }
-      setRows((current) =>
-        current.map((item) =>
-          item.memberId === row.memberId ? { ...item, roleName: null, countryCodes: [] } : item,
-        ),
-      );
+      setRows((current) => current.filter((item) => item.memberId !== row.memberId));
+      setSaveMsg("Removed.");
     } catch (deleteErr) {
       setError(deleteErr instanceof Error ? deleteErr.message : "Failed to remove access.");
     } finally {
@@ -167,11 +166,12 @@ export default function ContributionsAccessPage() {
           return <p className={forms.error}>Only contrib_admin can access this page.</p>;
         }
 
-        if (loading) return <p>Loading access list...</p>;
+    if (loading) return <p>Loading access list...</p>;
 
-        return (
-          <div>
-            {error ? <p className={forms.error}>{error}</p> : null}
+    return (
+      <div>
+        {error ? <p className={forms.error}>{error}</p> : null}
+        {saveMsg ? <p style={{ color: "#166534" }}>{saveMsg}</p> : null}
 
             <div className={forms.actions} style={{ marginBottom: 12, gap: 8, flexWrap: "wrap" }}>
               <Link

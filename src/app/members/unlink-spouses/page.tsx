@@ -167,6 +167,7 @@ export default function UnlinkSpousesPage() {
   const [householdSearchResults, setHouseholdSearchResults] = useState<HouseholdOption[]>([]);
   const [selectedHouseholdLabel, setSelectedHouseholdLabel] = useState("");
   const [skipHouseholdSearch, setSkipHouseholdSearch] = useState(false);
+  const [browseAll, setBrowseAll] = useState(false);
 
   const [memberADetail, setMemberADetail] = useState<LinkedMember | null>(null);
   const [memberBDetail, setMemberBDetail] = useState<LinkedMember | null>(null);
@@ -578,8 +579,48 @@ export default function UnlinkSpousesPage() {
               ) : householdSearch.trim() !== selectedHouseholdLabel.trim() ? (
                 <p style={{ margin: 4, color: "#6b7280" }}>No matches.</p>
               ) : null
-            ) : null}
+              ) : null}
           </div>
+          <button
+            type="button"
+            className={forms.button}
+            style={{ marginTop: 6 }}
+            onClick={() => setBrowseAll((prev) => !prev)}
+          >
+            {browseAll ? "Hide all households" : "Browse all households"}
+          </button>
+          {browseAll ? (
+            <div
+              style={{
+                marginTop: 8,
+                border: "1px solid #e5e7eb",
+                borderRadius: 10,
+                maxHeight: 260,
+                overflow: "auto",
+                padding: 6,
+                minWidth: 280,
+              }}
+            >
+              {householdOptions.map((option) => (
+                <button
+                  key={`browse-household-${option.householdId}`}
+                  type="button"
+                  className={forms.autocompleteOption}
+                  style={{ width: "100%", textAlign: "left" }}
+                  onClick={() => {
+                    setSelectedHouseholdId(option.householdId);
+                    setSelectedHouseholdLabel(option.label);
+                    setHouseholdSearch(option.label);
+                    setHouseholdSearchResults([]);
+                    setSkipHouseholdSearch(true);
+                    setBrowseAll(false);
+                  }}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          ) : null}
         </Row>
       </div>
 

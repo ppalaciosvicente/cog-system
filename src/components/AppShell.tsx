@@ -151,10 +151,12 @@ export function AppShell({ children }: AppShellProps) {
   useEffect(() => {
     let cancelled = false;
     async function checkSession() {
-      const { data } = await supabase.auth.getSession();
+      const { data, error } = await supabase.auth.getUser();
       if (cancelled) return;
-      if (!data.session && !AUTH_PATH_PREFIXES.some((prefix) => pathname?.startsWith(prefix))) {
+      const unauthenticated = Boolean(error) || !data.user;
+      if (unauthenticated && !AUTH_PATH_PREFIXES.some((prefix) => pathname?.startsWith(prefix))) {
         router.replace("/login");
+        return;
       }
       setAuthReady(true);
     }

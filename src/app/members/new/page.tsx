@@ -402,7 +402,7 @@ export default function NewMemberPage() {
 
       <div className={forms.backRow}>
         <BackLink fallbackHref="/members" className={`${forms.linkButton} ${forms.linkButtonLight}`}>
-          ← Back to Members
+          ← Back to Contacts
         </BackLink>
       </div>
 

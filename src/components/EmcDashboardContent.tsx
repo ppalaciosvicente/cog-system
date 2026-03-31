@@ -17,7 +17,7 @@ export function EmcDashboardContent() {
         >
           <li>
             <Link href="/members" className={forms.button} style={{ textDecoration: "none" }}>
-              Members
+              Contacts
             </Link>
           </li>
           <li>

@@ -8,20 +8,25 @@ export function EmcDashboardContent() {
         <h2>Quick Access</h2>
         <ul
           className={forms.listButtons}
-          style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 8,
+            padding: 0,
+          }}
         >
           <li>
-            <Link href="/members" className={forms.button}>
+            <Link href="/members" className={forms.button} style={{ textDecoration: "none" }}>
               Members
             </Link>
           </li>
           <li>
-            <Link href="/elders" className={forms.button}>
+            <Link href="/elders" className={forms.button} style={{ textDecoration: "none" }}>
               Elders
             </Link>
           </li>
           <li>
-            <Link href="/fot-reg" className={forms.button}>
+            <Link href="/fot-reg" className={forms.button} style={{ textDecoration: "none" }}>
               FOT Registration
             </Link>
           </li>
@@ -30,7 +35,7 @@ export function EmcDashboardContent() {
 
       <section className={forms.sectionCard} style={{ marginTop: 20 }}>
         <h2>Documents</h2>
-        <div style={{ display: "grid", gap: 28 }}>
+        <div style={{ display: "grid", gap: 34 }}>
           <div>
             <h3 style={{ margin: "0 0 10px" }}>Anointing Docs</h3>
             <ul

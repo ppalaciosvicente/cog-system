@@ -1351,16 +1351,34 @@ export default function MembersPage() {
                   href={mapsHref}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`${forms.linkButton} ${forms.linkButtonLight} ${forms.linkButtonCompactTouch}`}
+                  className={`${forms.linkButtonLight} ${forms.linkButtonCompactTouch}`}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    background: "#fff",
+                    border: "1px solid #d1d5db",
+                    color: "#111827",
+                  }}
                 >
+                  <span aria-hidden="true">📍</span>
                   View Location on Map
                 </a>
               ) : (
                 <button
                   type="button"
-                  className={`${forms.button} ${forms.linkButtonLight} ${forms.linkButtonCompactTouch}`}
+                  className={`${forms.linkButtonLight} ${forms.linkButtonCompactTouch}`}
                   disabled
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    background: "#fff",
+                    border: "1px solid #e5e7eb",
+                    color: "#9ca3af",
+                  }}
                 >
+                  <span aria-hidden="true">📍</span>
                   View Location on Map
                 </button>
               )}

@@ -1103,7 +1103,7 @@ export default function MembersPage() {
       </div>
 
       {/* top bar */}
-      <div className={forms.topBar}>
+      <div className={forms.topBar} style={{ marginTop: 10 }}>
         <div className={forms.topGroup}>
           <label htmlFor="memberSelect" className={forms.topLabel}>
             Select Contact:

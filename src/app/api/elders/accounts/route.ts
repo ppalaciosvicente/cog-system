@@ -151,27 +151,27 @@ async function ensureActiveAccountForMember(
 
     if (existingAuth.id) {
       authUserId = existingAuth.id;
-      const redirectTo = `${appOrigin}/auth/callback?next=/reset-password`;
-      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(memberEmail, {
-        redirectTo,
-      });
-      if (resetErr) {
-        return { accountId: null as number | null, error: resetErr.message };
-      }
     } else {
-      const redirectTo = `${appOrigin}/auth/callback?next=/reset-password`;
-      const { data: inviteData, error: inviteErr } =
-        await supabase.auth.admin.inviteUserByEmail(memberEmail, {
-          redirectTo,
-        });
-      if (inviteErr || !inviteData.user?.id) {
+      const { data: createdUser, error: createUserErr } = await supabase.auth.admin.createUser({
+        email: memberEmail,
+        email_confirm: true,
+      });
+      if (createUserErr || !createdUser.user?.id) {
         return {
           accountId: null as number | null,
           error:
-            inviteErr?.message ?? "Failed to create auth user from member email.",
+            createUserErr?.message ?? "Failed to create auth user from member email.",
         };
       }
-      authUserId = inviteData.user.id;
+      authUserId = createdUser.user.id;
+    }
+
+    const redirectTo = `${appOrigin}/auth/callback?next=/reset-password`;
+    const { error: resetErr } = await supabase.auth.resetPasswordForEmail(memberEmail, {
+      redirectTo,
+    });
+    if (resetErr) {
+      return { accountId: null as number | null, error: resetErr.message };
     }
   }
 

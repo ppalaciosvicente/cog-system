@@ -142,45 +142,37 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: existingAuth.error.message }, { status: 500 });
     }
     authUserId = existingAuth.id;
+    if (!authUserId) {
+      const { data: createdUser, error: createUserErr } = await supabase.auth.admin.createUser({
+        email: memberEmail,
+        email_confirm: true,
+      });
+      if (createUserErr || !createdUser.user?.id) {
+        return NextResponse.json(
+          { error: createUserErr?.message ?? "Failed to create auth user." },
+          { status: 500 },
+        );
+      }
+      authUserId = createdUser.user.id;
+    }
   }
 
   const redirectTo = `${appOrigin}/auth/callback?next=/reset-password`;
 
-  if (authUserId) {
-    const { error: resetErr } = await supabase.auth.resetPasswordForEmail(memberEmail, {
-      redirectTo,
-    });
-    if (resetErr) {
-      return NextResponse.json({ error: resetErr.message }, { status: 500 });
-    }
-
-    const { error: accountUpdateErr } = await supabase
-      .from("emcaccounts")
-      .update({ authuserid: authUserId, isactive: true })
-      .eq("id", account.id);
-    if (accountUpdateErr) {
-      return NextResponse.json({ error: accountUpdateErr.message }, { status: 500 });
-    }
-
-    return NextResponse.json({ ok: true, sent: "reset" as const });
-  }
-
-  const { data: inviteData, error: inviteErr } =
-    await supabase.auth.admin.inviteUserByEmail(memberEmail, { redirectTo });
-  if (inviteErr || !inviteData.user?.id) {
-    return NextResponse.json(
-      { error: inviteErr?.message ?? "Failed to send invitation email." },
-      { status: 500 },
-    );
-  }
-
   const { error: accountUpdateErr } = await supabase
     .from("emcaccounts")
-    .update({ authuserid: inviteData.user.id, isactive: true })
+    .update({ authuserid: authUserId, isactive: true })
     .eq("id", account.id);
   if (accountUpdateErr) {
     return NextResponse.json({ error: accountUpdateErr.message }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, sent: "invite" as const });
+  const { error: resetErr } = await supabase.auth.resetPasswordForEmail(memberEmail, {
+    redirectTo,
+  });
+  if (resetErr) {
+    return NextResponse.json({ error: resetErr.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true, sent: "reset" as const });
 }

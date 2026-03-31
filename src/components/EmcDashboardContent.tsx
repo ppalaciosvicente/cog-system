@@ -8,32 +8,29 @@ export function EmcDashboardContent() {
         <h2>Quick Access</h2>
         <ul
           className={forms.listButtons}
-          style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}
+          style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}
         >
           <li>
-            <Link href="/members" className={forms.listButtonLink}>
-              <span className={forms.listButtonIcon}>MEM</span>
-              <span>Members</span>
+            <Link href="/members" className={forms.button}>
+              Members
             </Link>
           </li>
           <li>
-            <Link href="/elders" className={forms.listButtonLink}>
-              <span className={forms.listButtonIcon}>ELD</span>
-              <span>Elders</span>
+            <Link href="/elders" className={forms.button}>
+              Elders
             </Link>
           </li>
           <li>
-            <Link href="/fot-reg" className={forms.listButtonLink}>
-              <span className={forms.listButtonIcon}>FOT</span>
-              <span>FOT Registration</span>
+            <Link href="/fot-reg" className={forms.button}>
+              FOT Registration
             </Link>
           </li>
         </ul>
       </section>
 
-      <section className={forms.sectionCard} style={{ marginTop: 12 }}>
+      <section className={forms.sectionCard} style={{ marginTop: 20 }}>
         <h2>Documents</h2>
-        <div style={{ display: "grid", gap: 18 }}>
+        <div style={{ display: "grid", gap: 28 }}>
           <div>
             <h3 style={{ margin: "0 0 10px" }}>Anointing Docs</h3>
             <ul

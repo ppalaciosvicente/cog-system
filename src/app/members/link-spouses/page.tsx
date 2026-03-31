@@ -116,6 +116,8 @@ export default function LinkSpousesPage() {
   const [memberBSearchResults, setMemberBSearchResults] = useState<
     { value: number; label: string }[]
   >([]);
+  const [browseAllA, setBrowseAllA] = useState(false);
+  const [browseAllB, setBrowseAllB] = useState(false);
   const [selectedALabel, setSelectedALabel] = useState("");
   const [selectedBLabel, setSelectedBLabel] = useState("");
   const [skipMemberASearch, setSkipMemberASearch] = useState(false);
@@ -614,6 +616,49 @@ export default function LinkSpousesPage() {
                 ) : null
               ) : null}
             </div>
+            <button
+              type="button"
+              className={forms.button}
+              style={{ marginTop: 6 }}
+              onClick={() => setBrowseAllA((prev) => !prev)}
+            >
+              {browseAllA ? "Hide all contacts" : "Browse all contacts"}
+            </button>
+            {browseAllA ? (
+              <div
+                style={{
+                  marginTop: 8,
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 10,
+                  maxHeight: 240,
+                  overflow: "auto",
+                  padding: 6,
+                  minWidth: 240,
+                }}
+              >
+                {memberOptions
+                  .filter((m) => m.id !== memberBId)
+                  .map((m) => (
+                    <button
+                      key={`browse-a-${m.id}`}
+                      type="button"
+                      className={forms.autocompleteOption}
+                      style={{ width: "100%", textAlign: "left" }}
+                      onClick={() => {
+                        setMemberAId(m.id);
+                        const label = displayName(m);
+                        setSelectedALabel(label);
+                        setMemberASearch(label);
+                        setMemberASearchResults([]);
+                        setSkipMemberASearch(true);
+                        setBrowseAllA(false);
+                      }}
+                    >
+                      {displayName(m)}
+                    </button>
+                  ))}
+              </div>
+            ) : null}
           </Row>
 
           <Row label="Member 2">
@@ -655,6 +700,49 @@ export default function LinkSpousesPage() {
                 ) : null
               ) : null}
             </div>
+            <button
+              type="button"
+              className={forms.button}
+              style={{ marginTop: 6 }}
+              onClick={() => setBrowseAllB((prev) => !prev)}
+            >
+              {browseAllB ? "Hide all contacts" : "Browse all contacts"}
+            </button>
+            {browseAllB ? (
+              <div
+                style={{
+                  marginTop: 8,
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 10,
+                  maxHeight: 240,
+                  overflow: "auto",
+                  padding: 6,
+                  minWidth: 240,
+                }}
+              >
+                {memberOptions
+                  .filter((m) => m.id !== memberAId)
+                  .map((m) => (
+                    <button
+                      key={`browse-b-${m.id}`}
+                      type="button"
+                      className={forms.autocompleteOption}
+                      style={{ width: "100%", textAlign: "left" }}
+                      onClick={() => {
+                        setMemberBId(m.id);
+                        const label = displayName(m);
+                        setSelectedBLabel(label);
+                        setMemberBSearch(label);
+                        setMemberBSearchResults([]);
+                        setSkipMemberBSearch(true);
+                        setBrowseAllB(false);
+                      }}
+                    >
+                      {displayName(m)}
+                    </button>
+                  ))}
+              </div>
+            ) : null}
           </Row>
         </div>
       </div>

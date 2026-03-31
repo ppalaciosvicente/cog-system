@@ -107,6 +107,7 @@ export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
   const [initialIdentity] = useState(() => {
     return appShellIdentityCache;
   });
@@ -146,6 +147,22 @@ export function AppShell({ children }: AppShellProps) {
     setIsContributionAdmin(false);
     setEmcAreasLabel(null);
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function checkSession() {
+      const { data } = await supabase.auth.getSession();
+      if (cancelled) return;
+      if (!data.session && !AUTH_PATH_PREFIXES.some((prefix) => pathname?.startsWith(prefix))) {
+        router.replace("/login");
+      }
+      setAuthReady(true);
+    }
+    void checkSession();
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname, router, supabase]);
 
   const rehydrateShellIdentity = useCallback(() => {
     const nextCache = loadPersistedAppShellIdentityCache();
@@ -406,6 +423,7 @@ export function AppShell({ children }: AppShellProps) {
     : null;
 
   if (!showShell) return <>{children}</>;
+  if (!authReady) return null;
 
   const isContributionPath = Boolean(pathname?.startsWith("/contributions"));
   const isSystemChooser = pathname === "/";

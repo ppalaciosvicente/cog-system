@@ -1104,7 +1104,7 @@ export default function MembersPage() {
 
       {/* top bar */}
       <div className={forms.topBar} style={{ marginTop: 10 }}>
-        <div className={forms.topGroup}>
+          <div className={forms.topGroup} style={{ marginBottom: 12 }}>
           <label htmlFor="memberSelect" className={forms.topLabel}>
             Select Contact:
           </label>
@@ -1227,7 +1227,7 @@ export default function MembersPage() {
                   setDetailError(null);
                 }}
               >
-                Edit info
+                Edit
               </button>
             ) : (
               <button
@@ -1249,7 +1249,7 @@ export default function MembersPage() {
               onClick={() => saveChanges()}
               style={{ opacity: !dirty || !editMode ? 0.5 : 1 }}
             >
-              Save Changes
+              Save
             </button>
 
             {saveMsg && <span className={forms.actionsMsg}>{saveMsg}</span>}
@@ -1359,9 +1359,21 @@ export default function MembersPage() {
                     background: "#fff",
                     border: "1px solid #d1d5db",
                     color: "#111827",
+                    textDecoration: "none",
+                    transition: "background 0.15s ease, border-color 0.15s ease, color 0.15s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLAnchorElement).style.background = "#f9fafb";
+                    (e.currentTarget as HTMLAnchorElement).style.borderColor = "#cfd4dc";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLAnchorElement).style.background = "#fff";
+                    (e.currentTarget as HTMLAnchorElement).style.borderColor = "#d1d5db";
                   }}
                 >
-                  <span aria-hidden="true">📍</span>
+                  <span aria-hidden="true" style={{ textDecoration: "none" }}>
+                    📍
+                  </span>
                   View Location on Map
                 </a>
               ) : (
@@ -1376,9 +1388,12 @@ export default function MembersPage() {
                     background: "#fff",
                     border: "1px solid #e5e7eb",
                     color: "#9ca3af",
+                    textDecoration: "none",
                   }}
                 >
-                  <span aria-hidden="true">📍</span>
+                  <span aria-hidden="true" style={{ textDecoration: "none" }}>
+                    📍
+                  </span>
                   View Location on Map
                 </button>
               )}

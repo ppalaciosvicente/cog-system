@@ -458,12 +458,12 @@ export function AppShell({ children }: AppShellProps) {
           aria-label="Open navigation menu"
           onClick={() => setMobileOpen(true)}
         >
-          <svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true">
+          <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
             <path
-              d="M5 7h18M5 14h18M5 21h18"
+              d="M6 8h20M6 16h20M6 24h20"
               fill="none"
               stroke="currentColor"
-              strokeWidth="2.6"
+              strokeWidth="3"
               strokeLinecap="round"
             />
           </svg>

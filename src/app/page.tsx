@@ -21,6 +21,7 @@ export default function HomePage() {
 
   useEffect(() => {
     let cancelled = false;
+    let redirected = false;
 
     async function run() {
       setLoading(true);
@@ -33,6 +34,7 @@ export default function HomePage() {
         if (!access.ok) {
           if (access.unauthenticated) {
             router.replace("/login");
+            redirected = true;
             return;
           }
 
@@ -64,7 +66,7 @@ export default function HomePage() {
           setError("You are logged in, but you do not have access to any app area.");
         }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled && !redirected) setLoading(false);
       }
     }
 

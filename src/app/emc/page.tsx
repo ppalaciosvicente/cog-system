@@ -83,7 +83,7 @@ export default function EmcHomePage() {
 
   return (
     <main className={forms.page}>
-      <h1 className={forms.h1}>EMC</h1>
+      <h1 className={forms.h1}>EMC Dashboard</h1>
       {!error && roleLabel ? (
         <p style={{ margin: "8px 0 0", fontStyle: "italic" }}>
           Logged in as: {roleLabel}

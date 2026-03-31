@@ -31,7 +31,7 @@ const DASHBOARD_LINKS = [
 export default function ContributionsDashboardPage() {
   return (
     <ContributionPage
-      title="Contributions"
+      title="Contributions Dashboard"
       showBackLink={false}
       showRoleSummary
     >

@@ -37,7 +37,7 @@ export function EmcDashboardContent() {
         <h2>Documents</h2>
         <div style={{ display: "grid", gap: 34 }}>
           <div>
-            <h3 style={{ margin: "0 0 10px" }}>Anointing Docs</h3>
+            <h3 style={{ margin: "0 0 10px" }}>Anointing</h3>
             <ul
               className={forms.listButtons}
               style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}
@@ -82,7 +82,7 @@ export function EmcDashboardContent() {
           </div>
 
           <div>
-            <h3 style={{ margin: "0 0 10px" }}>Baptism Docs</h3>
+            <h3 style={{ margin: "0 0 10px" }}>Baptism</h3>
             <ul
               className={forms.listButtons}
               style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}

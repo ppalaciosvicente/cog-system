@@ -1143,49 +1143,6 @@ export default function MembersPage() {
               ) : null
             ) : null}
           </div>
-          <button
-            type="button"
-            className={forms.button}
-            style={{ marginLeft: 8 }}
-            onClick={() => setBrowseAll((prev) => !prev)}
-          >
-            {browseAll ? "Hide all contacts" : "Browse all contacts"}
-          </button>
-
-          {browseAll ? (
-            <div
-              style={{
-                marginTop: 10,
-                border: "1px solid #e5e7eb",
-                borderRadius: 10,
-                maxHeight: 280,
-                overflow: "auto",
-                padding: 6,
-                minWidth: 320,
-              }}
-            >
-              {sortedMemberOptions.map((m) => (
-                <button
-                  key={`browse-${m.id}`}
-                  type="button"
-                  className={forms.autocompleteOption}
-                  style={{ width: "100%", textAlign: "left" }}
-                  onClick={() => {
-                    setSelectedId(m.id);
-                    const label = displayName(m);
-                    setSelectedLabel(label);
-                    setMemberSearch(label);
-                    setSearchResults([]);
-                    setSkipMemberSearch(true);
-                    setBrowseAll(false);
-                  }}
-                >
-                  {displayName(m)}
-                </button>
-              ))}
-            </div>
-          ) : null}
-
           {selectedHouseholdMembers.length > 1 && (
             <>
               <label htmlFor="householdRecordSelect" className={forms.topLabel}>
@@ -1207,6 +1164,49 @@ export default function MembersPage() {
               </select>
             </>
           )}
+
+          <button
+            type="button"
+            className={forms.button}
+            style={{ marginLeft: 8 }}
+            onClick={() => setBrowseAll((prev) => !prev)}
+          >
+            {browseAll ? "Hide all contacts" : "Browse all contacts"}
+          </button>
+
+          {browseAll ? (
+            <div
+              style={{
+                marginTop: 10,
+                border: "1px solid #e5e7eb",
+                borderRadius: 10,
+                maxHeight: 280,
+                overflow: "auto",
+                padding: 6,
+                minWidth: 320,
+              }}
+            >
+              {householdOptions.map((option) => (
+                <button
+                  key={`browse-${option.value}`}
+                  type="button"
+                  className={forms.autocompleteOption}
+                  style={{ width: "100%", textAlign: "left" }}
+                  onClick={() => {
+                    setSelectedId(option.value);
+                    const label = option.label;
+                    setSelectedLabel(label);
+                    setMemberSearch(label);
+                    setSearchResults([]);
+                    setSkipMemberSearch(true);
+                    setBrowseAll(false);
+                  }}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
       </div>
 

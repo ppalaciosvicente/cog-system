@@ -1,8 +1,36 @@
+import Link from "next/link";
 import forms from "@/styles/forms.module.css";
 
 export function EmcDashboardContent() {
   return (
     <>
+      <section className={forms.sectionCard} style={{ marginTop: 12 }}>
+        <h2>Quick Access</h2>
+        <ul
+          className={forms.listButtons}
+          style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}
+        >
+          <li>
+            <Link href="/members" className={forms.listButtonLink}>
+              <span className={forms.listButtonIcon}>MEM</span>
+              <span>Members</span>
+            </Link>
+          </li>
+          <li>
+            <Link href="/elders" className={forms.listButtonLink}>
+              <span className={forms.listButtonIcon}>ELD</span>
+              <span>Elders</span>
+            </Link>
+          </li>
+          <li>
+            <Link href="/fot-reg" className={forms.listButtonLink}>
+              <span className={forms.listButtonIcon}>FOT</span>
+              <span>FOT Registration</span>
+            </Link>
+          </li>
+        </ul>
+      </section>
+
       <section className={forms.sectionCard} style={{ marginTop: 12 }}>
         <h2>Documents</h2>
         <div style={{ display: "grid", gap: 18 }}>

@@ -422,13 +422,13 @@ export function AppShell({ children }: AppShellProps) {
         )
       : EMC_NAV_ITEMS;
 
-  const topTitle = isSystemChooser
+  const topTitle = "Menu";
+
+  const brand = isSystemChooser
     ? "COG PKG Management System"
     : isContributionPath
       ? "Contributions"
       : "EMC";
-
-  const brand = isSystemChooser ? "COG PKG Management System" : topTitle;
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -458,12 +458,12 @@ export function AppShell({ children }: AppShellProps) {
           aria-label="Open navigation menu"
           onClick={() => setMobileOpen(true)}
         >
-          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <svg viewBox="0 0 28 28" width="24" height="24" aria-hidden="true">
             <path
-              d="M4 7h16M4 12h16M4 17h16"
+              d="M5 7h18M5 14h18M5 21h18"
               fill="none"
               stroke="currentColor"
-              strokeWidth="2"
+              strokeWidth="2.6"
               strokeLinecap="round"
             />
           </svg>

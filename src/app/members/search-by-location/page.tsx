@@ -519,14 +519,21 @@ export default function MembersSearchByLocationPage() {
                     <th className={forms.th}>Email</th>
                     <th className={forms.th}>Baptized</th>
                     <th className={forms.th}>Tithing Status</th>
-                    <th className={forms.th}>View</th>
                   </tr>
                 </thead>
                 <tbody>
                   {groupedRows.map((group) => {
                     return (
                       <tr key={group.value}>
-                        <td className={forms.td}>{group.label}</td>
+                        <td className={forms.td}>
+                          <Link
+                            href={`/members?selected=${group.representative.id}`}
+                            className={forms.linkButton}
+                            style={{ textDecoration: "none" }}
+                          >
+                            {group.label}
+                          </Link>
+                        </td>
                         <td className={forms.td}>
                           {renderGroupedAddresses(group.members)}
                         </td>
@@ -566,14 +573,6 @@ export default function MembersSearchByLocationPage() {
                               (m) => normalizeTitheStatusRelation(m.emctithestatus)?.name ?? "",
                             ),
                           )}
-                        </td>
-                        <td className={forms.td}>
-                          <Link
-                            href={`/members?selected=${group.representative.id}`}
-                            className={forms.linkButton}
-                          >
-                            View
-                          </Link>
                         </td>
                       </tr>
                     );

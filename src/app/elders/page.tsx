@@ -25,7 +25,7 @@ function EldersMenuItem({
       <Link href={href} className={forms.listButtonLink}>
         <span className={forms.listButtonIcon}>{icon}</span>
         <span style={{ display: "grid", gap: 2 }}>
-          <strong>{title}</strong>
+          <span style={{ fontWeight: 700 }}>{title}</span>
           <span style={{ fontWeight: 400, color: "#374151" }}>{description}</span>
         </span>
       </Link>

@@ -531,6 +531,13 @@ function CongregationDetailsContent() {
     setAddSearchAttempted(true);
     setAddSearchTruncated(false);
 
+    if (addNameFilter.trim() && addNameFilter.trim().length < 2) {
+      setActionError("Enter at least 2 letters to filter by name.");
+      setMemberOptions([]);
+      setAddSelectedIds([]);
+      return;
+    }
+
     if (!hasFilter) {
       setMemberOptions([]);
       setAddSelectedIds([]);
@@ -911,8 +918,8 @@ function CongregationDetailsContent() {
                   >
                     {addSearchLoading ? "Searching..." : "Search members"}
                   </button>
-                  <span style={{ fontSize: 14, color: "#555" }}>
-                    Enter at least one filter before searching.
+                  <span style={{ fontSize: 14, color: actionError ? "#b91c1c" : "#555" }}>
+                    {actionError ?? "Enter at least one filter before searching."}
                   </span>
                 </div>
 

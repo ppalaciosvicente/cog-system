@@ -858,6 +858,7 @@ function CongregationDetailsContent() {
                     <input
                       id="filter-by-name"
                       className={forms.field}
+                      placeholder="Enter at least 2 letters to filter by name."
                       value={addNameFilter}
                       onChange={(e) => setAddNameFilter(e.target.value)}
                       disabled={saving || addSearchLoading}
@@ -923,7 +924,7 @@ function CongregationDetailsContent() {
                   </span>
                 </div>
 
-                {addSearchTruncated && (
+                    {addSearchTruncated && (
                   <p style={{ margin: "0 0 8px", color: "#555" }}>
                     Showing the first 100 matches. Refine the filters to narrow the list.
                   </p>
@@ -980,12 +981,10 @@ function CongregationDetailsContent() {
                           </td>
                         </tr>
                       ))}
-                      {filteredAddGroups.length === 0 && (
+                      {filteredAddGroups.length === 0 && addSearchAttempted && (
                         <tr>
                           <td className={forms.td} colSpan={5}>
-                            {addSearchAttempted
-                              ? "No members match your filters."
-                              : "Enter at least one filter and search to view members."}
+                            No members match your filters.
                           </td>
                         </tr>
                       )}

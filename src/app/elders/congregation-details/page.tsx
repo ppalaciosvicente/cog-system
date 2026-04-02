@@ -399,6 +399,8 @@ function CongregationDetailsContent() {
     return list;
   }, [memberOptions, congregationId]);
 
+  const addGroups = useMemo(() => buildMemberGroups(addOptions), [addOptions]);
+
   function displayStateName(m: LocationRow) {
     const cc = normalizeCode(m.countrycode);
     const sc = normalizeCode(m.statecode);
@@ -446,23 +448,38 @@ function CongregationDetailsContent() {
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [addCountryCode, australiaStateNameByCode, canadaStateNameByCode, usStateNameByCode]);
 
-  const filteredAddOptions = useMemo(() => {
+  const filteredAddGroups = useMemo(() => {
     const nameQ = addNameFilter.trim().toLowerCase();
     const cityQ = addCityFilter.trim().toLowerCase();
-
-    return addOptions.filter((m) => {
-      if (addCountryCode && normalizeCode(m.countrycode) !== addCountryCode) return false;
-      if (addStateCode && normalizeCode(m.statecode) !== addStateCode) return false;
-      if (nameQ && !displayName(m).toLowerCase().includes(nameQ)) return false;
-      if (cityQ && !(m.city ?? "").toLowerCase().includes(cityQ)) return false;
+    return addGroups.filter((group) => {
+      const members = group.members;
+      if (
+        addCountryCode &&
+        !members.some((m) => normalizeCode(m.countrycode) === addCountryCode)
+      ) {
+        return false;
+      }
+      if (
+        addStateCode &&
+        !members.some((m) => normalizeCode(m.statecode) === addStateCode)
+      ) {
+        return false;
+      }
+      if (
+        nameQ &&
+        !members.some((m) => displayName(m).toLowerCase().includes(nameQ))
+      ) {
+        return false;
+      }
+      if (
+        cityQ &&
+        !members.some((m) => (m.city ?? "").toLowerCase().includes(cityQ))
+      ) {
+        return false;
+      }
       return true;
     });
-  }, [addOptions, addCountryCode, addStateCode, addNameFilter, addCityFilter]);
-
-  const filteredAddGroups = useMemo(
-    () => buildMemberGroups(filteredAddOptions),
-    [filteredAddOptions],
-  );
+  }, [addGroups, addCountryCode, addStateCode, addNameFilter, addCityFilter]);
 
   useEffect(() => {
     if (!showAddMembers || !addSearchAttempted) return;
@@ -472,9 +489,14 @@ function CongregationDetailsContent() {
     setAddSearchAttempted(false);
   }, [addCityFilter, addCountryCode, addNameFilter, addStateCode, showAddMembers, addSearchAttempted]);
 
+  const visibleMemberIds = useMemo(
+    () => filteredAddGroups.flatMap((g) => g.memberIds),
+    [filteredAddGroups],
+  );
+
   const allVisibleSelected =
-    filteredAddOptions.length > 0 &&
-    filteredAddOptions.every((m) => addSelectedIds.includes(m.id));
+    visibleMemberIds.length > 0 &&
+    visibleMemberIds.every((id) => addSelectedIds.includes(id));
 
   function toggleAddSelectedGroup(memberIds: number[]) {
     const allSelected = memberIds.every((memberId) => addSelectedIds.includes(memberId));
@@ -486,14 +508,13 @@ function CongregationDetailsContent() {
   }
 
   function toggleSelectAllVisible(checked: boolean) {
-    const visibleIds = filteredAddOptions.map((m) => m.id);
     if (checked) {
       setAddSelectedIds((prev) =>
-        Array.from(new Set([...prev, ...visibleIds])),
+        Array.from(new Set([...prev, ...visibleMemberIds])),
       );
       return;
     }
-    setAddSelectedIds((prev) => prev.filter((id) => !visibleIds.includes(id)));
+    setAddSelectedIds((prev) => prev.filter((id) => !visibleMemberIds.includes(id)));
   }
 
   async function handleSearchAddMembers() {
@@ -513,6 +534,7 @@ function CongregationDetailsContent() {
     if (!hasFilter) {
       setMemberOptions([]);
       setAddSelectedIds([]);
+      setActionError("Enter at least one filter before searching.");
       return;
     }
 
@@ -543,10 +565,43 @@ function CongregationDetailsContent() {
         return;
       }
 
-      const nextOptions = Array.isArray(payload?.members) ? payload.members : [];
+      let nextOptions = Array.isArray(payload?.members) ? payload.members : [];
+
+      // Ensure households are shown: if any result belongs to a household, fetch the rest of that household.
+      const householdIds = Array.from(
+        new Set(
+          nextOptions
+            .map((m) => m.householdid)
+            .filter((id): id is number => Number.isFinite(id)),
+        ),
+      );
+      if (householdIds.length > 0) {
+        const { data: householdMembers, error: hhErr } = await supabase
+          .from("emcmember")
+          .select(
+            "id,fname,lname,email,homephone,cellphone,city,statecode,countrycode,congregationid,householdid,spouseid",
+          )
+          .in("householdid", householdIds)
+          .eq("statusid", 1);
+        if (!hhErr && Array.isArray(householdMembers)) {
+          const merged = [...nextOptions];
+          const existingIds = new Set(merged.map((m) => m.id));
+          (householdMembers as MemberOptionRow[]).forEach((m) => {
+            if (!existingIds.has(m.id)) merged.push(m);
+          });
+          nextOptions = merged;
+        }
+      }
+
       setMemberOptions(nextOptions);
       setAddSelectedIds((prev) => prev.filter((id) => nextOptions.some((m) => m.id === id)));
       setAddSearchTruncated(Boolean(payload?.truncated));
+      if (nextOptions.length === 0) {
+        setActionError("No members match your filters.");
+      }
+      if (nextOptions.length === 0) {
+        setActionError("No members match your filters.");
+      }
     } finally {
       setAddSearchLoading(false);
     }

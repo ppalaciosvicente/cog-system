@@ -990,7 +990,7 @@ function CongregationDetailsContent() {
             </>
           )}
 
-          {actionError && <p className={forms.error}>{actionError}</p>}
+          {actionError && !addSearchAttempted && <p className={forms.error}>{actionError}</p>}
           {actionMsg && <p>{actionMsg}</p>}
         </div>
       )}

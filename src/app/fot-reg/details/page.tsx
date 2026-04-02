@@ -157,11 +157,13 @@ function FotRegistrationDetailsInner() {
     return "Unknown";
   }, [locationId, locationName]);
 
+  const headingText = loading
+    ? "Loading FoT registrations…"
+    : `Members registered for ${titleLocation}: ${totalAttendance}`;
+
   return (
     <main className={forms.page}>
-      <h1 className={forms.h1}>
-        Members registered for {titleLocation}: {totalAttendance}
-      </h1>
+      <h1 className={forms.h1}>{headingText}</h1>
       <div className={forms.backRow}>
         <BackLink
           fallbackHref="/fot-reg"

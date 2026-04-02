@@ -61,6 +61,11 @@ export default function EldersAddPage() {
 
   const [memberOptions, setMemberOptions] = useState<MemberOption[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [memberSearch, setMemberSearch] = useState("");
+  const [memberSearchResults, setMemberSearchResults] = useState<MemberOption[]>([]);
+  const [selectedLabel, setSelectedLabel] = useState("");
+  const [skipMemberSearch, setSkipMemberSearch] = useState(false);
+  const [browseAll, setBrowseAll] = useState(false);
 
   const [detailLoading, setDetailLoading] = useState(false);
   const [form, setForm] = useState<MemberDetail | null>(null);
@@ -212,6 +217,37 @@ export default function EldersAddPage() {
       cancelled = true;
     };
   }, [router, supabase]);
+
+  useEffect(() => {
+    if (skipMemberSearch) {
+      setSkipMemberSearch(false);
+      setMemberSearchResults([]);
+      return;
+    }
+    const term = memberSearch.trim().toLowerCase();
+    if (term && term === selectedLabel.trim().toLowerCase()) {
+      setMemberSearchResults([]);
+      return;
+    }
+    if (term.length < 2) {
+      setMemberSearchResults([]);
+      return;
+    }
+    const results = sortedOptions
+      .filter((m) => displayName(m).toLowerCase().includes(term))
+      .slice(0, 50);
+    setMemberSearchResults(results);
+  }, [memberSearch, selectedLabel, skipMemberSearch, sortedOptions]);
+
+  useEffect(() => {
+    if (selectedId == null) return;
+    const match = sortedOptions.find((m) => m.id === selectedId);
+    if (match) {
+      const label = displayName(match);
+      setSelectedLabel(label);
+      setMemberSearch(label);
+    }
+  }, [selectedId, sortedOptions]);
 
   useEffect(() => {
     let cancelled = false;
@@ -428,21 +464,83 @@ export default function EldersAddPage() {
             Select Member:
           </label>
 
-          <select
-            id="memberSelect"
-            value={selectedId ?? ""}
-            onChange={(e) =>
-              setSelectedId(e.target.value ? Number(e.target.value) : null)
-            }
-            className={forms.selectContact}
+          <div className={forms.autocompleteWrap} style={{ minWidth: 260 }}>
+            <input
+              id="memberSelect"
+              type="search"
+              className={forms.field}
+              placeholder="Type at least 2 letters to search"
+              value={memberSearch}
+              onChange={(e) => setMemberSearch(e.target.value)}
+            />
+            {memberSearch.trim().length >= 2 ? (
+              memberSearchResults.length ? (
+                <div className={forms.autocompleteMenu} role="listbox" aria-label="Matching members">
+                  {memberSearchResults.map((m) => (
+                    <button
+                      key={`member-opt-${m.id}`}
+                      type="button"
+                      className={forms.autocompleteOption}
+                      onClick={() => {
+                        setSelectedId(m.id);
+                        const label = displayName(m);
+                        setSelectedLabel(label);
+                        setMemberSearch(label);
+                        setMemberSearchResults([]);
+                        setSkipMemberSearch(true);
+                        setBrowseAll(false);
+                      }}
+                    >
+                      {displayName(m)}
+                    </button>
+                  ))}
+                </div>
+              ) : memberSearch.trim() !== selectedLabel.trim() ? (
+                <p style={{ margin: 4, color: "#6b7280" }}>No matches.</p>
+              ) : null
+            ) : null}
+          </div>
+          <button
+            type="button"
+            className={forms.button}
+            style={{ marginLeft: 8 }}
+            onClick={() => setBrowseAll((prev) => !prev)}
           >
-            <option value="">(choose a member)</option>
-            {sortedOptions.map((m) => (
-              <option key={m.id} value={m.id}>
-                {displayName(m)}
-              </option>
-            ))}
-          </select>
+            {browseAll ? "Hide all members" : "Browse all members"}
+          </button>
+          {browseAll ? (
+            <div
+              style={{
+                marginTop: 8,
+                border: "1px solid #e5e7eb",
+                borderRadius: 10,
+                maxHeight: 240,
+                overflow: "auto",
+                padding: 6,
+                minWidth: 240,
+              }}
+            >
+              {sortedOptions.map((m) => (
+                <button
+                  key={`browse-member-${m.id}`}
+                  type="button"
+                  className={forms.autocompleteOption}
+                  style={{ width: "100%", textAlign: "left" }}
+                  onClick={() => {
+                    setSelectedId(m.id);
+                    const label = displayName(m);
+                    setSelectedLabel(label);
+                    setMemberSearch(label);
+                    setMemberSearchResults([]);
+                    setSkipMemberSearch(true);
+                    setBrowseAll(false);
+                  }}
+                >
+                  {displayName(m)}
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
 
         <div className={forms.topSpacer}>

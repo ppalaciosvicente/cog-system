@@ -291,13 +291,20 @@ export default function EldersListPage() {
                 <th className={forms.th}>Email</th>
                 {isAdmin && <th className={forms.th}>EMC Access*</th>}
                 {isAdmin && <th className={forms.th}>Contribution Access**</th>}
-                {canViewDetails && <th className={forms.th}>View</th>}
               </tr>
             </thead>
             <tbody>
               {rows.map((m) => (
                 <tr key={m.id}>
-                  <td className={forms.td}>{displayName(m)}</td>
+                  <td className={forms.td}>
+                    <Link
+                      href={`/elders/elders-details?selected=${m.id}`}
+                      className={forms.linkButton}
+                      style={{ textDecoration: "none" }}
+                    >
+                      {displayName(m)}
+                    </Link>
+                  </td>
                   <td className={forms.td}>
                     {normalizeElderTypeRelation(m.emceldertype)?.name ?? ""}
                   </td>

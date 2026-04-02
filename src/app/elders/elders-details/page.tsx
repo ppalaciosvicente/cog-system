@@ -810,7 +810,7 @@ export default function EldersDetailsPage() {
                   setDetailError(null);
                 }}
               >
-                Edit info
+                Edit
               </button>
             ) : (
               <button
@@ -833,7 +833,7 @@ export default function EldersDetailsPage() {
               onClick={saveChanges}
               style={{ opacity: !dirty || !editMode ? 0.5 : 1 }}
             >
-              Save Changes
+              Save
             </button>
             <button disabled={!form || sendingInvite} onClick={() => void resendInvitationEmail()}>
               {sendingInvite ? "Sending..." : "Resend Invitation Email"}

@@ -438,6 +438,7 @@ export default function EldersGroupEmailPage() {
           </p>
 
           <div className={forms.col} style={{ gap: 10, marginTop: 12 }}>
+            <label className={forms.label}>Get email addresses of…</label>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <button
                 type="button"
@@ -514,9 +515,9 @@ export default function EldersGroupEmailPage() {
 
           {emailError && <p className={forms.error}>{emailError}</p>}
 
-          <div className={forms.col} style={{ gap: 6 }}>
+          <div className={forms.col} style={{ gap: 6, marginTop: 12 }}>
             <label className={forms.label} htmlFor="elder-area-email-list">
-              Email addresses
+              Email addresses:
             </label>
             <div style={{ display: "grid", gap: 8 }}>
               <textarea
@@ -549,7 +550,7 @@ export default function EldersGroupEmailPage() {
             </div>
           </div>
 
-          <div className={forms.col} style={{ gap: 6 }}>
+          <div className={forms.col} style={{ gap: 6, marginTop: 12 }}>
             <label className={forms.label} htmlFor="elder-area-no-email-list">
               The following contacts have no email address:
             </label>

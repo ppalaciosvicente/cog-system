@@ -990,7 +990,7 @@ function CongregationDetailsContent() {
             </>
           )}
 
-          {actionError && !addSearchAttempted && <p className={forms.error}>{actionError}</p>}
+          {/* actionError is shown inline near the search button */}
           {actionMsg && <p>{actionMsg}</p>}
         </div>
       )}

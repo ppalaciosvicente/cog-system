@@ -835,7 +835,11 @@ export default function EldersDetailsPage() {
             >
               Save
             </button>
-            <button disabled={!form || sendingInvite} onClick={() => void resendInvitationEmail()}>
+            <button
+              className={forms.button}
+              disabled={!form || sendingInvite}
+              onClick={() => void resendInvitationEmail()}
+            >
               {sendingInvite ? "Sending..." : "Resend Invitation Email"}
             </button>
 

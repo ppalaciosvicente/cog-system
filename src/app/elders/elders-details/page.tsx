@@ -839,6 +839,7 @@ export default function EldersDetailsPage() {
               className={forms.button}
               disabled={!form || sendingInvite}
               onClick={() => void resendInvitationEmail()}
+              style={{ background: "#1d4ed8", color: "#fff" }}
             >
               {sendingInvite ? "Sending..." : "Resend Invitation Email"}
             </button>

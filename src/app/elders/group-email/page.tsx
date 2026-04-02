@@ -514,7 +514,7 @@ export default function EldersGroupEmailPage() {
 
           {emailError && <p className={forms.error}>{emailError}</p>}
 
-          <div className={forms.row}>
+          <div className={forms.col} style={{ gap: 6 }}>
             <label className={forms.label} htmlFor="elder-area-email-list">
               Email addresses
             </label>
@@ -549,7 +549,7 @@ export default function EldersGroupEmailPage() {
             </div>
           </div>
 
-          <div className={forms.row}>
+          <div className={forms.col} style={{ gap: 6 }}>
             <label className={forms.label} htmlFor="elder-area-no-email-list">
               The following contacts have no email address:
             </label>

@@ -720,7 +720,6 @@ function CongregationDetailsContent() {
               <th className={forms.th}>Country</th>
               <th className={forms.th}>Email</th>
               <th className={forms.th}>Telephone</th>
-              {canViewMemberDetails && <th className={forms.th}>View</th>}
             </tr>
           </thead>
           <tbody>
@@ -736,7 +735,17 @@ function CongregationDetailsContent() {
                     />
                   </td>
                 )}
-                <td className={forms.td}>{group.label}</td>
+                <td className={forms.td}>
+                  <Link
+                    href={`/members?selected=${group.representative.id}&returnTo=${encodeURIComponent(
+                      `/elders/congregation-details?selected=${congregationId}`,
+                    )}`}
+                    className={forms.linkButton}
+                    style={{ textDecoration: "none" }}
+                  >
+                    {group.label}
+                  </Link>
+                </td>
                 <td className={forms.td}>{joinDistinct(group.members.map((member) => member.city))}</td>
                 <td className={forms.td}>
                   {joinDistinct(group.members.map((member) => displayStateName(member)))}
@@ -748,23 +757,11 @@ function CongregationDetailsContent() {
                 <td className={forms.td}>
                   {joinDistinct(group.members.map((member) => displayPhone(member)))}
                 </td>
-                {canViewMemberDetails && (
-                  <td className={forms.td}>
-                    <Link
-                      href={`/members?selected=${group.representative.id}&returnTo=${encodeURIComponent(
-                        `/elders/congregation-details?selected=${congregationId}`,
-                      )}`}
-                      className={forms.linkButton}
-                    >
-                      View
-                    </Link>
-                  </td>
-                )}
               </tr>
             ))}
             {sortedMemberGroups.length === 0 && (
               <tr>
-                <td className={forms.td} colSpan={isAdmin ? 8 : canViewMemberDetails ? 7 : 6}>
+                <td className={forms.td} colSpan={isAdmin ? 7 : 6}>
                   No members in this congregation.
                 </td>
               </tr>

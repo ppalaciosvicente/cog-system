@@ -726,7 +726,7 @@ export default function EldersAreasPage() {
           <h2 style={{ margin: "0 0 12px", fontSize: 18 }}>
             Add Elder/Area Relationship
           </h2>
-          <div className={forms.row}>
+          <div className={forms.row} style={{ marginBottom: 10 }}>
             <label className={forms.label} htmlFor="elder-area-member">
               Elder
             </label>
@@ -746,7 +746,7 @@ export default function EldersAreasPage() {
               ))}
             </select>
           </div>
-          <div className={forms.row}>
+          <div className={forms.row} style={{ marginBottom: 10 }}>
             <label className={forms.label} htmlFor="elder-area-type">
               Assign
             </label>
@@ -774,7 +774,7 @@ export default function EldersAreasPage() {
           </div>
 
           {form.assignmentType === "country" && (
-            <div className={forms.row}>
+            <div className={forms.row} style={{ marginBottom: 10 }}>
               <label className={forms.label} htmlFor="elder-area-country">
                 Country
               </label>
@@ -798,7 +798,7 @@ export default function EldersAreasPage() {
 
           {form.assignmentType === "state" && (
             <>
-            <div className={forms.row}>
+            <div className={forms.row} style={{ marginBottom: 10 }}>
               <label className={forms.label} htmlFor="elder-area-state-country">
                 Country
               </label>
@@ -819,7 +819,7 @@ export default function EldersAreasPage() {
                 <option value="AU">Australia</option>
               </select>
             </div>
-            <div className={forms.row}>
+            <div className={forms.row} style={{ marginBottom: 10 }}>
               <label className={forms.label} htmlFor="elder-area-state">
                 {form.stateCountryCode === "CA" ? "Province" : "State"}
               </label>
@@ -852,7 +852,7 @@ export default function EldersAreasPage() {
           )}
 
           {form.assignmentType === "congregation" && (
-            <div className={forms.row}>
+            <div className={forms.row} style={{ marginBottom: 10 }}>
               <label className={forms.label} htmlFor="elder-area-congregation">
                 Congregation
               </label>

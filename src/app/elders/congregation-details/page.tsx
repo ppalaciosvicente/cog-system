@@ -606,9 +606,6 @@ function CongregationDetailsContent() {
       if (nextOptions.length === 0) {
         setActionError("No members match your filters.");
       }
-      if (nextOptions.length === 0) {
-        setActionError("No members match your filters.");
-      }
     } finally {
       setAddSearchLoading(false);
     }
@@ -983,9 +980,7 @@ function CongregationDetailsContent() {
                       ))}
                       {filteredAddGroups.length === 0 && addSearchAttempted && (
                         <tr>
-                          <td className={forms.td} colSpan={5}>
-                            No members match your filters.
-                          </td>
+                          <td className={forms.td} colSpan={5}></td>
                         </tr>
                       )}
                     </tbody>

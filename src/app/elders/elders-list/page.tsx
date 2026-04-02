@@ -318,16 +318,6 @@ export default function EldersListPage() {
                   {isAdmin && (
                     <td className={forms.td}>{contribAccessByMemberId[m.id] ?? "-"}</td>
                   )}
-                  {canViewDetails && (
-                    <td className={forms.td}>
-                      <Link
-                        href={`/elders/elders-details?selected=${m.id}`}
-                        className={forms.linkButton}
-                      >
-                        View
-                      </Link>
-                    </td>
-                  )}
                 </tr>
               ))}
             </tbody>

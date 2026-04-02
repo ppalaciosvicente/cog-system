@@ -437,78 +437,78 @@ export default function EldersGroupEmailPage() {
             account and send them.
           </p>
 
-          <div className={forms.row} style={{ marginTop: 12 }}>
-            <label className={forms.label}>Get email addresses of…</label>
-            <div style={{ display: "grid", gap: 8 }}>
-              <div>
-                <button
-                  type="button"
-                  className={forms.button}
-                  onClick={() => {
-                    setIncludeAllMembers(false);
-                    setSelectedAreaIds(areasWithLabels.map((area) => area.id));
-                  }}
-                  disabled={areasWithLabels.length === 0 || includeAllMembers}
-                >
-                  All of my areas
-                </button>
-                <button
-                  type="button"
-                  className={forms.button}
-                  onClick={() => {
-                    setIncludeAllMembers(false);
-                    setSelectedAreaIds([]);
-                  }}
-                  disabled={areasWithLabels.length === 0 || includeAllMembers}
-                  style={{ marginLeft: 8 }}
-                >
-                  None
-                </button>
-              </div>
-              <div style={{ display: "grid", gap: 10 }}>
-                {areaOptions.map((area) => {
-                  const checked = area.isAllMembers
-                    ? includeAllMembers
-                    : selectedAreaIds.includes(area.id);
-                  return (
-                    <label
-                      key={area.id}
-                      style={{ display: "flex", alignItems: "center", gap: 8 }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={(e) => {
-                          const nextChecked = e.target.checked;
-                          if (area.isAllMembers) {
-                            setIncludeAllMembers(nextChecked);
-                            if (nextChecked) {
-                              setSelectedAreaIds([]);
-                            }
-                            return;
+          <div className={forms.col} style={{ gap: 10, marginTop: 12 }}>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button
+                type="button"
+                className={forms.button}
+                onClick={() => {
+                  setIncludeAllMembers(false);
+                  setSelectedAreaIds(areasWithLabels.map((area) => area.id));
+                }}
+                disabled={areasWithLabels.length === 0 || includeAllMembers}
+              >
+                All of my areas
+              </button>
+              <button
+                type="button"
+                className={forms.button}
+                onClick={() => {
+                  setIncludeAllMembers(false);
+                  setSelectedAreaIds([]);
+                }}
+                disabled={areasWithLabels.length === 0 || includeAllMembers}
+              >
+                None
+              </button>
+            </div>
+
+            <p style={{ margin: 0, color: "#4b5563", fontSize: 13 }}>
+              Or select specific areas below:
+            </p>
+            <div style={{ display: "grid", gap: 10 }}>
+              {areaOptions.map((area) => {
+                const checked = area.isAllMembers
+                  ? includeAllMembers
+                  : selectedAreaIds.includes(area.id);
+                return (
+                  <label
+                    key={area.id}
+                    style={{ display: "flex", alignItems: "center", gap: 8 }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) => {
+                        const nextChecked = e.target.checked;
+                        if (area.isAllMembers) {
+                          setIncludeAllMembers(nextChecked);
+                          if (nextChecked) {
+                            setSelectedAreaIds([]);
                           }
-                          setIncludeAllMembers(false);
-                          setSelectedAreaIds((prev) => {
-                            if (nextChecked) return [...prev, area.id];
-                            return prev.filter((id) => id !== area.id);
-                          });
-                        }}
-                        disabled={includeAllMembers && !area.isAllMembers}
-                      />
-                      <span
-                        style={
-                          area.isAllMembers
-                            ? { fontStyle: "italic", color: "#555" }
-                            : undefined
+                          return;
                         }
-                      >
-                        {area.label}
-                      </span>
-                    </label>
-                  );
-                })}
-                {areaOptions.length === 0 && <span>No areas available.</span>}
-              </div>
+                        setIncludeAllMembers(false);
+                        setSelectedAreaIds((prev) => {
+                          if (nextChecked) return [...prev, area.id];
+                          return prev.filter((id) => id !== area.id);
+                        });
+                      }}
+                      disabled={includeAllMembers && !area.isAllMembers}
+                    />
+                    <span
+                      style={
+                        area.isAllMembers
+                          ? { fontStyle: "italic", color: "#555" }
+                          : undefined
+                      }
+                    >
+                      {area.label}
+                    </span>
+                  </label>
+                );
+              })}
+              {areaOptions.length === 0 && <span>No areas available.</span>}
             </div>
           </div>
 

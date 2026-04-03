@@ -43,17 +43,7 @@ export function ContributionPage({
     let cancelled = false;
 
     async function load() {
-      const cacheValid =
-        cachedContributionAccess &&
-        Date.now() - cachedContributionAccessAt < CONTRIBUTION_ACCESS_CACHE_TTL_MS;
-      if (cacheValid) {
-        if (!cancelled) {
-          setAccess(cachedContributionAccess);
-          setLoading(false);
-        }
-        return;
-      }
-
+      // Always fetch fresh access to avoid stale role state.
       setLoading(true);
 
       try {

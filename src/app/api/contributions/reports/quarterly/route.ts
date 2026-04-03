@@ -197,6 +197,17 @@ function formatFundTypeForLocale(fundType: string, locale: string) {
   return fundType;
 }
 
+function formatContributionTypeForLocale(contributionType: string, locale: string) {
+  const base = locale.toLowerCase();
+  if (!base.startsWith("nl")) {
+    return contributionType;
+  }
+
+  const normalized = normalizeName(contributionType);
+  if (normalized === "tithe/offering") return "Tiende/Offer";
+  return contributionType;
+}
+
 function drawQuarterlyHeader(
   doc: PDFKit.PDFDocument,
   startDate: string,
@@ -354,7 +365,9 @@ function buildQuarterlyPdf({
 
         doc.font("Helvetica").fontSize(10);
         doc.text(formatShortDateLabel(row.dateDeposited, locale), 35, rowY);
-        doc.text(row.contributionType, 101, rowY, { width: 95 });
+        doc.text(formatContributionTypeForLocale(row.contributionType, locale), 101, rowY, {
+          width: 95,
+        });
         doc.text("Y", 229, rowY, { width: 15, align: "center" });
         doc.text(formatFundTypeForLocale(row.fundType, locale), 295, rowY, {
           width: fundTypeWidth,

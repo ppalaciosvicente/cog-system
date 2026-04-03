@@ -649,6 +649,7 @@ export default function ContributionDonorsPage() {
                       setSelectedId("");
                       setDetail(null);
                       setEditDraft(null);
+                      setBrowseAll(false);
                     }}
                   />
                   {!loadingOptions && !selectedId && searchResults.length > 0 ? (

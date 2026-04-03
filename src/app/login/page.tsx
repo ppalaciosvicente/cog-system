@@ -1,19 +1,19 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "../../lib/supabase/client";
 import styles from "@/styles/auth.module.css";
 
-export default function LoginPage() {
+function LoginContent() {
   const supabase = createClient();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [err, setErr] = useState<string | null>(null);
-  const noAccess = useMemo(() => searchParams.get("noAccess") === "1", [searchParams]);
+  const noAccess = searchParams.get("noAccess") === "1";
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -95,5 +95,13 @@ export default function LoginPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginContent />
+    </Suspense>
   );
 }

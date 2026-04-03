@@ -35,7 +35,7 @@ export default function HomePage() {
         if (!access.ok) {
           if (access.unauthenticated) {
             setRedirecting(true);
-            router.replace("/login?noAccess=1");
+            router.replace("/login");
             redirected = true;
             return;
           }
@@ -82,9 +82,7 @@ export default function HomePage() {
     return <main className={forms.page}>Loading…</main>;
   }
 
-  if (redirecting) {
-    return null;
-  }
+  if (redirecting) return null;
 
   async function handleLogout() {
     await supabase.auth.signOut();

@@ -109,6 +109,7 @@ export function AppShell({ children }: AppShellProps) {
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [authReady, setAuthReady] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
   const [initialIdentity] = useState(() => {
     return appShellIdentityCache;
   });
@@ -156,19 +157,21 @@ export function AppShell({ children }: AppShellProps) {
       if (cancelled) return;
       const unauthenticated = Boolean(error) || !data.user;
       if (unauthenticated && !AUTH_PATH_PREFIXES.some((prefix) => pathname?.startsWith(prefix))) {
-        router.replace("/login?noAccess=1");
+        setRedirecting(true);
+        router.replace("/login");
         return;
       }
 
-       // If authenticated, verify they still have app access; otherwise sign out and redirect.
-       if (!unauthenticated) {
-         const access = await loadCurrentAppAccess(supabase);
-         if (!access.ok) {
-           await supabase.auth.signOut().catch(() => undefined);
-           router.replace("/login?noAccess=1");
-           return;
-         }
-       }
+      // If authenticated, verify they still have app access; otherwise sign out and redirect.
+      if (!unauthenticated) {
+        const access = await loadCurrentAppAccess(supabase);
+        if (!access.ok) {
+          await supabase.auth.signOut().catch(() => undefined);
+          setRedirecting(true);
+          router.replace("/login?noAccess=1");
+          return;
+        }
+      }
       setAuthReady(true);
     }
     void checkSession();
@@ -436,7 +439,7 @@ export function AppShell({ children }: AppShellProps) {
     : null;
 
   if (!showShell) return <>{children}</>;
-  if (!authReady) return null;
+  if (!authReady || redirecting) return null;
 
   const isContributionPath = Boolean(pathname?.startsWith("/contributions"));
   const isSystemChooser = pathname === "/";

@@ -277,6 +277,11 @@ export default function FotResendInvitationsPage() {
                 placeholder="Type at least 2 letters to search by name or email"
                 className={forms.field}
               />
+              {query.trim().length >= 2 && filteredRows.length === 0 ? (
+                <p style={{ margin: 4, color: "#b91c1c", fontSize: 13 }}>
+                  No matches.
+                </p>
+              ) : null}
             </div>
             <button type="button" className={`${forms.button} ${forms.linkButtonLight}`} onClick={toggleAllFiltered}>
               Toggle all filtered

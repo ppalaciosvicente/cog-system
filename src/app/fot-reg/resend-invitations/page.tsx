@@ -34,6 +34,9 @@ export default function FotResendInvitationsPage() {
   const [error, setError] = useState<string | null>(null);
   const [rows, setRows] = useState<MemberRow[]>([]);
   const [query, setQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<MemberRow[]>([]);
+  const [skipSearch, setSkipSearch] = useState(false);
+  const [browseAll, setBrowseAll] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [sending, setSending] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -128,13 +131,23 @@ export default function FotResendInvitationsPage() {
 
   const filteredRows = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter((row) => {
-      const name = fullName(row).toLowerCase();
-      const email = String(row.email ?? "").trim().toLowerCase();
-      return name.includes(q) || email.includes(q);
-    });
+    if (!q || q.length < 2) return [];
+    return rows
+      .filter((row) => {
+        const name = fullName(row).toLowerCase();
+        const email = String(row.email ?? "").trim().toLowerCase();
+        return name.includes(q) || email.includes(q);
+      })
+      .slice(0, 50);
   }, [query, rows]);
+
+  useEffect(() => {
+    if (skipSearch) {
+      setSkipSearch(false);
+      return;
+    }
+    setSearchResults(filteredRows);
+  }, [filteredRows, skipSearch]);
 
   function toggleMember(memberId: number) {
     setSelectedIds((prev) => (prev.includes(memberId) ? prev.filter((id) => id !== memberId) : [...prev, memberId]));
@@ -263,14 +276,49 @@ export default function FotResendInvitationsPage() {
       {isAdmin ? (
         <>
           <div className={forms.actions}>
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by name or email"
-              className={forms.field}
-              style={{ maxWidth: 380 }}
-            />
+            <div className={forms.autocompleteWrap} style={{ minWidth: 320 }}>
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setBrowseAll(false);
+                }}
+                placeholder="Type at least 2 letters to search by name or email"
+                className={forms.field}
+              />
+              {query.trim().length >= 2 ? (
+                searchResults.length ? (
+                  <div className={forms.autocompleteMenu} role="listbox" aria-label="Matching members">
+                    {searchResults.map((row) => (
+                      <button
+                        key={`resend-${row.id}`}
+                        type="button"
+                        className={forms.autocompleteOption}
+                        onClick={() => {
+                          toggleMember(row.id);
+                          setQuery(fullName(row));
+                          setSkipSearch(true);
+                          setSearchResults([]);
+                        }}
+                      >
+                        {fullName(row)} — {String(row.email ?? "").trim()}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p style={{ margin: 4, color: "#6b7280" }}>No matches.</p>
+                )
+              ) : null}
+            </div>
+            <button
+              type="button"
+              className={forms.button}
+              style={{ marginLeft: 8 }}
+              onClick={() => setBrowseAll((prev) => !prev)}
+            >
+              {browseAll ? "Hide all members" : "Browse all members"}
+            </button>
             <button type="button" className={`${forms.button} ${forms.linkButtonLight}`} onClick={toggleAllFiltered}>
               Toggle all filtered
             </button>
@@ -292,6 +340,38 @@ export default function FotResendInvitationsPage() {
               </button>
             ) : null}
           </div>
+
+          {browseAll ? (
+            <div
+              style={{
+                marginTop: 8,
+                border: "1px solid #e5e7eb",
+                borderRadius: 10,
+                maxHeight: 280,
+                overflow: "auto",
+                padding: 6,
+                minWidth: 320,
+              }}
+            >
+              {rows.map((row) => (
+                <button
+                  key={`browse-resend-${row.id}`}
+                  type="button"
+                  className={forms.autocompleteOption}
+                  style={{ width: "100%", textAlign: "left" }}
+                  onClick={() => {
+                    toggleMember(row.id);
+                    setQuery(fullName(row));
+                    setSkipSearch(true);
+                    setSearchResults([]);
+                    setBrowseAll(false);
+                  }}
+                >
+                  {fullName(row)} — {String(row.email ?? "").trim()}
+                </button>
+              ))}
+            </div>
+          ) : null}
 
           <div className={forms.tableWrap} style={{ marginTop: 12 }}>
             <table className={forms.table}>

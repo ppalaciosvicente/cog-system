@@ -278,14 +278,6 @@ export default function FotResendInvitationsPage() {
                 className={forms.field}
               />
             </div>
-            <button
-              type="button"
-              className={forms.button}
-              style={{ marginLeft: 8 }}
-              onClick={() => setBrowseAll((prev) => !prev)}
-            >
-              {browseAll ? "Hide all members" : "Browse all members"}
-            </button>
             <button type="button" className={`${forms.button} ${forms.linkButtonLight}`} onClick={toggleAllFiltered}>
               Toggle all filtered
             </button>
@@ -307,36 +299,6 @@ export default function FotResendInvitationsPage() {
               </button>
             ) : null}
           </div>
-
-          {browseAll ? (
-            <div
-              style={{
-                marginTop: 8,
-                border: "1px solid #e5e7eb",
-                borderRadius: 10,
-                maxHeight: 280,
-                overflow: "auto",
-                padding: 6,
-                minWidth: 320,
-              }}
-            >
-              {rows.map((row) => (
-                <button
-                  key={`browse-resend-${row.id}`}
-                  type="button"
-                  className={forms.autocompleteOption}
-                  style={{ width: "100%", textAlign: "left" }}
-                  onClick={() => {
-                    toggleMember(row.id);
-                    setQuery(fullName(row));
-                    setBrowseAll(false);
-                  }}
-                >
-                  {fullName(row)} — {String(row.email ?? "").trim()}
-                </button>
-              ))}
-            </div>
-          ) : null}
 
           <div className={forms.tableWrap} style={{ marginTop: 12 }}>
             <table className={forms.table}>

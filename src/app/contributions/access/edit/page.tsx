@@ -186,6 +186,8 @@ function ContributionAccessEditInner() {
     }
   }, [memberId, accessRows, eligibleMembers, searchResults]);
 
+  const hasExistingAccess = Boolean(row?.roleName);
+
   async function saveChanges() {
     if (!row || saving) return;
     if (roleName === "contrib_user" && countryCodes.length === 0) {
@@ -205,6 +207,7 @@ function ContributionAccessEditInner() {
           memberId: row.memberId,
           roleName: roleName || null,
           countryCodes: roleName === "contrib_user" ? countryCodes : [],
+          sendEmail: !hasExistingAccess,
         }),
       });
       const payload = (await response.json().catch(() => ({}))) as { error?: string };
@@ -372,7 +375,11 @@ function ContributionAccessEditInner() {
                 onClick={() => void saveChanges()}
                 disabled={saving || !row}
               >
-                {saving ? "Saving..." : "Save & Send Email Invitation"}
+                {saving
+                  ? "Saving..."
+                  : hasExistingAccess
+                    ? "Save changes"
+                    : "Save & Send Email Invitation"}
               </button>
             </div>
           </div>

@@ -47,6 +47,7 @@ type UpdatePayload = {
   roleName?: string | null;
   countryCodes?: string[] | null;
   action?: "resend";
+  sendEmail?: boolean;
 };
 
 type EligibleMember = {
@@ -597,10 +598,12 @@ export async function PUT(request: NextRequest) {
   }
 
   const supabase = createServiceRoleClient();
+  const sendEmail = payload.sendEmail !== false;
   const ensured = await ensureActiveAccountForMember(
     supabase,
     request,
     memberId,
+    sendEmail,
   );
   if (ensured.error || !ensured.accountId) {
     return NextResponse.json(

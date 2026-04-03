@@ -111,7 +111,17 @@ export default function FotRegistrationPage() {
         </Link>
       </div>
       {isAdmin ? (
-        <div className={forms.actions} style={{ marginTop: 24 }}>
+        <div className={forms.actions} style={{ marginTop: 24, flexDirection: "column", alignItems: "flex-start" }}>
+          <Link
+            href="/fot-reg/resend-invitations"
+            className={`${forms.linkButton} ${forms.linkButtonLight}`}
+          >
+            Resend specific invitations
+          </Link>
+        </div>
+      ) : null}
+      {isAdmin ? (
+        <div className={forms.actions} style={{ marginTop: 12 }}>
           <Link href="/fot-reg/send-yearly" className={`${forms.linkButton} ${forms.linkButtonDanger}`}>
             Send yearly FoT registrations
           </Link>

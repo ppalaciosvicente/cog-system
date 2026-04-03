@@ -102,9 +102,15 @@ export async function loadCurrentAppAccess(
 
   const appAccess = getAppAccess(roleNames);
   if (!appAccess.canAccessEmc && !appAccess.canAccessContributions) {
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      // ignore sign-out errors; we'll still block access
+    }
     return {
       ok: false,
       error: "You are logged in, but you do not have access to any app area.",
+      unauthenticated: true,
     };
   }
 

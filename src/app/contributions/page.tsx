@@ -20,12 +20,6 @@ const DASHBOARD_LINKS = [
     label: "View Contributions & Download Reports",
     description: "Filter contributions, export CSV/PDF, or download reports.",
   },
-  {
-    href: "/contributions/access",
-    label: "Access Configuration",
-    description: "Manage who can enter contributions and which regions they can access.",
-    adminOnly: true,
-  },
 ];
 
 export default function ContributionsDashboardPage() {
@@ -36,13 +30,26 @@ export default function ContributionsDashboardPage() {
       showRoleSummary
     >
       {(access) => (
-        <div className={forms.actions} style={{ marginTop: 8 }}>
-          {DASHBOARD_LINKS.filter((item) => !item.adminOnly || access.isAdmin).map((item) => (
-            <Link key={item.href} href={item.href} className={forms.button}>
-              {item.label}
-            </Link>
-          ))}
-        </div>
+        <>
+          <div className={forms.actions} style={{ marginTop: 8 }}>
+            {DASHBOARD_LINKS.map((item) => (
+              <Link key={item.href} href={item.href} className={forms.button}>
+                {item.label}
+              </Link>
+            ))}
+          </div>
+
+          {access.isAdmin ? (
+            <div style={{ marginTop: 24 }}>
+              <h3 style={{ margin: "0 0 10px" }}>Administration</h3>
+              <div className={forms.actions} style={{ marginTop: 0 }}>
+                <Link href="/contributions/access" className={forms.button}>
+                  Access Configuration
+                </Link>
+              </div>
+            </div>
+          ) : null}
+        </>
       )}
     </ContributionPage>
   );

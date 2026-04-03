@@ -22,7 +22,7 @@ function EldersMenuItem({
     <li>
       <Link href={href} className={forms.listButtonLink}>
         <span className={forms.listButtonIcon}>{icon}</span>
-        <span style={{ fontWeight: 700 }}>{title}</span>
+        <span>{title}</span>
       </Link>
     </li>
   );

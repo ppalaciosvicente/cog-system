@@ -35,6 +35,7 @@ const SYSTEM_NAV_ITEMS: NavItem[] = [
 const EMC_NAV_ITEMS: NavItem[] = [
   { href: "/emc", label: "Dashboard" },
   { href: "/members", label: "Contacts" },
+  { href: "/elders/group-email", label: "Group Email" },
   { href: "/elders", label: "Elders" },
   { href: "/fot-reg", label: "FoT Registration" },
 ];

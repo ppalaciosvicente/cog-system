@@ -159,6 +159,16 @@ export function AppShell({ children }: AppShellProps) {
         router.replace("/login?noAccess=1");
         return;
       }
+
+       // If authenticated, verify they still have app access; otherwise sign out and redirect.
+       if (!unauthenticated) {
+         const access = await loadCurrentAppAccess(supabase);
+         if (!access.ok) {
+           await supabase.auth.signOut().catch(() => undefined);
+           router.replace("/login?noAccess=1");
+           return;
+         }
+       }
       setAuthReady(true);
     }
     void checkSession();

@@ -87,7 +87,7 @@ function LoginContent() {
 
           {noAccess ? (
             <p className={styles.error} style={{ marginTop: 12 }}>
-              You don&apos;t have access. Please contact an administrator.
+              You do not have access. Please contact an administrator.
             </p>
           ) : null}
 

@@ -329,8 +329,6 @@ export default function FotResendInvitationsPage() {
                   onClick={() => {
                     toggleMember(row.id);
                     setQuery(fullName(row));
-                    setSkipSearch(true);
-                    setSearchResults([]);
                     setBrowseAll(false);
                   }}
                 >

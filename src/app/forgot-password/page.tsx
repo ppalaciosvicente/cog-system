@@ -39,7 +39,7 @@ export default function ForgotPasswordPage() {
   return (
     <div className={styles.page}>
       <div className={styles.card}>
-        <p className={styles.brand}>Elders Management Console</p>
+        <p className={styles.brand}>COG PKG Management System</p>
         <h1 className={styles.title}>Reset your password</h1>
         <p className={styles.subtitle}>
           Enter the email address associated with your account.

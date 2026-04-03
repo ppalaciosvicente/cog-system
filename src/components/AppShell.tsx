@@ -456,6 +456,24 @@ export function AppShell({ children }: AppShellProps) {
         )
       : EMC_NAV_ITEMS;
 
+  const activeHref = (() => {
+    if (!pathname) return null;
+    let best: { href: string; score: number } | null = null;
+    for (const item of navItems) {
+      const href = item.href;
+      let score = -1;
+      if (pathname === href || pathname === `${href}/`) {
+        score = href.length + 1; // prioritize exact match
+      } else if (pathname.startsWith(`${href}/`)) {
+        score = href.length;
+      }
+      if (score > (best?.score ?? -1)) {
+        best = { href, score };
+      }
+    }
+    return best?.href ?? null;
+  })();
+
   const topTitle = "Menu";
 
   const brand = isSystemChooser
@@ -540,9 +558,7 @@ export function AppShell({ children }: AppShellProps) {
         ) : null}
         <nav className={styles.nav} aria-label="Main navigation">
           {navItems.map((item) => {
-            const active = item.href === "/contributions" || item.href === "/emc"
-              ? pathname === item.href
-              : pathname === item.href || pathname?.startsWith(`${item.href}/`);
+            const active = activeHref === item.href;
             return (
               <Link
                 key={item.href}

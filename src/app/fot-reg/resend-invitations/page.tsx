@@ -34,8 +34,6 @@ export default function FotResendInvitationsPage() {
   const [error, setError] = useState<string | null>(null);
   const [rows, setRows] = useState<MemberRow[]>([]);
   const [query, setQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<MemberRow[]>([]);
-  const [skipSearch, setSkipSearch] = useState(false);
   const [browseAll, setBrowseAll] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [sending, setSending] = useState(false);
@@ -140,14 +138,6 @@ export default function FotResendInvitationsPage() {
       })
       .slice(0, 50);
   }, [query, rows]);
-
-  useEffect(() => {
-    if (skipSearch) {
-      setSkipSearch(false);
-      return;
-    }
-    setSearchResults(filteredRows);
-  }, [filteredRows, skipSearch]);
 
   function toggleMember(memberId: number) {
     setSelectedIds((prev) => (prev.includes(memberId) ? prev.filter((id) => id !== memberId) : [...prev, memberId]));
@@ -287,29 +277,6 @@ export default function FotResendInvitationsPage() {
                 placeholder="Type at least 2 letters to search by name or email"
                 className={forms.field}
               />
-              {query.trim().length >= 2 ? (
-                searchResults.length ? (
-                  <div className={forms.autocompleteMenu} role="listbox" aria-label="Matching members">
-                    {searchResults.map((row) => (
-                      <button
-                        key={`resend-${row.id}`}
-                        type="button"
-                        className={forms.autocompleteOption}
-                        onClick={() => {
-                          toggleMember(row.id);
-                          setQuery(fullName(row));
-                          setSkipSearch(true);
-                          setSearchResults([]);
-                        }}
-                      >
-                        {fullName(row)} — {String(row.email ?? "").trim()}
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <p style={{ margin: 4, color: "#6b7280" }}>No matches.</p>
-                )
-              ) : null}
             </div>
             <button
               type="button"

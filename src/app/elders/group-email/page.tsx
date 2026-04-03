@@ -433,7 +433,7 @@ export default function EldersGroupEmailPage() {
         <div style={{ display: "grid", gap: 16 }}>
           <p>
             You can use this page to gather the email addresses from your
-            area(s) and then copy and paste them into the BCC of your own email
+            area(s) and then copy and <strong>paste them into the BCC</strong> of your own email
             account and send them.
           </p>
 

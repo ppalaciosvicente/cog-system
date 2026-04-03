@@ -353,7 +353,7 @@ export default function FotSendYearlyPage() {
 
   return (
     <main className={`${forms.page} ${forms.pageWarn}`}>
-      <h1 className={forms.h1}>Send yearly FoT registrations</h1>
+      <h1 className={forms.h1}>Send yearly FoT invitations</h1>
       <div className={forms.backRow}>
         <BackLink
           fallbackHref="/fot-reg"
@@ -623,7 +623,7 @@ export default function FotSendYearlyPage() {
                 onClick={runSendIssuedEmails}
                 disabled={issuing || emailing || dryRunning}
               >
-                {emailing ? "Sending..." : "Send FoT Emails"}
+                {emailing ? "Sending..." : "Send FoT invitations"}
               </button>
               {lastSuccessStep === "step4" && issueMsg ? (
                 <p className={forms.actionsMsg} style={{ marginTop: 12 }}>

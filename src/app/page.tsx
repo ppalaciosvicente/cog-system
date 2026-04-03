@@ -12,6 +12,7 @@ export default function HomePage() {
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);
+  const [redirecting, setRedirecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [roleSummary, setRoleSummary] = useState<string | null>(null);
   const [appAccess, setAppAccess] = useState({
@@ -33,7 +34,8 @@ export default function HomePage() {
         const access = await loadCurrentAppAccess(supabase);
         if (!access.ok) {
           if (access.unauthenticated) {
-            router.replace("/login");
+            setRedirecting(true);
+            router.replace("/login?noAccess=1");
             redirected = true;
             return;
           }
@@ -78,6 +80,10 @@ export default function HomePage() {
 
   if (loading) {
     return <main className={forms.page}>Loading…</main>;
+  }
+
+  if (redirecting) {
+    return null;
   }
 
   async function handleLogout() {

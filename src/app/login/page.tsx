@@ -1,17 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "../../lib/supabase/client";
 import styles from "@/styles/auth.module.css";
 
 export default function LoginPage() {
   const supabase = createClient();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [err, setErr] = useState<string | null>(null);
+  const noAccess = useMemo(() => searchParams.get("noAccess") === "1", [searchParams]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -82,6 +84,12 @@ export default function LoginPage() {
           <p className={styles.subtitle} style={{ marginTop: 12 }}>
             Invite link expired? Use <em>Forgot password</em> to receive a fresh setup link.
           </p>
+
+          {noAccess ? (
+            <p className={styles.error} style={{ marginTop: 12 }}>
+              You don&apos;t have access. Please contact an administrator.
+            </p>
+          ) : null}
 
           {err && <p className={styles.error}>{err}</p>}
         </form>

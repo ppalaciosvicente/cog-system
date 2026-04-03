@@ -156,7 +156,7 @@ export function AppShell({ children }: AppShellProps) {
       if (cancelled) return;
       const unauthenticated = Boolean(error) || !data.user;
       if (unauthenticated && !AUTH_PATH_PREFIXES.some((prefix) => pathname?.startsWith(prefix))) {
-        router.replace("/login");
+        router.replace("/login?noAccess=1");
         return;
       }
       setAuthReady(true);

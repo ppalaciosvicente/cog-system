@@ -111,7 +111,7 @@ export default function FotRegistrationPage() {
         </Link>
       </div>
       {isAdmin ? (
-        <div style={{ marginTop: 24 }}>
+        <div style={{ marginTop: 32 }}>
           <h3 style={{ margin: "0 0 10px" }}>Administration</h3>
         </div>
       ) : null}

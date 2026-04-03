@@ -21,6 +21,11 @@ export function EmcDashboardContent() {
             </Link>
           </li>
           <li>
+            <Link href="/elders/group-email" className={forms.button} style={{ textDecoration: "none" }}>
+              Group Email
+            </Link>
+          </li>
+          <li>
             <Link href="/elders" className={forms.button} style={{ textDecoration: "none" }}>
               Elders
             </Link>

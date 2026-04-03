@@ -13,21 +13,16 @@ function EldersMenuItem({
   href,
   icon,
   title,
-  description,
 }: {
   href: string;
   icon: string;
   title: string;
-  description: string;
 }) {
   return (
     <li>
       <Link href={href} className={forms.listButtonLink}>
         <span className={forms.listButtonIcon}>{icon}</span>
-        <span style={{ display: "grid", gap: 2 }}>
-          <span style={{ fontWeight: 700 }}>{title}</span>
-          <span style={{ fontWeight: 400, color: "#374151" }}>{description}</span>
-        </span>
+        <span style={{ fontWeight: 700 }}>{title}</span>
       </Link>
     </li>
   );
@@ -142,40 +137,36 @@ export default function EldersPage() {
           <EldersMenuItem
             href="/elders/elders-list"
             icon="EL"
-            title="Elders general listing"
-            description="Table listing all elders"
+            title="Elders List"
           />
           {!isUser && (
             <EldersMenuItem
               href="/elders/elders-details"
               icon="ED"
-              title="Elders details"
-              description="Detailed contact information for each elder"
+              title="Elders Contact Information"
             />
           )}
-          <EldersMenuItem
-            href="/elders/group-email"
-            icon="GE"
-            title="Group email"
-            description="Gather email addresses of members in your area(s) of responsibility for sending emails"
-          />
-          {isAdmin && (
-            <>
+        </ul>
+        {isAdmin && (
+          <>
+            <h3 style={{ margin: "20px 0 10px", fontWeight: 700 }}>Administration</h3>
+            <ul
+              className={forms.listButtons}
+              style={{ gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}
+            >
               <EldersMenuItem
                 href="/elders/areas"
                 icon="AR"
-                title="Elders and areas of responsibility"
-                description="Table listing the areas of responsibility of each elder"
+                title="Areas of Responsibility"
               />
               <EldersMenuItem
                 href="/elders/congregations"
                 icon="CG"
-                title="Congregations"
-                description="List of existing congregations (areas of responsibility that don't match a state/province or country)"
+                title="Congregations Configuration"
               />
-            </>
-          )}
-        </ul>
+            </ul>
+          </>
+        )}
       </section>
     </main>
   );

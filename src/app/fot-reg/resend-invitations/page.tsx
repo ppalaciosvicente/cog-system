@@ -40,6 +40,10 @@ export default function FotResendInvitationsPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [msgIsError, setMsgIsError] = useState(false);
   const [failedRecipients, setFailedRecipients] = useState<FailedRecipient[]>([]);
+  const selectedRows = useMemo(
+    () => rows.filter((row) => selectedIds.includes(row.id)),
+    [rows, selectedIds],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -263,8 +267,57 @@ export default function FotResendInvitationsPage() {
       {error ? <p className={forms.error}>{error}</p> : null}
       {msg ? <p className={msgIsError ? forms.error : forms.actionsMsg}>{msg}</p> : null}
 
-      {isAdmin ? (
-        <>
+          {isAdmin ? (
+            <>
+          {selectedRows.length > 0 && (
+            <div
+              style={{
+                marginBottom: 10,
+                padding: "8px 10px",
+                border: "1px solid #e5e7eb",
+                borderRadius: 10,
+                background: "#f8fafc",
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 8,
+                alignItems: "center",
+              }}
+            >
+              <span style={{ fontWeight: 600, fontSize: 13 }}>Selected ({selectedRows.length}):</span>
+              {selectedRows.map((row) => (
+                <button
+                  key={`selected-pill-${row.id}`}
+                  type="button"
+                  onClick={() => toggleMember(row.id)}
+                  style={{
+                    border: "1px solid #c7d2fe",
+                    background: "#eef2ff",
+                    color: "#1d4ed8",
+                    borderRadius: 9999,
+                    padding: "4px 10px",
+                    fontSize: 13,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    cursor: "pointer",
+                  }}
+                  aria-label={`Remove ${fullName(row)} from selection`}
+                >
+                  {fullName(row)}
+                  <span aria-hidden="true" style={{ fontWeight: 700 }}>×</span>
+                </button>
+              ))}
+              <button
+                type="button"
+                className={forms.button}
+                style={{ padding: "6px 10px", marginLeft: "auto" }}
+                onClick={() => setSelectedIds([])}
+              >
+                Clear all
+              </button>
+            </div>
+          )}
+
           <div className={forms.actions}>
             <div className={forms.autocompleteWrap} style={{ minWidth: 320 }}>
               <input

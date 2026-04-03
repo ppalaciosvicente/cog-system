@@ -678,38 +678,51 @@ export default function ContributionDonorsPage() {
             searchResults.length === 0 ? (
               <p style={{ marginTop: 12 }}>No matching donors found.</p>
             ) : null}
-            <button
-              type="button"
-              className={forms.button}
-              onClick={() => setBrowseAll((prev) => !prev)}
-              style={{ marginTop: 12 }}
-            >
-              {browseAll ? "Hide all donors" : "Browse all donors"}
-            </button>
-            {browseAll ? (
-              <div
-                style={{
-                  marginTop: 10,
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 10,
-                  maxHeight: 260,
-                  overflow: "auto",
-                  padding: 6,
-                }}
-              >
-                {editHouseholdOptions.map((household) => (
-                  <button
-                    key={`browse-donor-${household.value}`}
-                    type="button"
-                    className={forms.autocompleteOption}
-                    style={{ width: "100%", textAlign: "left" }}
-                    onClick={() => handleSelectDonor(household)}
+            {!selectedId && (
+              <>
+                <button
+                  type="button"
+                  className={forms.button}
+                  onClick={() => {
+                    if (!browseAll && editHouseholdOptions.length === 0) {
+                      void ensureEditHouseholdOptions();
+                    }
+                    setBrowseAll((prev) => !prev);
+                  }}
+                  style={{ marginTop: 12 }}
+                >
+                  {browseAll ? "Hide all donors" : "Browse all donors"}
+                </button>
+                {browseAll ? (
+                  <div
+                    style={{
+                      marginTop: 10,
+                      border: "1px solid #e5e7eb",
+                      borderRadius: 10,
+                      maxHeight: 260,
+                      overflow: "auto",
+                      padding: 6,
+                    }}
                   >
-                    {household.label}
-                  </button>
-                ))}
-              </div>
-            ) : null}
+                    {loadingEditOptions ? (
+                      <p style={{ margin: 6, color: "#6b7280" }}>Loading donors…</p>
+                    ) : (
+                      editHouseholdOptions.map((household) => (
+                        <button
+                          key={`browse-donor-${household.value}`}
+                          type="button"
+                          className={forms.autocompleteOption}
+                          style={{ width: "100%", textAlign: "left" }}
+                          onClick={() => handleSelectDonor(household)}
+                        >
+                          {household.label}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                ) : null}
+              </>
+            )}
             {error ? <p className={forms.error}>{error}</p> : null}
           </section>
 

@@ -297,13 +297,17 @@ export default function EldersListPage() {
               {rows.map((m) => (
                 <tr key={m.id}>
                   <td className={forms.td}>
-                    <Link
-                      href={`/elders/elders-details?selected=${m.id}`}
-                      className={forms.linkButton}
-                      style={{ textDecoration: "none" }}
-                    >
-                      {displayName(m)}
-                    </Link>
+                    {canViewDetails ? (
+                      <Link
+                        href={`/elders/elders-details?selected=${m.id}`}
+                        className={forms.linkButton}
+                        style={{ textDecoration: "none" }}
+                      >
+                        {displayName(m)}
+                      </Link>
+                    ) : (
+                      <span>{displayName(m)}</span>
+                    )}
                   </td>
                   <td className={forms.td}>
                     {normalizeElderTypeRelation(m.emceldertype)?.name ?? ""}

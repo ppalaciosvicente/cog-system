@@ -35,6 +35,7 @@ export default function EldersPage() {
   const [error, setError] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isUser, setIsUser] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -92,6 +93,12 @@ export default function EldersPage() {
           setIsAdmin(admin);
           setIsUser(emcUser);
         }
+
+        if (!cancelled && emcUser && !admin && !superuser) {
+          setRedirecting(true);
+          router.replace("/elders/elders-list");
+          return;
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -129,6 +136,7 @@ export default function EldersPage() {
           &lt;- Back to Dashboard
         </BackLink>
       </div>
+      {redirecting ? null : (
       <section className={forms.sectionCard}>
         <ul
           className={forms.listButtons}
@@ -147,11 +155,11 @@ export default function EldersPage() {
             />
           )}
         </ul>
-        {isAdmin && (
-          <>
-            <h3 style={{ margin: "20px 0 10px", fontWeight: 700 }}>Administration</h3>
-            <ul
-              className={forms.listButtons}
+          {isAdmin && (
+            <>
+              <h3 style={{ margin: "20px 0 10px", fontWeight: 700 }}>Administration</h3>
+              <ul
+                className={forms.listButtons}
               style={{ gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}
             >
               <EldersMenuItem
@@ -168,6 +176,7 @@ export default function EldersPage() {
           </>
         )}
       </section>
+      )}
     </main>
   );
 }

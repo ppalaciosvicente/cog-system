@@ -119,9 +119,6 @@ export default function HomePage() {
                   <span className={forms.listButtonIcon}>EMC</span>
                   <span>
                     <span style={{ display: "block" }}>Elders Management Console</span>
-                    <span style={{ display: "block", fontWeight: 400, marginTop: 4 }}>
-                      View/manage members, elders, documents, etc.
-                    </span>
                   </span>
                 </Link>
               </li>
@@ -133,9 +130,6 @@ export default function HomePage() {
                   <span className={forms.listButtonIcon}>CTR</span>
                   <span>
                     <span style={{ display: "block" }}>Contributions</span>
-                    <span style={{ display: "block", fontWeight: 400, marginTop: 4 }}>
-                      View/enter contributions, review donors, create/download reports, etc.
-                    </span>
                   </span>
                 </Link>
               </li>

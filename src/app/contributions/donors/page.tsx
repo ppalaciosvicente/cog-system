@@ -103,6 +103,12 @@ function todayDateString() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function currentYearStartDateString() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 1);
+  return start.toISOString().slice(0, 10);
+}
+
 function dateDaysAgoString(days: number) {
   const date = new Date();
   date.setDate(date.getDate() - days);
@@ -141,7 +147,7 @@ export default function ContributionDonorsPage() {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState<DonorPayload | null>(null);
-  const [startDate, setStartDate] = useState("");
+  const [startDate, setStartDate] = useState(currentYearStartDateString());
   const [endDate, setEndDate] = useState(todayDateString());
   const [editDraft, setEditDraft] = useState<EditDraft | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
@@ -618,7 +624,7 @@ export default function ContributionDonorsPage() {
     setSelectedId(String(option.value));
     setDonorQuery(option.label);
     setSearchResults([]);
-    setStartDate("");
+    setStartDate(currentYearStartDateString());
     setEndDate(todayDateString());
     setShowDetails(false);
   }

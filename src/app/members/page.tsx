@@ -1055,51 +1055,6 @@ export default function MembersPage() {
         <Link href="/members/search-by-location" className={forms.linkButton}>
           Search by State/Country
         </Link>
-        {isAdmin && (
-          <Link
-            href="/members/not-in-fellowship"
-            className={`${forms.linkButton} ${forms.linkButtonWarn}`}
-          >
-            Members not in fellowship
-          </Link>
-        )}
-        {isAdmin && (
-          <Link href="/members/new" className={forms.linkButton}>
-            Add New Contact
-          </Link>
-        )}
-        {isAdmin && (
-          <button
-            type="button"
-            className={forms.button}
-            disabled={linkableMemberOptions.length < 2}
-            onClick={() => {
-              const params = new URLSearchParams({ returnTo: "/members" });
-              if (selectedId) params.set("selected", String(selectedId));
-              router.push(`/members/link-spouses?${params.toString()}`);
-            }}
-          >
-            Link spouses
-          </button>
-        )}
-        {isAdmin && (
-          <button
-            type="button"
-            className={forms.button}
-            disabled={linkedHouseholdOptions.length === 0}
-            onClick={() => {
-              const params = new URLSearchParams({ returnTo: "/members" });
-              if (selectedId) params.set("selected", String(selectedId));
-              const selectedHouseholdId = selectedHouseholdMembers[0]?.householdid ?? null;
-              if (selectedHouseholdId) {
-                params.set("household", String(selectedHouseholdId));
-              }
-              router.push(`/members/unlink-spouses?${params.toString()}`);
-            }}
-          >
-            Unlink spouses
-          </button>
-        )}
       </div>
 
       {/* top bar */}
@@ -1701,6 +1656,51 @@ export default function MembersPage() {
           </div>
         </div>
       )}
+
+      {isAdmin && (
+        <section style={{ marginTop: 28 }}>
+          <h3 style={{ margin: "0 0 10px" }}>Administration</h3>
+          <div className={forms.actions} style={{ flexWrap: "wrap", gap: 8 }}>
+            <Link
+              href="/members/not-in-fellowship"
+              className={`${forms.linkButton} ${forms.linkButtonWarn}`}
+            >
+              Members not in fellowship
+            </Link>
+            <Link href="/members/new" className={forms.linkButton}>
+              Add New Contact
+            </Link>
+            <button
+              type="button"
+              className={forms.button}
+              disabled={linkableMemberOptions.length < 2}
+              onClick={() => {
+                const params = new URLSearchParams({ returnTo: "/members" });
+                if (selectedId) params.set("selected", String(selectedId));
+                router.push(`/members/link-spouses?${params.toString()}`);
+              }}
+            >
+              Link spouses
+            </button>
+            <button
+              type="button"
+              className={forms.button}
+              disabled={linkedHouseholdOptions.length === 0}
+              onClick={() => {
+                const params = new URLSearchParams({ returnTo: "/members" });
+                if (selectedId) params.set("selected", String(selectedId));
+                const selectedHouseholdId = selectedHouseholdMembers[0]?.householdid ?? null;
+                if (selectedHouseholdId) {
+                  params.set("household", String(selectedHouseholdId));
+                }
+                router.push(`/members/unlink-spouses?${params.toString()}`);
+              }}
+            >
+              Unlink spouses
+            </button>
+          </div>
+        </section>
+      )}
     </main>
   );
 }
@@ -1735,7 +1735,7 @@ function TextRow({
     <Row label={label}>
       <input
         value={value}
-        disabled={disabled}
+        readOnly={disabled}
         onChange={(e) => onChange(e.target.value)}
         className={forms.field}
       />
@@ -1758,7 +1758,7 @@ function TextAreaRow({
     <Row label={label}>
       <textarea
         value={value}
-        disabled={disabled}
+        readOnly={disabled}
         onChange={(e) => onChange(e.target.value)}
         className={`${forms.field} ${forms.textarea}`}
       />

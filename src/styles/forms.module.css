@@ -135,7 +135,7 @@
 /* Label + control rows */
 .row {
   display: grid;
-  grid-template-columns: 160px 1fr;
+  grid-template-columns: 130px 1fr;
   gap: 12px;
   align-items: center;
 }
@@ -204,6 +204,13 @@
   background: #fff;
   color: #111827;
   font-family: inherit;
+}
+
+.field:disabled,
+.field[disabled] {
+  background: #fff;
+  color: #111827;
+  opacity: 1;
 }
 
 .field:focus {

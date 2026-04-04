@@ -108,6 +108,7 @@
 
   .fieldRow {
     grid-template-columns: 1fr;
+    gap: 8px;
   }
 
   .phoneRow {
@@ -116,10 +117,15 @@
 
   .groupRow {
     grid-template-columns: 1fr;
+    gap: 10px;
   }
 
   .copyButtons {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .selectRow {
+    grid-template-columns: 1fr;
   }
 }
 

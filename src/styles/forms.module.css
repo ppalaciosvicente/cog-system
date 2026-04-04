@@ -145,8 +145,8 @@
 /* Label + control rows */
 .row {
   display: grid;
-  grid-template-columns: minmax(100px, 30%) 1fr;
-  gap: 6px;
+  grid-template-columns: minmax(110px, 220px) 1fr;
+  gap: 8px;
   align-items: center;
 }
 
@@ -163,6 +163,18 @@
 
   .label {
     margin-bottom: 2px;
+  }
+}
+
+@media (max-width: 900px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .row {
+    grid-template-columns: minmax(100px, 200px) 1fr;
+    gap: 6px;
   }
 }
 

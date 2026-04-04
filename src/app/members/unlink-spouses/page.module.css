@@ -38,4 +38,8 @@
   .splitGrid {
     grid-template-columns: 1fr;
   }
+
+  .reviewCard {
+    gap: 8px;
+  }
 }

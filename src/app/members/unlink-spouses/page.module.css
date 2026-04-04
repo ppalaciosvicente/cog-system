@@ -44,13 +44,6 @@
   }
 }
 
-.formCard {
-  max-width: 720px;
-  margin: 0 auto;
-  display: grid;
-  gap: 12px;
-}
-
 .rowStack {
   display: flex;
   flex-direction: column;

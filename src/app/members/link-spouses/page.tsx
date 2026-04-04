@@ -575,10 +575,10 @@ export default function LinkSpousesPage() {
         </BackLink>
       </div>
 
-      <div className={`${forms.sectionCard} ${styles.formCard}`} style={{ maxWidth: 640, margin: "0 auto" }}>
+      <div className={`${forms.sectionCard} ${styles.formCard}`}>
         <div className={styles.selectRow}>
           <Row label="Member 1">
-            <div className={forms.autocompleteWrap} style={{ width: "100%", maxWidth: 520 }}>
+            <div className={forms.autocompleteWrap} style={{ width: "100%" }}>
               <input
                 type="search"
                 className={forms.field}
@@ -662,7 +662,7 @@ export default function LinkSpousesPage() {
           </Row>
 
           <Row label="Member 2">
-            <div className={forms.autocompleteWrap} style={{ width: "100%", maxWidth: 520 }}>
+            <div className={forms.autocompleteWrap} style={{ width: "100%" }}>
               <input
                 type="search"
                 className={forms.field}

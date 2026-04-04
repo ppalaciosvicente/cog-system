@@ -619,7 +619,7 @@ export default function LinkSpousesPage() {
             <button
               type="button"
               className={forms.button}
-              style={{ marginTop: 6 }}
+              style={{ marginTop: 6, width: "100%" }}
               onClick={() => setBrowseAllA((prev) => !prev)}
             >
               {browseAllA ? "Hide all contacts" : "Browse all contacts"}
@@ -703,7 +703,7 @@ export default function LinkSpousesPage() {
             <button
               type="button"
               className={forms.button}
-              style={{ marginTop: 6 }}
+              style={{ marginTop: 6, width: "100%" }}
               onClick={() => setBrowseAllB((prev) => !prev)}
             >
               {browseAllB ? "Hide all contacts" : "Browse all contacts"}

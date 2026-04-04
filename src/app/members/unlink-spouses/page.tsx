@@ -598,7 +598,8 @@ export default function UnlinkSpousesPage() {
                 maxHeight: 260,
                 overflow: "auto",
                 padding: 6,
-                minWidth: 280,
+                minWidth: 220,
+                maxWidth: "100%",
               }}
             >
               {householdOptions.map((option) => (

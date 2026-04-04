@@ -619,7 +619,7 @@ export default function LinkSpousesPage() {
             <button
               type="button"
               className={forms.button}
-              style={{ marginTop: 6, width: "100%" }}
+              style={{ marginTop: 6 }}
               onClick={() => setBrowseAllA((prev) => !prev)}
             >
               {browseAllA ? "Hide all contacts" : "Browse all contacts"}
@@ -633,7 +633,8 @@ export default function LinkSpousesPage() {
                   maxHeight: 240,
                   overflow: "auto",
                   padding: 6,
-                  minWidth: 240,
+                  minWidth: 200,
+                  maxWidth: "100%",
                 }}
               >
                 {memberOptions
@@ -703,7 +704,7 @@ export default function LinkSpousesPage() {
             <button
               type="button"
               className={forms.button}
-              style={{ marginTop: 6, width: "100%" }}
+              style={{ marginTop: 6 }}
               onClick={() => setBrowseAllB((prev) => !prev)}
             >
               {browseAllB ? "Hide all contacts" : "Browse all contacts"}
@@ -717,7 +718,8 @@ export default function LinkSpousesPage() {
                   maxHeight: 240,
                   overflow: "auto",
                   padding: 6,
-                  minWidth: 240,
+                  minWidth: 200,
+                  maxWidth: "100%",
                 }}
               >
                 {memberOptions

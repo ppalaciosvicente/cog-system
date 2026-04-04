@@ -1058,7 +1058,7 @@ export default function MembersPage() {
       </div>
 
       {/* top bar */}
-      <div className={forms.topBar} style={{ marginTop: 24, justifyContent: "center", flexWrap: "wrap", rowGap: 8 }}>
+      <div className={forms.topBar} style={{ marginTop: 24, justifyContent: "flex-start", flexWrap: "wrap", rowGap: 8 }}>
           <div className={forms.topGroup} style={{ marginBottom: 12, alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <label htmlFor="memberSelect" className={forms.topLabel}>
             Select Contact:

@@ -541,9 +541,9 @@ export default function UnlinkSpousesPage() {
         </BackLink>
       </div>
 
-      <div className={forms.sectionCard}>
+      <div className={forms.sectionCard} style={{ maxWidth: 640, margin: "0 auto" }}>
         <Row label="Household">
-          <div className={forms.autocompleteWrap} style={{ minWidth: 320 }}>
+          <div className={forms.autocompleteWrap} style={{ width: "100%", maxWidth: 520 }}>
             <input
               type="search"
               className={forms.field}
@@ -748,9 +748,9 @@ function Row({
   children: React.ReactNode;
 }) {
   return (
-    <div className={forms.row}>
+    <div className={styles.rowStack}>
       <div className={forms.label}>{label}:</div>
-      <div className={forms.control}>{children}</div>
+      <div className={styles.rowControl}>{children}</div>
     </div>
   );
 }

@@ -43,3 +43,21 @@
     gap: 8px;
   }
 }
+
+.formCard {
+  max-width: 640px;
+  margin: 0 auto;
+  display: grid;
+  gap: 12px;
+}
+
+.rowStack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.rowControl {
+  width: 100%;
+}

@@ -575,10 +575,10 @@ export default function LinkSpousesPage() {
         </BackLink>
       </div>
 
-      <div className={forms.sectionCard}>
+      <div className={`${forms.sectionCard} ${styles.formCard}`} style={{ maxWidth: 640, margin: "0 auto" }}>
         <div className={styles.selectRow}>
           <Row label="Member 1">
-            <div className={forms.autocompleteWrap} style={{ minWidth: 260 }}>
+            <div className={forms.autocompleteWrap} style={{ width: "100%", maxWidth: 520 }}>
               <input
                 type="search"
                 className={forms.field}
@@ -662,7 +662,7 @@ export default function LinkSpousesPage() {
           </Row>
 
           <Row label="Member 2">
-            <div className={forms.autocompleteWrap} style={{ minWidth: 260 }}>
+            <div className={forms.autocompleteWrap} style={{ width: "100%", maxWidth: 520 }}>
               <input
                 type="search"
                 className={forms.field}
@@ -930,9 +930,9 @@ function Row({
   children: React.ReactNode;
 }) {
   return (
-    <div className={forms.row}>
+    <div className={styles.rowStack}>
       <div className={forms.label}>{label}:</div>
-      <div className={forms.control}>{children}</div>
+      <div className={styles.rowControl}>{children}</div>
     </div>
   );
 }

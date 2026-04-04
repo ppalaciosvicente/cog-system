@@ -541,7 +541,7 @@ export default function UnlinkSpousesPage() {
         </BackLink>
       </div>
 
-      <div className={forms.sectionCard}>
+      <div className={`${forms.sectionCard} ${styles.noCardMobile}`}>
         <Row label="Household">
           <div className={forms.autocompleteWrap} style={{ width: "100%", maxWidth: 520 }}>
             <input

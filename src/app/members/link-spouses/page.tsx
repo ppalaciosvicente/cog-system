@@ -575,7 +575,7 @@ export default function LinkSpousesPage() {
         </BackLink>
       </div>
 
-      <div className={forms.sectionCard}>
+      <div className={`${forms.sectionCard} ${styles.noCardMobile}`}>
         <div className={styles.selectRow}>
           <Row label="Member 1">
             <div className={forms.autocompleteWrap} style={{ width: "100%", maxWidth: 520 }}>

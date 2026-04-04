@@ -150,6 +150,22 @@
   align-items: center;
 }
 
+@media (max-width: 640px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .label {
+    margin-bottom: 2px;
+  }
+}
+
 .label {
   font-weight: 600;
 }

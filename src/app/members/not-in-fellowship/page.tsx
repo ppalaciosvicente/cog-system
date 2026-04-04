@@ -624,6 +624,12 @@ export default function MembersPage() {
     <main className={`${forms.page} ${forms.pageWarn} ${forms.compactPage}`}>
       <h1 className={forms.title}>Contacts - Not in fellowship</h1>
 
+      <div className={forms.backRow}>
+        <BackLink fallbackHref={backHref} className={`${forms.linkButton} ${forms.linkButtonLight}`}>
+          ← Back to contacts in fellowship
+        </BackLink>
+      </div>
+
       {/* top bar */}
       <div className={forms.topBar}>
         <div className={forms.topGroup}>
@@ -648,12 +654,6 @@ export default function MembersPage() {
               </option>
             ))}
           </select>
-        </div>
-
-        <div className={forms.topSpacer}>
-          <BackLink fallbackHref={backHref} className={`${forms.linkButton} ${forms.linkButtonLight}`}>
-            ← Back to contacts in fellowship
-          </BackLink>
         </div>
       </div>
 

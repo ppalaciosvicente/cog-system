@@ -1058,13 +1058,13 @@ export default function MembersPage() {
       </div>
 
       {/* top bar */}
-      <div className={forms.topBar} style={{ marginTop: 36 }}>
-          <div className={forms.topGroup} style={{ marginBottom: 12 }}>
+      <div className={forms.topBar} style={{ marginTop: 24, justifyContent: "center", flexWrap: "wrap", rowGap: 8 }}>
+          <div className={forms.topGroup} style={{ marginBottom: 12, alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <label htmlFor="memberSelect" className={forms.topLabel}>
             Select Contact:
           </label>
 
-          <div className={forms.autocompleteWrap} style={{ minWidth: 320 }}>
+          <div className={forms.autocompleteWrap} style={{ minWidth: 240, maxWidth: 420 }}>
             <input
               id="memberSelect"
               type="search"

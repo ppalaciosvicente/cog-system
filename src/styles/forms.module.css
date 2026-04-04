@@ -14,6 +14,15 @@
     0 4px 12px rgba(15, 23, 42, 0.03);
 }
 
+@media (max-width: 640px) {
+  .page {
+    padding: 18px 12px;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
 .pageWarn {
   background: #fffdf2;
   border-color: #f3e8b3;
@@ -124,7 +133,7 @@
 
 .col {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   min-width: 0; /* prevent overflow in grid children */
 }
 
@@ -135,8 +144,8 @@
 /* Label + control rows */
 .row {
   display: grid;
-  grid-template-columns: 130px 1fr;
-  gap: 12px;
+  grid-template-columns: minmax(105px, 34%) 1fr;
+  gap: 8px;
   align-items: center;
 }
 

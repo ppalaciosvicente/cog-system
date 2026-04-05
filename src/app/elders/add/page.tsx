@@ -500,7 +500,7 @@ export default function EldersAddPage() {
               ) : null
             ) : null}
           </div>
-          <div className={forms.mobileActionRow} style={{ marginTop: 12 }}>
+          <div className={forms.mobileActionRow} style={{ marginTop: 12, alignItems: "center" }}>
             <button
               type="button"
               className={forms.button}

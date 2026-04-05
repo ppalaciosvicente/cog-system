@@ -269,11 +269,13 @@
   .mobileActionRow {
     width: auto;
     justify-content: flex-start;
+    align-items: center;
   }
 
   .mobileActionRow > * {
     width: auto;
     max-width: 320px;
+    align-self: center;
   }
 }
 

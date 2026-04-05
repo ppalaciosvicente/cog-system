@@ -455,6 +455,7 @@ export default function NewMemberPage() {
             australiaStateNameByCode={australiaStateNameByCode}
             onChangeCountry={setCountry}
             onChangeState={setState}
+            rowGap={8}
           />
         </div>
 

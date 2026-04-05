@@ -38,6 +38,7 @@ type MemberDetail = {
 };
 
 type ElderType = { id: number; name: string };
+type ContribRoleOption = "none" | "contrib_user" | "contrib_admin";
 
 function displayName(m: {
   id: number;
@@ -77,6 +78,7 @@ export default function EldersAddPage() {
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
 
   const [elderTypes, setElderTypes] = useState<ElderType[]>([]);
+  const [contribRole, setContribRole] = useState<ContribRoleOption>("none");
 
   const [countryNameByCode, setCountryNameByCode] = useState<
     Record<string, string>
@@ -511,14 +513,16 @@ export default function EldersAddPage() {
               ) : null
             ) : null}
             </div>
-            <button
-              type="button"
-              className={forms.button}
-              style={{ flex: "0 0 auto", maxWidth: 260 }}
-              onClick={() => setBrowseAll((prev) => !prev)}
-            >
-              {browseAll ? "Hide all members" : "Browse all members"}
-            </button>
+            <div style={{ display: "flex", alignItems: "stretch" }}>
+              <button
+                type="button"
+                className={forms.button}
+                style={{ flex: "0 0 auto", maxWidth: 260, alignSelf: "stretch" }}
+                onClick={() => setBrowseAll((prev) => !prev)}
+              >
+                {browseAll ? "Hide all members" : "Browse all members"}
+              </button>
+            </div>
           </div>
           {browseAll ? (
             <div

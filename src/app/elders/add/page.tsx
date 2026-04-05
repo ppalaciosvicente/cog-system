@@ -503,7 +503,7 @@ export default function EldersAddPage() {
           <button
             type="button"
             className={forms.button}
-            style={{ marginLeft: 8 }}
+            style={{ marginLeft: 8, marginTop: 8, width: "100%", maxWidth: 420 }}
             onClick={() => setBrowseAll((prev) => !prev)}
           >
             {browseAll ? "Hide all members" : "Browse all members"}

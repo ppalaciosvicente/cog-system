@@ -281,7 +281,19 @@ export default function EldersListPage() {
       </div>
 
       {rows.length > 0 ? (
-        <div className={forms.tableWrap} style={{ marginTop: 12 }}>
+        <>
+          <p
+            style={{
+              marginTop: 8,
+              fontStyle: "italic",
+              fontSize: 13,
+              color: "#6b7280",
+            }}
+            className={forms.mobileOnly}
+          >
+            Tip: scroll horizontally to see all columns →
+          </p>
+          <div className={forms.tableWrap} style={{ marginTop: 12 }}>
           <table className={forms.table}>
             <thead>
               <tr>
@@ -326,7 +338,8 @@ export default function EldersListPage() {
               ))}
             </tbody>
           </table>
-        </div>
+          </div>
+        </>
       ) : (
         <p>No elders found.</p>
       )}

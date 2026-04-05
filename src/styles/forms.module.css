@@ -243,6 +243,16 @@
   background: #eef2ff;
 }
 
+.mobileOnly {
+  display: block;
+}
+
+@media (min-width: 801px) {
+  .mobileOnly {
+    display: none;
+  }
+}
+
 /* Inputs */
 .field {
   width: 100%;

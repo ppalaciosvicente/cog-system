@@ -1064,7 +1064,14 @@ export default function MembersPage() {
             Select Contact:
           </label>
 
-          <div className={forms.autocompleteWrap} style={{ minWidth: 240, maxWidth: 420 }}>
+          <div
+            className={forms.autocompleteWrap}
+            style={{
+              minWidth: 240,
+              maxWidth: 420,
+              width: "100%",
+            }}
+          >
             <input
               id="memberSelect"
               type="search"

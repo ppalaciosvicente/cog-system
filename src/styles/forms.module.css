@@ -164,6 +164,19 @@
   .label {
     margin-bottom: 2px;
   }
+
+  .topBar {
+    justify-content: center;
+  }
+
+  .topGroup {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .autocompleteWrap {
+    width: 100%;
+  }
 }
 
 @media (max-width: 900px) {

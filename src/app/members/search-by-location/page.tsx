@@ -444,8 +444,11 @@ export default function MembersSearchByLocationPage() {
         </BackLink>
       </div>
 
-      <div className={forms.actions} style={{ alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
-        <label style={{ display: "grid", gap: 6, minWidth: 240 }}>
+      <div
+        className={forms.actions}
+        style={{ alignItems: "flex-start", gap: 12, flexWrap: "wrap", flexDirection: "column" }}
+      >
+        <label style={{ display: "grid", gap: 8, minWidth: 240 }}>
           <span>Country:</span>
           <select
             value={country}
@@ -462,7 +465,7 @@ export default function MembersSearchByLocationPage() {
         </label>
 
         {usesState && (
-          <label style={{ display: "grid", gap: 6, minWidth: 200 }}>
+          <label style={{ display: "grid", gap: 8, minWidth: 200 }}>
             <span>{isCA ? "Province:" : "State:"}</span>
             <select
               value={stateCode}

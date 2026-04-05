@@ -284,7 +284,7 @@ export default function EldersListPage() {
         <>
           <p
             style={{
-              marginTop: 18,
+              marginTop: 24,
               fontStyle: "italic",
               fontSize: 13,
               color: "#6b7280",

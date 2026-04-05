@@ -253,6 +253,30 @@
   }
 }
 
+.mobileActionRow {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.mobileActionRow > * {
+  width: 100%;
+  max-width: 420px;
+}
+
+@media (min-width: 801px) {
+  .mobileActionRow {
+    width: auto;
+    justify-content: flex-start;
+  }
+
+  .mobileActionRow > * {
+    width: auto;
+    max-width: 320px;
+  }
+}
+
 /* Inputs */
 .field {
   width: 100%;

@@ -500,11 +500,10 @@ export default function EldersAddPage() {
               ) : null
             ) : null}
           </div>
-          <div style={{ width: "100%", display: "flex", justifyContent: "center", marginTop: 12 }}>
+          <div className={forms.mobileActionRow} style={{ marginTop: 12 }}>
             <button
               type="button"
               className={forms.button}
-              style={{ width: "100%", maxWidth: 420 }}
               onClick={() => setBrowseAll((prev) => !prev)}
             >
               {browseAll ? "Hide all members" : "Browse all members"}

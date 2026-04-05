@@ -464,7 +464,18 @@ export default function EldersAddPage() {
             Select Member:
           </label>
 
-          <div className={forms.autocompleteWrap} style={{ minWidth: 260 }}>
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+              alignItems: "center",
+            }}
+          >
+            <div
+              className={forms.autocompleteWrap}
+              style={{ minWidth: 260, flex: "1 1 260px", maxWidth: 420 }}
+            >
             <input
               id="memberSelect"
               type="search"
@@ -499,11 +510,11 @@ export default function EldersAddPage() {
                 <p style={{ margin: 4, color: "#6b7280" }}>No matches.</p>
               ) : null
             ) : null}
-          </div>
-          <div className={forms.mobileActionRow} style={{ marginTop: 12, alignItems: "center" }}>
+            </div>
             <button
               type="button"
               className={forms.button}
+              style={{ flex: "0 0 auto", maxWidth: 260 }}
               onClick={() => setBrowseAll((prev) => !prev)}
             >
               {browseAll ? "Hide all members" : "Browse all members"}

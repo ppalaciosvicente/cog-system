@@ -198,6 +198,7 @@
 
   .topGroupAdd {
     order: 2;
+    margin-bottom: 6px;
   }
 
   .topGroupSelect {

@@ -754,7 +754,7 @@ export default function EldersDetailsPage() {
       <h1 className={forms.h1}>Elders Details</h1>
 
       <div className={forms.topBar}>
-        <div className={`${forms.topSpacer} ${forms.topBack}`}>
+        <div className={forms.topBack}>
           <BackLink fallbackHref="/elders" className={`${forms.linkButton} ${forms.linkButtonLight}`}>
             &lt;- Back
           </BackLink>

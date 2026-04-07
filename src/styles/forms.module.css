@@ -119,6 +119,7 @@
 
 .topGroupSelect {
   flex-basis: 100%;
+  margin-top: 12px;
 }
 
 .topGroupAdd {

@@ -407,6 +407,18 @@ export default function CongregationsPage() {
 
       {sortedRows.length > 0 ? (
         <div className={forms.tableWrap} style={{ marginTop: 12 }}>
+          <p
+            style={{
+              marginTop: 0,
+              marginBottom: 8,
+              fontStyle: "italic",
+              fontSize: 13,
+              color: "#6b7280",
+            }}
+            className={forms.mobileOnly}
+          >
+            Tip: scroll horizontally to see all columns →
+          </p>
           <table className={forms.table}>
             <thead>
               <tr>
@@ -454,11 +466,11 @@ export default function CongregationsPage() {
                       href={`/elders/congregation-details?selected=${row.id}`}
                       className={forms.linkButton}
                     >
-                      View/add/delete members
+                      View/edit members
                     </Link>
                   ) : (
                     <button className={forms.linkButton} disabled>
-                      View/add/delete members
+                      View/edit members
                     </button>
                   )}
                 </td>

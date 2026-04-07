@@ -413,7 +413,7 @@ export default function CongregationsPage() {
                 <th className={forms.th}>Congregation name</th>
                 <th className={forms.th}>Comments</th>
                 <th className={forms.th}>Responsible elder(s)</th>
-                <th className={forms.th}>View members</th>
+                <th className={forms.th}>Configuration</th>
                 {isAdmin && <th className={forms.th}>Edit</th>}
                 {isAdmin && <th className={forms.th}>Delete</th>}
               </tr>
@@ -454,11 +454,11 @@ export default function CongregationsPage() {
                       href={`/elders/congregation-details?selected=${row.id}`}
                       className={forms.linkButton}
                     >
-                      View members
+                      View/add/delete members
                     </Link>
                   ) : (
                     <button className={forms.linkButton} disabled>
-                      View members
+                      View/add/delete members
                     </button>
                   )}
                 </td>

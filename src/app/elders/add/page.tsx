@@ -687,7 +687,7 @@ export default function EldersAddPage() {
             {isAdmin && (
               <>
                 <SelectRow
-                  label="EMC Access"
+                  label="EMC Access*"
                   value={form.emcaccessrole ?? ""}
                   disabled={!isAdmin || !form.eldertypeid}
                   options={[
@@ -701,7 +701,7 @@ export default function EldersAddPage() {
                   }
                 />
                 <SelectRow
-                  label="Contribution Access"
+                  label="Contributions Access**"
                   value={form.contribaccessrole ?? ""}
                   disabled={!isAdmin || !form.eldertypeid}
                   options={[
@@ -735,18 +735,16 @@ export default function EldersAddPage() {
 
       {isAdmin && form && (
         <div style={{ marginTop: 28, fontSize: 13, color: "#374151" }}>
-          <strong>EMC Access</strong>
+          <strong>* EMC Access</strong>
           <ul style={{ margin: "6px 0 0 18px", padding: 0 }}>
             <li>Admin: can view and edit everything.</li>
             <li>Superuser: can view everything.</li>
             <li>User: can only view members in his/her assigned areas.</li>
-            <li>No access: no active EMC account role.</li>
           </ul>
-          <strong style={{ display: "inline-block", marginTop: 18 }}>Contribution Access</strong>
+          <strong style={{ display: "inline-block", marginTop: 18 }}>** Contribution Access</strong>
           <ul style={{ margin: "6px 0 0 18px", padding: 0 }}>
             <li>Admin: access to everything.</li>
             <li>User: access to specific country/area.</li>
-            <li>No access: no active Contribution access.</li>
           </ul>
         </div>
       )}

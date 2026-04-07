@@ -754,7 +754,21 @@ export default function EldersDetailsPage() {
       <h1 className={forms.h1}>Elders Details</h1>
 
       <div className={forms.topBar}>
-        <div className={forms.topGroup}>
+        <div className={`${forms.topSpacer} ${forms.topBack}`}>
+          <BackLink fallbackHref="/elders" className={`${forms.linkButton} ${forms.linkButtonLight}`}>
+            &lt;- Back
+          </BackLink>
+        </div>
+
+        {isAdmin && (
+          <div className={`${forms.topGroup} ${forms.topGroupAdd}`}>
+            <Link href="/elders/add" className={forms.linkButton}>
+              Add Elder
+            </Link>
+          </div>
+        )}
+
+        <div className={`${forms.topGroup} ${forms.topGroupSelect}`}>
           <label htmlFor="memberSelect" className={forms.topLabel}>
             Select Elder:
           </label>
@@ -776,20 +790,6 @@ export default function EldersDetailsPage() {
               </option>
             ))}
           </select>
-        </div>
-
-        {isAdmin && (
-          <div className={forms.topGroup}>
-            <Link href="/elders/add" className={forms.linkButton}>
-              Add Elder
-            </Link>
-          </div>
-        )}
-
-        <div className={forms.topSpacer}>
-          <BackLink fallbackHref="/elders" className={`${forms.linkButton} ${forms.linkButtonLight}`}>
-            &lt;- Back
-          </BackLink>
         </div>
       </div>
 

@@ -13,6 +13,7 @@ export default function EmcHomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [roleLabel, setRoleLabel] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [areasLabel, setAreasLabel] = useState<string | null>(null);
 
   useEffect(() => {
@@ -48,6 +49,10 @@ export default function EmcHomePage() {
 
         if (!cancelled) {
           setRoleLabel(access.roleSummary);
+          const normalizedRoles = access.roleSummary
+            .split(",")
+            .map((r) => r.trim().toLowerCase());
+          setIsAdmin(normalizedRoles.includes("emc_admin"));
           try {
             const headers = await getAuthHeaders();
             const response = await fetch("/api/elders/areas/summary", {
@@ -94,7 +99,7 @@ export default function EmcHomePage() {
           Areas of responsibility: {areasLabel}
         </p>
       ) : null}
-      {error ? <p className={forms.error}>{error}</p> : <EmcDashboardContent />}
+      {error ? <p className={forms.error}>{error}</p> : <EmcDashboardContent isAdmin={isAdmin} />}
     </main>
   );
 }

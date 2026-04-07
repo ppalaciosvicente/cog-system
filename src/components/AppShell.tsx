@@ -443,6 +443,14 @@ export function AppShell({ children }: AppShellProps) {
 
   const isContributionPath = Boolean(pathname?.startsWith("/contributions"));
   const isSystemChooser = pathname === "/";
+  const isEmcAdmin = useMemo(
+    () =>
+      (roleSummary ?? "")
+        .split(",")
+        .map((r) => r.trim().toLowerCase())
+        .includes("emc_admin"),
+    [roleSummary],
+  );
 
   const navItems = isSystemChooser
     ? SYSTEM_NAV_ITEMS.filter(
@@ -454,7 +462,9 @@ export function AppShell({ children }: AppShellProps) {
       ? CONTRIBUTION_NAV_ITEMS.filter((item) =>
           item.href === "/contributions/access" ? isContributionAdmin : true,
         )
-      : EMC_NAV_ITEMS;
+      : EMC_NAV_ITEMS.filter((item) =>
+          item.href === "/fot-reg" ? isEmcAdmin : true,
+        );
 
   const activeHref = (() => {
     if (!pathname) return null;

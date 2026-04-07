@@ -1,7 +1,11 @@
 import Link from "next/link";
 import forms from "@/styles/forms.module.css";
 
-export function EmcDashboardContent() {
+type Props = {
+  isAdmin: boolean;
+};
+
+export function EmcDashboardContent({ isAdmin }: Props) {
   return (
     <>
       <section className={forms.sectionCard} style={{ marginTop: 12 }}>
@@ -30,11 +34,13 @@ export function EmcDashboardContent() {
               Elders
             </Link>
           </li>
-          <li>
-            <Link href="/fot-reg" className={forms.button} style={{ textDecoration: "none" }}>
-              FOT Registration
-            </Link>
-          </li>
+          {isAdmin && (
+            <li>
+              <Link href="/fot-reg" className={forms.button} style={{ textDecoration: "none" }}>
+                FOT Registration
+              </Link>
+            </li>
+          )}
         </ul>
       </section>
 

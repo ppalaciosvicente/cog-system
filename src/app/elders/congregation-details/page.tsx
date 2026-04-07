@@ -747,6 +747,18 @@ function CongregationDetailsContent() {
       </p>
 
       <h2 style={{ margin: "16px 0 8px", fontSize: 20 }}>Members of this congregation</h2>
+      <p
+        style={{
+          marginTop: 0,
+          marginBottom: 8,
+          fontStyle: "italic",
+          fontSize: 13,
+          color: "#6b7280",
+        }}
+        className={forms.mobileOnly}
+      >
+        Tip: scroll horizontally to see all columns →
+      </p>
       {isAdmin && (
         <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
           <label style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
@@ -768,7 +780,7 @@ function CongregationDetailsContent() {
         </div>
       )}
 
-      <div className={forms.tableWrap} style={{ marginTop: 12, marginBottom: 24 }}>
+      <div className={forms.tableWrap} style={{ marginTop: 16, marginBottom: 24 }}>
         <table className={forms.table}>
           <thead>
             <tr>
@@ -946,7 +958,19 @@ function CongregationDetailsContent() {
                   </button>
                 </div>
 
-                <div className={forms.tableWrap}>
+              <p
+                style={{
+                  marginTop: 12,
+                  marginBottom: 8,
+                  fontStyle: "italic",
+                  fontSize: 13,
+                  color: "#6b7280",
+                }}
+                className={forms.mobileOnly}
+              >
+                Tip: scroll horizontally to see all columns →
+              </p>
+              <div className={forms.tableWrap}>
                   <table className={forms.table}>
                     <thead>
                       <tr>

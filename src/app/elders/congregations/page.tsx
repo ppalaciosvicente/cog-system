@@ -406,10 +406,10 @@ export default function CongregationsPage() {
       {actionMsg && <p>{actionMsg}</p>}
 
       {sortedRows.length > 0 ? (
-        <div className={forms.tableWrap} style={{ marginTop: 12 }}>
+        <>
           <p
             style={{
-              marginTop: 0,
+              marginTop: 18,
               marginBottom: 8,
               fontStyle: "italic",
               fontSize: 13,
@@ -419,6 +419,7 @@ export default function CongregationsPage() {
           >
             Tip: scroll horizontally to see all columns →
           </p>
+          <div className={forms.tableWrap} style={{ marginTop: 18 }}>
           <table className={forms.table}>
             <thead>
               <tr>
@@ -515,7 +516,8 @@ export default function CongregationsPage() {
               ))}
             </tbody>
           </table>
-        </div>
+          </div>
+        </>
       ) : (
         <p>No congregations found.</p>
       )}

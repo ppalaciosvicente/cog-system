@@ -113,7 +113,20 @@ export default function FotAreaContactsPage() {
       {loading ? <p>Loading contacts...</p> : null}
       {!loading && !error ? (
         rows.length ? (
-          <div className={forms.tableWrap}>
+          <>
+            <p
+              style={{
+                marginTop: 16,
+                marginBottom: 8,
+                fontStyle: "italic",
+                fontSize: 13,
+                color: "#6b7280",
+              }}
+              className={forms.mobileOnly}
+            >
+              Tip: scroll horizontally to see all columns →
+            </p>
+            <div className={forms.tableWrap} style={{ marginTop: 12 }}>
             <table className={forms.table}>
               <thead>
                 <tr>
@@ -164,7 +177,8 @@ export default function FotAreaContactsPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+            </div>
+          </>
         ) : (
           <p>No registrations found for members in your area.</p>
         )

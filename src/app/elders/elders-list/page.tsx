@@ -258,7 +258,7 @@ export default function EldersListPage() {
         <h1 className={forms.h1}>Elders General Listing</h1>
         <div className={forms.backRow}>
           <BackLink fallbackHref="/elders" className={`${forms.linkButton} ${forms.linkButtonLight}`}>
-            &lt;- Back to Elders
+            &lt;- Back
           </BackLink>
         </div>
         <p style={{ color: "crimson" }}>{error}</p>
@@ -271,7 +271,7 @@ export default function EldersListPage() {
       <h1 className={forms.h1}>Elders General Listing</h1>
       <div className={forms.topBar}>
         <BackLink fallbackHref="/elders" className={`${forms.linkButton} ${forms.linkButtonLight}`}>
-          &lt;- Back to Elders
+          &lt;- Back
         </BackLink>
         {isAdmin && (
           <Link href="/elders/add" className={forms.linkButton}>

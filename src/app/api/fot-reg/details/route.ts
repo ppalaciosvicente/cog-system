@@ -32,10 +32,23 @@ type DetailRow = {
   stayingAt: string;
   daysAtFeast: string;
   dateRegistered: string;
+  locationId: string | number;
+  locationName: string;
 };
 
 type DeletePayload = {
   regId?: string | number | null;
+};
+
+type UpdatePayload = {
+  regId?: string | number | null;
+  locationId?: string | number | null;
+  locationName?: string | null;
+  totalInParty?: number | null;
+  namesInParty?: string | null;
+  stayingAt?: string | null;
+  allEightDays?: boolean | null;
+  daysAtFeast?: string | null;
 };
 
 function toIdKey(value: number | string | null | undefined) {
@@ -160,6 +173,8 @@ export async function GET(request: NextRequest) {
       stayingAt: (reg.accommodation ?? "").trim(),
       daysAtFeast: reg.alleightdays ? "Entire feast" : String(reg.days ?? "").trim(),
       dateRegistered: String(reg.datecreated ?? ""),
+      locationId: location?.id ?? locationIdValue,
+      locationName: (location?.name ?? "").trim() || `Location ${locationIdParam}`,
     };
   });
 
@@ -204,6 +219,102 @@ export async function DELETE(request: NextRequest) {
       { error: `Failed to delete registration: ${deleteRegErr.message}` },
       { status: 500 },
     );
+  }
+
+  return NextResponse.json({ ok: true });
+}
+
+export async function PUT(request: NextRequest) {
+  const roleCheck = await requireRole(["emc_admin"], request);
+  if (!roleCheck.ok) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const payload = (await request.json().catch(() => ({} as UpdatePayload))) ?? {};
+  const regIdRaw = toIdKey(payload.regId);
+  const locationIdRaw = toIdKey(payload.locationId);
+  if (!regIdRaw) {
+    return NextResponse.json({ error: "Missing registration id." }, { status: 400 });
+  }
+  if (!locationIdRaw) {
+    return NextResponse.json({ error: "Missing location id." }, { status: 400 });
+  }
+
+  const regIdValue: string | number = /^\d+$/.test(regIdRaw) ? Number(regIdRaw) : regIdRaw;
+  const locationIdValue: string | number = /^\d+$/.test(locationIdRaw)
+    ? Number(locationIdRaw)
+    : locationIdRaw;
+
+  const totalInParty = Number(payload.totalInParty ?? 0);
+  const stayingAt = String(payload.stayingAt ?? "").trim();
+  const allEightDays = Boolean(payload.allEightDays);
+  const daysAtFeast = String(payload.daysAtFeast ?? "").trim();
+  const namesInParty = String(payload.namesInParty ?? "")
+    .split(",")
+    .map((name) => name.trim())
+    .filter(Boolean);
+
+  const supabase = createServiceRoleClient();
+
+  // Update registration core fields
+  const { error: updateRegErr } = await supabase
+    .from("fotreg")
+    .update({
+      totalinparty: Number.isFinite(totalInParty) ? totalInParty : null,
+      accommodation: stayingAt || null,
+      alleightdays: allEightDays,
+      days: allEightDays ? null : daysAtFeast || null,
+    })
+    .eq("id", regIdValue)
+    .eq("locationid", locationIdValue);
+
+  if (updateRegErr) {
+    return NextResponse.json(
+      { error: `Failed to update registration: ${updateRegErr.message}` },
+      { status: 500 },
+    );
+  }
+
+  // Replace individual names
+  const { error: deleteNamesErr } = await supabase
+    .from("fotregindividual")
+    .delete()
+    .eq("fotregid", regIdValue);
+  if (deleteNamesErr) {
+    return NextResponse.json(
+      { error: `Failed to update party names: ${deleteNamesErr.message}` },
+      { status: 500 },
+    );
+  }
+
+  if (namesInParty.length) {
+    const { error: insertNamesErr } = await supabase.from("fotregindividual").insert(
+      namesInParty.map((name) => ({
+        fotregid: regIdValue,
+        name,
+      })),
+    );
+    if (insertNamesErr) {
+      return NextResponse.json(
+        { error: `Failed to save party names: ${insertNamesErr.message}` },
+        { status: 500 },
+      );
+    }
+  }
+
+  // Optionally update location name
+  const locationName = String(payload.locationName ?? "").trim();
+  if (locationName) {
+    const { error: updateLocationErr } = await supabase
+      .from("fotlocation")
+      .update({ name: locationName })
+      .eq("id", locationIdValue);
+    if (updateLocationErr) {
+      return NextResponse.json(
+        { error: `Registration updated, but failed to update location name: ${updateLocationErr.message}` },
+        { status: 500 },
+      );
+    }
   }
 
   return NextResponse.json({ ok: true });

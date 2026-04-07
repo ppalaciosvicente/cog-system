@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { getAuthHeaders } from "@/lib/supabase/client";
 import { BackLink } from "@/components/BackLink";
@@ -14,6 +15,8 @@ type DetailRow = {
   stayingAt: string;
   daysAtFeast: string;
   dateRegistered: string;
+  locationId: string | number;
+  locationName: string;
 };
 
 type SortField = "contactName" | "dateRegistered";
@@ -231,14 +234,25 @@ function FotRegistrationDetailsInner() {
                     <td className={forms.td}>{formatRegisteredDate(row.dateRegistered)}</td>
                     {isAdmin ? (
                       <td className={forms.td}>
-                        <button
-                          type="button"
-                          className={`${forms.button} ${forms.buttonDanger} ${forms.linkButtonCompactTouch}`}
-                          onClick={() => void handleDelete(row)}
-                          disabled={Boolean(deletingRegId)}
-                        >
-                          {deletingRegId === row.regId ? "Deleting..." : "Delete"}
-                        </button>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                          <Link
+                            href={`/fot-reg/details/edit?locationId=${encodeURIComponent(
+                              row.locationId,
+                            )}&regId=${encodeURIComponent(row.regId)}`}
+                            className={forms.linkButton}
+                            style={{ textDecoration: "none" }}
+                          >
+                            Edit
+                          </Link>
+                          <button
+                            type="button"
+                            className={`${forms.button} ${forms.buttonDanger} ${forms.linkButtonCompactTouch}`}
+                            onClick={() => void handleDelete(row)}
+                            disabled={Boolean(deletingRegId)}
+                          >
+                            {deletingRegId === row.regId ? "Deleting..." : "Delete"}
+                          </button>
+                        </div>
                       </td>
                     ) : null}
                   </tr>

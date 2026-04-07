@@ -438,9 +438,6 @@ export function AppShell({ children }: AppShellProps) {
     ? contributionScopeLabel
     : null;
 
-  if (!showShell) return <>{children}</>;
-  if (!authReady || redirecting) return null;
-
   const isContributionPath = Boolean(pathname?.startsWith("/contributions"));
   const isSystemChooser = pathname === "/";
   const isEmcAdmin = useMemo(
@@ -451,6 +448,9 @@ export function AppShell({ children }: AppShellProps) {
         .includes("emc_admin"),
     [roleSummary],
   );
+
+  if (!showShell) return <>{children}</>;
+  if (!authReady || redirecting) return null;
 
   const navItems = isSystemChooser
     ? SYSTEM_NAV_ITEMS.filter(

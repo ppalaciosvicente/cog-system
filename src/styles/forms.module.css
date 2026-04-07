@@ -118,6 +118,7 @@
 }
 
 .topGroupSelect {
+  flex-basis: 100%;
 }
 
 .topGroupAdd {
@@ -198,11 +199,12 @@
 
   .topGroupAdd {
     order: 2;
-    margin-bottom: 6px;
+    margin-bottom: 16px;
   }
 
   .topGroupSelect {
     order: 3;
+    margin-top: -4px;
   }
 }
 

@@ -33,12 +33,12 @@ type MemberDetail = {
   email: string | null;
   eldertypeid: number | null;
   emcaccessrole: "emc_admin" | "emc_superuser" | "emc_user" | null;
+  contribaccessrole: "contrib_admin" | "contrib_user" | null;
   datecreated: string;
   dateupdated: string | null;
 };
 
 type ElderType = { id: number; name: string };
-type ContribRoleOption = "none" | "contrib_user" | "contrib_admin";
 
 function displayName(m: {
   id: number;
@@ -78,7 +78,6 @@ export default function EldersAddPage() {
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
 
   const [elderTypes, setElderTypes] = useState<ElderType[]>([]);
-  const [contribRole, setContribRole] = useState<ContribRoleOption>("none");
 
   const [countryNameByCode, setCountryNameByCode] = useState<
     Record<string, string>
@@ -286,8 +285,9 @@ export default function EldersAddPage() {
 
         if (!cancelled) {
           const d = {
-            ...(data as Omit<MemberDetail, "emcaccessrole">),
+            ...(data as Omit<MemberDetail, "emcaccessrole" | "contribaccessrole">),
             emcaccessrole: "emc_user" as MemberDetail["emcaccessrole"],
+            contribaccessrole: null,
           } as MemberDetail;
           setForm(d);
         }
@@ -400,19 +400,25 @@ export default function EldersAddPage() {
     }
 
     const headers = await getAuthHeaders();
-    if (form.emcaccessrole) {
+    const hasAnyAccess = Boolean(form.emcaccessrole || form.contribaccessrole);
+
+    if (hasAnyAccess) {
       const roleResponse = await fetch("/api/elders/accounts", {
         method: "PUT",
         headers,
         credentials: "same-origin",
-        body: JSON.stringify({ memberId: form.id, roleName: form.emcaccessrole }),
+        body: JSON.stringify({
+          memberId: form.id,
+          emcRoleName: form.emcaccessrole,
+          contribRoleName: form.contribaccessrole,
+        }),
       });
       if (!roleResponse.ok) {
         const rolePayload = (await roleResponse.json().catch(() => ({}))) as {
           error?: string;
         };
         setDetailError(
-          `Elder was saved, but failed to set EMC access: ${rolePayload.error ?? "Unknown error."}`,
+          `Elder was saved, but failed to set access: ${rolePayload.error ?? "Unknown error."}`,
         );
         return;
       }
@@ -674,24 +680,43 @@ export default function EldersAddPage() {
                 setField("eldertypeid", nextElderTypeId);
                 if (!nextElderTypeId) {
                   setField("emcaccessrole", null);
+                  setField("contribaccessrole", null);
                 }
               }}
             />
             {isAdmin && (
-              <SelectRow
-                label="EMC Access"
-                value={form.emcaccessrole ?? ""}
-                disabled={!isAdmin || !form.eldertypeid}
-                options={[
-                  { value: "", label: "No access" },
-                  { value: "emc_admin", label: "Admin" },
-                  { value: "emc_superuser", label: "Superuser" },
-                  { value: "emc_user", label: "User" },
-                ]}
-                onChange={(v) =>
-                  setField("emcaccessrole", v ? (v as MemberDetail["emcaccessrole"]) : null)
-                }
-              />
+              <>
+                <SelectRow
+                  label="EMC Access"
+                  value={form.emcaccessrole ?? ""}
+                  disabled={!isAdmin || !form.eldertypeid}
+                  options={[
+                    { value: "", label: "No access" },
+                    { value: "emc_admin", label: "Admin" },
+                    { value: "emc_superuser", label: "Superuser" },
+                    { value: "emc_user", label: "User" },
+                  ]}
+                  onChange={(v) =>
+                    setField("emcaccessrole", v ? (v as MemberDetail["emcaccessrole"]) : null)
+                  }
+                />
+                <SelectRow
+                  label="Contribution Access"
+                  value={form.contribaccessrole ?? ""}
+                  disabled={!isAdmin || !form.eldertypeid}
+                  options={[
+                    { value: "", label: "No access" },
+                    { value: "contrib_admin", label: "Admin" },
+                    { value: "contrib_user", label: "User" },
+                  ]}
+                  onChange={(v) =>
+                    setField(
+                      "contribaccessrole",
+                      v ? (v as MemberDetail["contribaccessrole"]) : null,
+                    )
+                  }
+                />
+              </>
             )}
 
             <div className={forms.actions}>
@@ -716,6 +741,12 @@ export default function EldersAddPage() {
             <li>Superuser: can view everything.</li>
             <li>User: can only view members in his/her assigned areas.</li>
             <li>No access: no active EMC account role.</li>
+          </ul>
+          <strong style={{ display: "inline-block", marginTop: 18 }}>Contribution Access</strong>
+          <ul style={{ margin: "6px 0 0 18px", padding: 0 }}>
+            <li>Admin: access to everything.</li>
+            <li>User: access to specific country/area.</li>
+            <li>No access: no active Contribution access.</li>
           </ul>
         </div>
       )}

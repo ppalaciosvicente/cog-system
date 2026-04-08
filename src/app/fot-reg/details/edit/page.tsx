@@ -375,9 +375,6 @@ export default function FotRegEditPage() {
             >
               {saving ? "Saving..." : "Save changes"}
             </button>
-            <Link href="/fot-reg" className={`${forms.linkButton} ${forms.linkButtonLight}`} style={{ textDecoration: "none" }}>
-              Back to FoT locations
-            </Link>
           </div>
         </>
       ) : null}

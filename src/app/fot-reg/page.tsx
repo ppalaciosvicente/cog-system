@@ -135,34 +135,22 @@ export default function FotRegistrationPage() {
           <p>No locations currently have attendance greater than zero.</p>
         )
       ) : null}
-      <div className={forms.actions} style={{ marginTop: 16 }}>
-        <Link
-          href="/fot-reg/area-contacts"
-          className={`${forms.linkButton} ${forms.linkButtonLight}`}
-        >
-          View Contacts in your area
-        </Link>
-      </div>
       {isAdmin ? (
         <div style={{ marginTop: 32 }}>
           <h3 style={{ margin: "0 0 10px" }}>Administration</h3>
-        </div>
-      ) : null}
-      {isAdmin ? (
-        <div className={forms.actions} style={{ marginTop: 0, flexDirection: "column", alignItems: "flex-start" }}>
-          <Link
-            href="/fot-reg/resend-invitations"
-            className={`${forms.linkButton} ${forms.linkButtonLight}`}
-          >
-            Resend specific FoT invitations
-          </Link>
-        </div>
-      ) : null}
-      {isAdmin ? (
-        <div className={forms.actions} style={{ marginTop: 12 }}>
-          <Link href="/fot-reg/send-yearly" className={`${forms.linkButton} ${forms.linkButtonDanger}`}>
-            Send yearly FoT invitations
-          </Link>
+          <div className={forms.actions} style={{ marginTop: 0, flexDirection: "column", alignItems: "flex-start" }}>
+            <Link
+              href="/fot-reg/resend-invitations"
+              className={`${forms.linkButton} ${forms.linkButtonLight}`}
+            >
+              Resend specific FoT invitations
+            </Link>
+          </div>
+          <div className={forms.actions} style={{ marginTop: 12 }}>
+            <Link href="/fot-reg/send-yearly" className={`${forms.linkButton} ${forms.linkButtonDanger}`}>
+              Send yearly FoT invitations
+            </Link>
+          </div>
         </div>
       ) : null}
     </main>

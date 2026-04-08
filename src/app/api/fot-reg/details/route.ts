@@ -79,19 +79,26 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Missing locationId." }, { status: 400 });
   }
 
-  const locationIdValue: string | number = /^\d+$/.test(locationIdParam)
-    ? Number(locationIdParam)
-    : locationIdParam;
+  const locationIdParts = locationIdParam
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (!locationIdParts.length) {
+    return NextResponse.json({ error: "Missing locationId." }, { status: 400 });
+  }
+
+  const locationIdValues: Array<string | number> = locationIdParts.map((part) =>
+    /^\d+$/.test(part) ? Number(part) : part,
+  );
 
   const supabase = createServiceRoleClient();
-  const [{ data: locationData, error: locationErr }, { data: regsData, error: regsErr }] =
-    await Promise.all([
-      supabase.from("fotlocation").select("id,name").eq("id", locationIdValue).limit(1),
-      supabase
-        .from("fotreg")
-        .select("id,memberid,totalinparty,accommodation,alleightdays,days,datecreated")
-        .eq("locationid", locationIdValue),
-    ]);
+  const [{ data: locationData, error: locationErr }, { data: regsData, error: regsErr }] = await Promise.all([
+    supabase.from("fotlocation").select("id,name").in("id", locationIdValues),
+    supabase
+      .from("fotreg")
+      .select("id,memberid,locationid,totalinparty,accommodation,alleightdays,days,datecreated")
+      .in("locationid", locationIdValues),
+  ]);
 
   if (locationErr) {
     return NextResponse.json({ error: `Failed to load location: ${locationErr.message}` }, { status: 500 });
@@ -103,7 +110,14 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const location = ((locationData ?? []) as FotLocationRow[])[0] ?? null;
+  const locationById = ((locationData ?? []) as FotLocationRow[]).reduce<Record<string, FotLocationRow>>(
+    (acc, loc) => {
+      const key = toIdKey(loc.id);
+      if (key) acc[key] = loc;
+      return acc;
+    },
+    {},
+  );
   const regs = (regsData ?? []) as FotRegRow[];
 
   const memberIds = Array.from(
@@ -165,6 +179,7 @@ export async function GET(request: NextRequest) {
     const regId = toIdKey(reg.id);
     const names = regId ? namesByRegId[regId] ?? [] : [];
     const totalInParty = Number(reg.totalinparty ?? 0);
+    const locationKey = toIdKey(reg.locationid) ?? locationIdParam;
     return {
       regId: regId ?? "",
       contactName: displayName(member) || (Number.isFinite(memberId) ? `#${memberId}` : ""),
@@ -173,15 +188,24 @@ export async function GET(request: NextRequest) {
       stayingAt: (reg.accommodation ?? "").trim(),
       daysAtFeast: reg.alleightdays ? "Entire feast" : String(reg.days ?? "").trim(),
       dateRegistered: String(reg.datecreated ?? ""),
-      locationId: location?.id ?? locationIdValue,
-      locationName: (location?.name ?? "").trim() || `Location ${locationIdParam}`,
+      locationId: reg.locationid ?? locationIdParam,
+      locationName:
+        (locationKey && locationById[locationKey]?.name?.trim()) ||
+        (location?.name ?? "").trim() ||
+        `Location ${locationIdParam}`,
     };
   });
 
   const totalAttendance = rows.reduce((sum, row) => sum + Number(row.totalInParty || 0), 0);
 
   return NextResponse.json({
-    locationName: (location?.name ?? "").trim() || `Location ${locationIdParam}`,
+    locationName:
+      (location?.name ?? "").trim() ||
+      locationIdParts
+        .map((id) => locationById[id]?.name?.trim())
+        .filter(Boolean)
+        .join(", ") ||
+      `Location ${locationIdParam}`,
     totalAttendance,
     rows,
     canDelete,

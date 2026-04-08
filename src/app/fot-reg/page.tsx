@@ -43,7 +43,40 @@ export default function FotRegistrationPage() {
         }
 
         if (!cancelled) {
-          setRows(payload.rows ?? []);
+          const incoming = payload.rows ?? [];
+
+          const merged = incoming.reduce<Record<string, { name: string; ids: string[]; attendance: number }>>(
+            (acc, row) => {
+              const normName = String(row.locationName ?? "")
+                .normalize("NFKD")
+                .replace(/\s+/g, " ")
+                .trim()
+                .toLowerCase();
+              if (!normName) return acc;
+              const id = String(row.locationId ?? "").trim();
+              const current = acc[normName];
+              if (current) {
+                current.attendance += Number(row.attendance ?? 0);
+                if (id && !current.ids.includes(id)) current.ids.push(id);
+              } else {
+                acc[normName] = {
+                  name: row.locationName ?? "",
+                  ids: id ? [id] : [],
+                  attendance: Number(row.attendance ?? 0),
+                };
+              }
+              return acc;
+            },
+            {},
+          );
+
+          const mergedRows: LocationAttendanceRow[] = Object.values(merged).map((item) => ({
+            locationId: item.ids.join(","),
+            locationName: item.name,
+            attendance: item.attendance,
+          }));
+
+          setRows(mergedRows);
           setIsAdmin(Boolean(payload.isAdmin));
         }
       } finally {

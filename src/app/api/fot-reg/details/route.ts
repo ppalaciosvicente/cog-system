@@ -11,6 +11,7 @@ type FotLocationRow = {
 type FotRegRow = {
   id: number | string | null;
   memberid: number | string | null;
+  locationid: number | string | null;
   totalinparty: number | null;
   accommodation: string | null;
   alleightdays: boolean | null;

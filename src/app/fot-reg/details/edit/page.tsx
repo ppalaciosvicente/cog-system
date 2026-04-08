@@ -208,10 +208,7 @@ export default function FotRegEditPage() {
     <main className={`${forms.page} ${forms.pageNarrow}`}>
       <h1 className={forms.h1}>{headingText}</h1>
       <div className={forms.backRow}>
-        <BackLink
-          fallbackHref={`/fot-reg/details?locationId=${encodeURIComponent(locationId)}`}
-          className={`${forms.linkButton} ${forms.linkButtonLight}`}
-        >
+        <BackLink fallbackHref="/fot-reg" className={`${forms.linkButton} ${forms.linkButtonLight}`}>
           &lt;- Back to FoT details
         </BackLink>
       </div>
@@ -378,12 +375,8 @@ export default function FotRegEditPage() {
             >
               {saving ? "Saving..." : "Save changes"}
             </button>
-            <Link
-              href={`/fot-reg/details?locationId=${encodeURIComponent(locationId)}`}
-              className={`${forms.linkButton} ${forms.linkButtonLight}`}
-              style={{ textDecoration: "none" }}
-            >
-              Cancel
+            <Link href="/fot-reg" className={`${forms.linkButton} ${forms.linkButtonLight}`} style={{ textDecoration: "none" }}>
+              Back to FoT locations
             </Link>
           </div>
         </>

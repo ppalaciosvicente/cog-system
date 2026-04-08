@@ -209,7 +209,7 @@ export default function FotRegEditPage() {
       <h1 className={forms.h1}>{headingText}</h1>
       <div className={forms.backRow}>
         <BackLink fallbackHref="/fot-reg" className={`${forms.linkButton} ${forms.linkButtonLight}`}>
-          &lt;- Back to FoT details
+          &lt;- Back to FoT locations
         </BackLink>
       </div>
 

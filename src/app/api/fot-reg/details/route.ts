@@ -191,8 +191,13 @@ export async function GET(request: NextRequest) {
       dateRegistered: String(reg.datecreated ?? ""),
       locationId: reg.locationid ?? locationIdParam,
       locationName:
-        (locationKey && locationById[locationKey]?.name?.trim()) ||
-        (locationById[locationIdParts[0]]?.name?.trim()) ||
+        [
+          locationKey && locationById[locationKey]?.name?.trim(),
+          ...locationIdParts.map((id) => locationById[id]?.name?.trim()).filter(Boolean),
+        ]
+          .filter(Boolean)
+          .filter((name, idx, arr) => arr.indexOf(name) === idx)
+          .join(", ") ||
         `Location ${locationIdParam}`,
     };
   });
@@ -204,6 +209,7 @@ export async function GET(request: NextRequest) {
       locationIdParts
         .map((id) => locationById[id]?.name?.trim())
         .filter(Boolean)
+        .filter((name, idx, arr) => arr.indexOf(name) === idx)
         .join(", ") ||
       `Location ${locationIdParam}`,
     totalAttendance,

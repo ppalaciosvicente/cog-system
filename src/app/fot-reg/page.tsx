@@ -43,7 +43,18 @@ export default function FotRegistrationPage() {
         }
 
         if (!cancelled) {
-          setRows(payload.rows ?? []);
+          const incoming = payload.rows ?? [];
+          const merged = incoming.reduce<Record<string, LocationAttendanceRow>>((acc, row) => {
+            const key = row.locationId;
+            const current = acc[key];
+            if (current) {
+              acc[key] = { ...current, attendance: current.attendance + Number(row.attendance || 0) };
+            } else {
+              acc[key] = { ...row, attendance: Number(row.attendance || 0) };
+            }
+            return acc;
+          }, {});
+          setRows(Object.values(merged));
           setIsAdmin(Boolean(payload.isAdmin));
         }
       } finally {

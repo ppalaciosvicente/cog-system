@@ -32,6 +32,7 @@ export default function FotRegEditPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [row, setRow] = useState<DetailRow | null>(null);
 
   const [locationOptions, setLocationOptions] = useState<LocationOption[]>([]);
@@ -149,6 +150,7 @@ export default function FotRegEditPage() {
   async function handleSave() {
     if (!row || saving) return;
     setSaving(true);
+    setSaved(false);
     setError(null);
     const trimmedNames = names.slice(0, partySize).map((name) => name.trim());
     if (trimmedNames.some((name) => !name)) {
@@ -185,7 +187,7 @@ export default function FotRegEditPage() {
         setError(payload.error ?? "Failed to save changes.");
         return;
       }
-      router.replace(`/fot-reg/details?locationId=${encodeURIComponent(locationId)}`);
+      setSaved(true);
     } finally {
       setSaving(false);
     }
@@ -194,6 +196,8 @@ export default function FotRegEditPage() {
   const headingText = row
     ? `Edit registration – ${row.contactName}`
     : "Edit registration";
+
+  const formDisabled = saving || saved;
 
   return (
     <main className={`${forms.page} ${forms.pageNarrow}`}>
@@ -208,6 +212,11 @@ export default function FotRegEditPage() {
       </div>
 
       {error ? <p className={forms.error}>{error}</p> : null}
+      {saved ? (
+        <p className={forms.success} style={{ marginTop: 6 }}>
+          Changes saved.
+        </p>
+      ) : null}
       {loading ? <p>Loading registration...</p> : null}
 
       {!loading && row ? (
@@ -231,13 +240,13 @@ export default function FotRegEditPage() {
                 className={forms.selectContact}
                 value={locationName || ""}
                 onChange={(e) => setLocationName(e.target.value)}
-                disabled={saving || !locationOptions.length}
+                disabled={formDisabled || !locationOptions.length}
               >
                 <option value="" disabled>
                   {locationOptions.length ? "Select a location" : "Loading locations..."}
                 </option>
                 {locationOptions.map((opt) => (
-                  <option key={opt.id} value={opt.name}>{`#${opt.id} – ${opt.name}`}</option>
+                  <option key={opt.id} value={opt.name}>{opt.name}</option>
                 ))}
                 {locationName && !locationOptions.some((opt) => opt.name === locationName) ? (
                   <option value={locationName}>{locationName}</option>
@@ -257,7 +266,7 @@ export default function FotRegEditPage() {
                 className={forms.selectContact}
                 value={partySize}
                 onChange={(e) => handlePartySizeChange(Number(e.target.value) || 1)}
-                disabled={saving}
+                disabled={formDisabled}
                 style={{ maxWidth: 92 }}
               >
                 {Array.from({ length: maxPartySize }, (_, i) => i + 1).map((n) => (
@@ -287,7 +296,7 @@ export default function FotRegEditPage() {
                     onChange={(e) => setPersonName(index, e.target.value)}
                     placeholder="First and last name"
                     autoComplete="off"
-                    disabled={saving}
+                    disabled={formDisabled}
                   />
                 </div>
               ))}
@@ -306,7 +315,7 @@ export default function FotRegEditPage() {
                 value={stayingAt}
                 onChange={(e) => setStayingAt(e.target.value)}
                 autoComplete="off"
-                disabled={saving}
+                disabled={formDisabled}
               />
             </div>
 
@@ -320,7 +329,7 @@ export default function FotRegEditPage() {
                   name="days-mode"
                   checked={daysMode === "all8"}
                   onChange={() => setDaysMode("all8")}
-                  disabled={saving}
+                  disabled={formDisabled}
                 />
                 All 8 days
               </label>
@@ -330,7 +339,7 @@ export default function FotRegEditPage() {
                   name="days-mode"
                   checked={daysMode === "other"}
                   onChange={() => setDaysMode("other")}
-                  disabled={saving}
+                  disabled={formDisabled}
                 />
                 Other (specify dates below)
               </label>
@@ -348,7 +357,7 @@ export default function FotRegEditPage() {
                 className={forms.field}
                 value={otherDays}
                 onChange={(e) => setOtherDays(e.target.value)}
-                disabled={saving || daysMode !== "other"}
+                disabled={formDisabled || daysMode !== "other"}
                 placeholder="e.g. Sept 26-29 and Oct 2-3"
                 autoComplete="off"
               />

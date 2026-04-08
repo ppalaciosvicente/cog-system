@@ -18,10 +18,6 @@ export function BackLink({ fallbackHref, className, children }: BackLinkProps) {
       className={className}
       onClick={(e) => {
         e.preventDefault();
-        if (window.history.length > 1) {
-          router.back();
-          return;
-        }
         router.push(fallbackHref);
       }}
     >

@@ -45,12 +45,24 @@ export default function FotRegistrationPage() {
         if (!cancelled) {
           const incoming = payload.rows ?? [];
           const merged = incoming.reduce<Record<string, LocationAttendanceRow>>((acc, row) => {
-            const key = row.locationId;
+            const locationIdKey = String(row.locationId ?? "").trim();
+            const nameKey = String(row.locationName ?? "").trim().toLowerCase();
+            const key = locationIdKey || nameKey;
+            if (!key) return acc;
+
             const current = acc[key];
             if (current) {
-              acc[key] = { ...current, attendance: current.attendance + Number(row.attendance || 0) };
+              acc[key] = {
+                locationId: current.locationId,
+                locationName: current.locationName || row.locationName,
+                attendance: current.attendance + Number(row.attendance || 0),
+              };
             } else {
-              acc[key] = { ...row, attendance: Number(row.attendance || 0) };
+              acc[key] = {
+                locationId: locationIdKey || row.locationId || key,
+                locationName: row.locationName,
+                attendance: Number(row.attendance || 0),
+              };
             }
             return acc;
           }, {});

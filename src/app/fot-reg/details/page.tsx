@@ -246,9 +246,10 @@ function FotRegistrationDetailsInner() {
                           </Link>
                           <button
                             type="button"
-                            className={`${forms.button} ${forms.buttonDanger} ${forms.linkButtonCompactTouch}`}
+                            className={`${forms.linkButton} ${forms.linkButtonDanger}`}
                             onClick={() => void handleDelete(row)}
                             disabled={Boolean(deletingRegId)}
+                            style={{ minWidth: 84 }}
                           >
                             {deletingRegId === row.regId ? "Deleting..." : "Delete"}
                           </button>

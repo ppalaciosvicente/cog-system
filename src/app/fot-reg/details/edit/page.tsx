@@ -216,10 +216,6 @@ export default function FotRegEditPage() {
             <p style={{ margin: 0 }}>
               <strong>Contact:</strong> {row.contactName || "Unknown contact"}
             </p>
-            <p style={{ margin: "8px 0 0" }}>
-              Update the location, party, lodging, and attendance details below. This screen mirrors the
-              member-facing registration layout.
-            </p>
           </div>
 
           <div style={{ borderTop: "1px solid #d1d5db", paddingTop: 14 }}>
@@ -230,23 +226,23 @@ export default function FotRegEditPage() {
               <label className={forms.label} htmlFor="location-name">
                 Location name
               </label>
-              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                <input
-                  id="location-name"
-                  list="fot-locations"
-                  className={forms.field}
-                  value={locationName}
-                  onChange={(e) => setLocationName(e.target.value)}
-                  disabled={saving}
-                  placeholder="Select or type a location name"
-                  autoComplete="off"
-                />
-                <datalist id="fot-locations">
-                  {locationOptions.map((opt) => (
-                    <option key={opt.id} value={opt.name}>{`#${opt.id} – ${opt.name}`}</option>
-                  ))}
-                </datalist>
-              </div>
+              <select
+                id="location-name"
+                className={forms.selectContact}
+                value={locationName || ""}
+                onChange={(e) => setLocationName(e.target.value)}
+                disabled={saving || !locationOptions.length}
+              >
+                <option value="" disabled>
+                  {locationOptions.length ? "Select a location" : "Loading locations..."}
+                </option>
+                {locationOptions.map((opt) => (
+                  <option key={opt.id} value={opt.name}>{`#${opt.id} – ${opt.name}`}</option>
+                ))}
+                {locationName && !locationOptions.some((opt) => opt.name === locationName) ? (
+                  <option value={locationName}>{locationName}</option>
+                ) : null}
+              </select>
             </div>
 
             <div

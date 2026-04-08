@@ -44,37 +44,36 @@ export default function FotRegistrationPage() {
 
         if (!cancelled) {
           const incoming = payload.rows ?? [];
-          const merged = incoming.reduce<Record<string, LocationAttendanceRow>>((acc, row) => {
-            const normId = String(row.locationId ?? "").trim();
+
+          const mergedByName = new Map<string, LocationAttendanceRow>();
+          incoming.forEach((row) => {
             const normName = String(row.locationName ?? "")
               .normalize("NFKD")
               .replace(/\s+/g, " ")
               .trim()
               .toLowerCase();
+            const normId = String(row.locationId ?? "").trim();
+            const key = normName || normId;
+            if (!key) return;
 
-            const candidates = [normId, normName].filter(Boolean);
-            const existingKey = candidates.find((key) => acc[key]);
-            const useKey = existingKey ?? candidates[0];
-            if (!useKey) return acc;
-
-            const current = acc[useKey];
             const attendance = Number(row.attendance ?? 0);
-            if (current) {
-              acc[useKey] = {
-                locationId: current.locationId || normId || row.locationId || useKey,
-                locationName: current.locationName || row.locationName || "",
-                attendance: current.attendance + attendance,
-              };
+            const existing = mergedByName.get(key);
+            if (existing) {
+              mergedByName.set(key, {
+                locationId: existing.locationId || normId || row.locationId || key,
+                locationName: existing.locationName || row.locationName || "",
+                attendance: existing.attendance + attendance,
+              });
             } else {
-              acc[useKey] = {
-                locationId: normId || row.locationId || useKey,
+              mergedByName.set(key, {
+                locationId: normId || row.locationId || key,
                 locationName: row.locationName || "",
                 attendance,
-              };
+              });
             }
-            return acc;
-          }, {});
-          setRows(Object.values(merged));
+          });
+
+          setRows(Array.from(mergedByName.values()));
           setIsAdmin(Boolean(payload.isAdmin));
         }
       } finally {

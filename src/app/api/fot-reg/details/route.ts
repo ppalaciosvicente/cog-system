@@ -44,7 +44,6 @@ type DeletePayload = {
 type UpdatePayload = {
   regId?: string | number | null;
   locationId?: string | number | null;
-  locationName?: string | null;
   totalInParty?: number | null;
   namesInParty?: string | null;
   stayingAt?: string | null;
@@ -333,19 +332,5 @@ export async function PUT(request: NextRequest) {
   }
 
   // Optionally update location name
-  const locationName = String(payload.locationName ?? "").trim();
-  if (locationName) {
-    const { error: updateLocationErr } = await supabase
-      .from("fotlocation")
-      .update({ name: locationName })
-      .eq("id", locationIdValue);
-    if (updateLocationErr) {
-      return NextResponse.json(
-        { error: `Registration updated, but failed to update location name: ${updateLocationErr.message}` },
-        { status: 500 },
-      );
-    }
-  }
-
   return NextResponse.json({ ok: true });
 }

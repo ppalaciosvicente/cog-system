@@ -36,6 +36,7 @@ export default function FotRegEditPage() {
   const [row, setRow] = useState<DetailRow | null>(null);
 
   const [locationOptions, setLocationOptions] = useState<LocationOption[]>([]);
+  const [locationIdSelected, setLocationIdSelected] = useState(locationId);
   const [locationName, setLocationName] = useState("");
 
   const maxPartySize = 9;
@@ -100,6 +101,7 @@ export default function FotRegEditPage() {
         }
         if (!cancelled) {
           setRow(match);
+          setLocationIdSelected(String(match.locationId ?? locationId));
           setLocationName(match.locationName || payload.locationName || "");
           const initialPartySize = Math.min(
             maxPartySize,
@@ -174,8 +176,7 @@ export default function FotRegEditPage() {
         },
         body: JSON.stringify({
           regId,
-          locationId,
-          locationName,
+          locationId: locationIdSelected || locationId,
           totalInParty: partySize,
           namesInParty: trimmedNames.join(", "),
           stayingAt,
@@ -236,19 +237,21 @@ export default function FotRegEditPage() {
               <select
                 id="location-name"
                 className={forms.selectContact}
-                value={locationName || ""}
-                onChange={(e) => setLocationName(e.target.value)}
+                value={locationIdSelected || ""}
+                onChange={(e) => {
+                  const nextId = e.target.value;
+                  setLocationIdSelected(nextId);
+                  const match = locationOptions.find((opt) => String(opt.id) === nextId);
+                  setLocationName(match?.name ?? locationName);
+                }}
                 disabled={formDisabled || !locationOptions.length}
               >
                 <option value="" disabled>
                   {locationOptions.length ? "Select a location" : "Loading locations..."}
                 </option>
                 {locationOptions.map((opt) => (
-                  <option key={opt.id} value={opt.name}>{opt.name}</option>
+                  <option key={opt.id} value={String(opt.id)}>{opt.name}</option>
                 ))}
-                {locationName && !locationOptions.some((opt) => opt.name === locationName) ? (
-                  <option value={locationName}>{locationName}</option>
-                ) : null}
               </select>
             </div>
 

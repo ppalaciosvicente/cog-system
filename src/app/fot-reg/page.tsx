@@ -43,37 +43,7 @@ export default function FotRegistrationPage() {
         }
 
         if (!cancelled) {
-          const incoming = payload.rows ?? [];
-
-          const mergedByName = new Map<string, LocationAttendanceRow>();
-          incoming.forEach((row) => {
-            const normName = String(row.locationName ?? "")
-              .normalize("NFKD")
-              .replace(/\s+/g, " ")
-              .trim()
-              .toLowerCase();
-            const normId = String(row.locationId ?? "").trim();
-            const key = normName || normId;
-            if (!key) return;
-
-            const attendance = Number(row.attendance ?? 0);
-            const existing = mergedByName.get(key);
-            if (existing) {
-              mergedByName.set(key, {
-                locationId: existing.locationId || normId || row.locationId || key,
-                locationName: existing.locationName || row.locationName || "",
-                attendance: existing.attendance + attendance,
-              });
-            } else {
-              mergedByName.set(key, {
-                locationId: normId || row.locationId || key,
-                locationName: row.locationName || "",
-                attendance,
-              });
-            }
-          });
-
-          setRows(Array.from(mergedByName.values()));
+          setRows(payload.rows ?? []);
           setIsAdmin(Boolean(payload.isAdmin));
         }
       } finally {

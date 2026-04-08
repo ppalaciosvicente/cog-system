@@ -218,7 +218,7 @@ export default function FotRegEditPage() {
 
       {error ? <p className={forms.error}>{error}</p> : null}
       {saved ? (
-        <p className={forms.success} style={{ marginTop: 6 }}>
+        <p className={forms.success} style={{ marginTop: 6, color: "#15803d" }}>
           Changes saved.
         </p>
       ) : null}

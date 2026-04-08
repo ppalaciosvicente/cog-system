@@ -45,23 +45,31 @@ export default function FotRegistrationPage() {
         if (!cancelled) {
           const incoming = payload.rows ?? [];
           const merged = incoming.reduce<Record<string, LocationAttendanceRow>>((acc, row) => {
-            const locationIdKey = String(row.locationId ?? "").trim();
-            const nameKey = String(row.locationName ?? "").trim().toLowerCase();
-            const key = locationIdKey || nameKey;
-            if (!key) return acc;
+            const normId = String(row.locationId ?? "").trim();
+            const normName = String(row.locationName ?? "")
+              .normalize("NFKD")
+              .replace(/\s+/g, " ")
+              .trim()
+              .toLowerCase();
 
-            const current = acc[key];
+            const candidates = [normId, normName].filter(Boolean);
+            const existingKey = candidates.find((key) => acc[key]);
+            const useKey = existingKey ?? candidates[0];
+            if (!useKey) return acc;
+
+            const current = acc[useKey];
+            const attendance = Number(row.attendance ?? 0);
             if (current) {
-              acc[key] = {
-                locationId: current.locationId,
-                locationName: current.locationName || row.locationName,
-                attendance: current.attendance + Number(row.attendance || 0),
+              acc[useKey] = {
+                locationId: current.locationId || normId || row.locationId || useKey,
+                locationName: current.locationName || row.locationName || "",
+                attendance: current.attendance + attendance,
               };
             } else {
-              acc[key] = {
-                locationId: locationIdKey || row.locationId || key,
-                locationName: row.locationName,
-                attendance: Number(row.attendance || 0),
+              acc[useKey] = {
+                locationId: normId || row.locationId || useKey,
+                locationName: row.locationName || "",
+                attendance,
               };
             }
             return acc;

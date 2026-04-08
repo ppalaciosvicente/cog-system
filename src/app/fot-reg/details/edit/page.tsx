@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getAuthHeaders } from "@/lib/supabase/client";
@@ -18,6 +18,11 @@ type DetailRow = {
   locationName: string;
 };
 
+type LocationOption = {
+  id: string;
+  name: string;
+};
+
 export default function FotRegEditPage() {
   const params = useSearchParams();
   const router = useRouter();
@@ -29,12 +34,39 @@ export default function FotRegEditPage() {
   const [saving, setSaving] = useState(false);
   const [row, setRow] = useState<DetailRow | null>(null);
 
+  const [locationOptions, setLocationOptions] = useState<LocationOption[]>([]);
   const [locationName, setLocationName] = useState("");
-  const [totalInParty, setTotalInParty] = useState(0);
-  const [namesInParty, setNamesInParty] = useState("");
+
+  const maxPartySize = 9;
+  const [partySize, setPartySize] = useState(1);
+  const [names, setNames] = useState<string[]>([""]);
   const [stayingAt, setStayingAt] = useState("");
-  const [allEightDays, setAllEightDays] = useState(false);
-  const [daysAtFeast, setDaysAtFeast] = useState("");
+  const [daysMode, setDaysMode] = useState<"all8" | "other">("all8");
+  const [otherDays, setOtherDays] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadLocations() {
+      try {
+        const headers = await getAuthHeaders();
+        const res = await fetch("/api/fot-reg/locations", { headers });
+        const payload = (await res.json().catch(() => ({}))) as {
+          locations?: LocationOption[];
+        };
+        if (!cancelled && res.ok) {
+          setLocationOptions(
+            (payload.locations ?? []).filter((opt) => opt.id && opt.name),
+          );
+        }
+      } catch (err) {
+        console.error("Failed to load FoT locations", err);
+      }
+    }
+    void loadLocations();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -67,12 +99,24 @@ export default function FotRegEditPage() {
         if (!cancelled) {
           setRow(match);
           setLocationName(match.locationName || payload.locationName || "");
-          setTotalInParty(Number(match.totalInParty ?? 0));
-          setNamesInParty(match.namesInParty || "");
+          const initialPartySize = Math.min(
+            maxPartySize,
+            Math.max(1, Number(match.totalInParty ?? 1)),
+          );
+          setPartySize(initialPartySize);
+          const parsedNames = (match.namesInParty || "")
+            .split(",")
+            .map((name) => name.trim())
+            .filter(Boolean);
+          setNames((prev) => {
+            const base = parsedNames.length ? parsedNames : prev;
+            if (base.length >= initialPartySize) return base.slice(0, initialPartySize);
+            return [...base, ...Array(initialPartySize - base.length).fill("")];
+          });
           setStayingAt(match.stayingAt || "");
           const entireFeast = (match.daysAtFeast ?? "").toLowerCase() === "entire feast";
-          setAllEightDays(entireFeast);
-          setDaysAtFeast(entireFeast ? "" : match.daysAtFeast || "");
+          setDaysMode(entireFeast ? "all8" : "other");
+          setOtherDays(entireFeast ? "" : match.daysAtFeast || "");
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -84,10 +128,39 @@ export default function FotRegEditPage() {
     };
   }, [locationId, regId]);
 
+  function handlePartySizeChange(next: number) {
+    const clamped = Math.max(1, Math.min(maxPartySize, next || 1));
+    setPartySize(clamped);
+    setNames((prev) => {
+      if (prev.length === clamped) return prev;
+      if (prev.length > clamped) return prev.slice(0, clamped);
+      return [...prev, ...Array(clamped - prev.length).fill("")];
+    });
+  }
+
+  function setPersonName(index: number, value: string) {
+    setNames((prev) => {
+      const next = [...prev];
+      next[index] = value;
+      return next;
+    });
+  }
+
   async function handleSave() {
     if (!row || saving) return;
     setSaving(true);
     setError(null);
+    const trimmedNames = names.slice(0, partySize).map((name) => name.trim());
+    if (trimmedNames.some((name) => !name)) {
+      setError("Please enter first and last name for each person in the party.");
+      setSaving(false);
+      return;
+    }
+    if (daysMode === "other" && !otherDays.trim()) {
+      setError("Please specify the dates attending or select all eight days.");
+      setSaving(false);
+      return;
+    }
     try {
       const headers = await getAuthHeaders();
       const res = await fetch("/api/fot-reg/details", {
@@ -100,11 +173,11 @@ export default function FotRegEditPage() {
           regId,
           locationId,
           locationName,
-          totalInParty,
-          namesInParty,
+          totalInParty: partySize,
+          namesInParty: trimmedNames.join(", "),
           stayingAt,
-          allEightDays,
-          daysAtFeast: allEightDays ? "" : daysAtFeast,
+          allEightDays: daysMode === "all8",
+          daysAtFeast: daysMode === "all8" ? "" : otherDays,
         }),
       });
       const payload = (await res.json().catch(() => ({}))) as { error?: string };
@@ -123,7 +196,7 @@ export default function FotRegEditPage() {
     : "Edit registration";
 
   return (
-    <main className={forms.page}>
+    <main className={`${forms.page} ${forms.pageNarrow}`}>
       <h1 className={forms.h1}>{headingText}</h1>
       <div className={forms.backRow}>
         <BackLink
@@ -136,110 +209,175 @@ export default function FotRegEditPage() {
 
       {error ? <p className={forms.error}>{error}</p> : null}
       {loading ? <p>Loading registration...</p> : null}
+
       {!loading && row ? (
-        <div className={forms.formGrid} style={{ marginTop: 12 }}>
-          <div className={forms.col}>
-            <div className={forms.row}>
-              <div className={forms.label}>Contact name:</div>
-              <div className={forms.control}>{row.contactName}</div>
-            </div>
-            <div className={forms.row}>
-              <div className={forms.label}>Location name:</div>
-              <div className={forms.control}>
+        <>
+          <div style={{ marginBottom: 16, lineHeight: 1.45 }}>
+            <p style={{ margin: 0 }}>
+              <strong>Contact:</strong> {row.contactName || "Unknown contact"}
+            </p>
+            <p style={{ margin: "8px 0 0" }}>
+              Update the location, party, lodging, and attendance details below. This screen mirrors the
+              member-facing registration layout.
+            </p>
+          </div>
+
+          <div style={{ borderTop: "1px solid #d1d5db", paddingTop: 14 }}>
+            <div
+              className={forms.row}
+              style={{ marginBottom: 10, gridTemplateColumns: "minmax(0, 1fr) minmax(220px, 1fr)" }}
+            >
+              <label className={forms.label} htmlFor="location-name">
+                Location name
+              </label>
+              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                 <input
+                  id="location-name"
+                  list="fot-locations"
                   className={forms.field}
                   value={locationName}
                   onChange={(e) => setLocationName(e.target.value)}
                   disabled={saving}
+                  placeholder="Select or type a location name"
+                  autoComplete="off"
                 />
+                <datalist id="fot-locations">
+                  {locationOptions.map((opt) => (
+                    <option key={opt.id} value={opt.name}>{`#${opt.id} – ${opt.name}`}</option>
+                  ))}
+                </datalist>
               </div>
             </div>
-            <div className={forms.row}>
-              <div className={forms.label}>Total in party:</div>
-              <div className={forms.control}>
+
+            <div
+              className={forms.row}
+              style={{ marginBottom: 10, gridTemplateColumns: "minmax(0, 1fr) auto", alignItems: "start" }}
+            >
+              <label className={forms.label} htmlFor="party-size">
+                Number of people in party
+              </label>
+              <select
+                id="party-size"
+                className={forms.selectContact}
+                value={partySize}
+                onChange={(e) => handlePartySizeChange(Number(e.target.value) || 1)}
+                disabled={saving}
+                style={{ maxWidth: 92 }}
+              >
+                {Array.from({ length: maxPartySize }, (_, i) => i + 1).map((n) => (
+                  <option key={`party-${n}`} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ display: "grid", gap: 10, marginBottom: 12 }}>
+              {names.slice(0, partySize).map((_, index) => (
+                <div
+                  key={`person-${index}`}
+                  className={forms.row}
+                  style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(320px, 1.2fr)" }}
+                >
+                  <label className={forms.label} htmlFor={`person-name-${index}`}>
+                    {partySize === 1
+                      ? "First and last name of individual:"
+                      : `First and last name of individual ${index + 1}:`}
+                  </label>
+                  <input
+                    id={`person-name-${index}`}
+                    className={forms.field}
+                    value={names[index] ?? ""}
+                    onChange={(e) => setPersonName(index, e.target.value)}
+                    placeholder="First and last name"
+                    autoComplete="off"
+                    disabled={saving}
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div
+              className={forms.row}
+              style={{ marginBottom: 12, gridTemplateColumns: "minmax(0, 1.2fr) minmax(320px, 1fr)" }}
+            >
+              <label className={forms.label} htmlFor="staying-at">
+                Hotel you are staying at (if different from meeting location)
+              </label>
+              <input
+                id="staying-at"
+                className={forms.field}
+                value={stayingAt}
+                onChange={(e) => setStayingAt(e.target.value)}
+                autoComplete="off"
+                disabled={saving}
+              />
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontWeight: 600, marginBottom: 8 }}>
+                Number of days attending services at this site
+              </div>
+              <label className={forms.checkControl} style={{ marginBottom: 8 }}>
                 <input
-                  type="number"
-                  min={0}
-                  className={forms.field}
-                  value={Number.isFinite(totalInParty) ? totalInParty : 0}
-                  onChange={(e) => setTotalInParty(Number(e.target.value))}
+                  type="radio"
+                  name="days-mode"
+                  checked={daysMode === "all8"}
+                  onChange={() => setDaysMode("all8")}
                   disabled={saving}
                 />
-              </div>
+                All 8 days
+              </label>
+              <label className={forms.checkControl}>
+                <input
+                  type="radio"
+                  name="days-mode"
+                  checked={daysMode === "other"}
+                  onChange={() => setDaysMode("other")}
+                  disabled={saving}
+                />
+                Other (specify dates below)
+              </label>
             </div>
-            <div className={forms.row}>
-              <div className={forms.label}>Names in party:</div>
-              <div className={forms.control}>
-                <textarea
-                  className={`${forms.field} ${forms.textarea}`}
-                  rows={3}
-                  placeholder="Comma-separated names"
-                  value={namesInParty}
-                  onChange={(e) => setNamesInParty(e.target.value)}
-                  disabled={saving}
-                />
-              </div>
+
+            <div
+              className={forms.row}
+              style={{ marginBottom: 12, gridTemplateColumns: "minmax(0, 1.2fr) minmax(320px, 1fr)" }}
+            >
+              <label className={forms.label} htmlFor="other-days">
+                Dates attending (if not all 8 days)
+              </label>
+              <input
+                id="other-days"
+                className={forms.field}
+                value={otherDays}
+                onChange={(e) => setOtherDays(e.target.value)}
+                disabled={saving || daysMode !== "other"}
+                placeholder="e.g. Sept 26-29 and Oct 2-3"
+                autoComplete="off"
+              />
             </div>
           </div>
 
-          <div className={forms.col}>
-            <div className={forms.row}>
-              <div className={forms.label}>Staying at:</div>
-              <div className={forms.control}>
-                <input
-                  className={forms.field}
-                  value={stayingAt}
-                  onChange={(e) => setStayingAt(e.target.value)}
-                  disabled={saving}
-                />
-              </div>
-            </div>
-            <div className={forms.row} style={{ alignItems: "center" }}>
-              <div className={forms.label}>Entire feast:</div>
-              <div className={forms.control} style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <input
-                  type="checkbox"
-                  checked={allEightDays}
-                  onChange={(e) => setAllEightDays(e.target.checked)}
-                  disabled={saving}
-                />
-                <span style={{ fontSize: 14, color: "#4b5563" }}>Select if attending all eight days</span>
-              </div>
-            </div>
-            <div className={forms.row}>
-              <div className={forms.label}>Days at feast:</div>
-              <div className={forms.control}>
-                <input
-                  className={forms.field}
-                  value={daysAtFeast}
-                  onChange={(e) => setDaysAtFeast(e.target.value)}
-                  disabled={saving || allEightDays}
-                  placeholder={allEightDays ? "All eight days selected" : "Example: 1-4, 7-8"}
-                />
-              </div>
-            </div>
+          <div className={forms.actions} style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid #d1d5db" }}>
+            <button
+              type="button"
+              className={forms.button}
+              onClick={handleSave}
+              disabled={saving || !row}
+            >
+              {saving ? "Saving..." : "Save changes"}
+            </button>
+            <Link
+              href={`/fot-reg/details?locationId=${encodeURIComponent(locationId)}`}
+              className={`${forms.linkButton} ${forms.linkButtonLight}`}
+              style={{ textDecoration: "none" }}
+            >
+              Cancel
+            </Link>
           </div>
-        </div>
+        </>
       ) : null}
-
-      <div className={forms.actions} style={{ marginTop: 18 }}>
-        <button
-          type="button"
-          className={forms.button}
-          onClick={handleSave}
-          disabled={saving || !row}
-          style={{ opacity: saving ? 0.7 : 1 }}
-        >
-          {saving ? "Saving..." : "Save changes"}
-        </button>
-        <Link
-          href={`/fot-reg/details?locationId=${encodeURIComponent(locationId)}`}
-          className={`${forms.linkButton} ${forms.linkButtonLight}`}
-          style={{ marginLeft: 10, textDecoration: "none" }}
-        >
-          Cancel
-        </Link>
-      </div>
     </main>
   );
 }

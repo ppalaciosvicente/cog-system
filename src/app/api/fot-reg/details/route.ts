@@ -192,7 +192,7 @@ export async function GET(request: NextRequest) {
       locationId: reg.locationid ?? locationIdParam,
       locationName:
         (locationKey && locationById[locationKey]?.name?.trim()) ||
-        (location?.name ?? "").trim() ||
+        (locationById[locationIdParts[0]]?.name?.trim()) ||
         `Location ${locationIdParam}`,
     };
   });
@@ -201,7 +201,6 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     locationName:
-      (location?.name ?? "").trim() ||
       locationIdParts
         .map((id) => locationById[id]?.name?.trim())
         .filter(Boolean)

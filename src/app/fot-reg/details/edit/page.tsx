@@ -55,9 +55,14 @@ export default function FotRegEditPage() {
           locations?: LocationOption[];
         };
         if (!cancelled && res.ok) {
-          setLocationOptions(
-            (payload.locations ?? []).filter((opt) => opt.id && opt.name),
-          );
+          const unique = (payload.locations ?? []).reduce<LocationOption[]>((acc, opt) => {
+            const nameKey = (opt.name ?? "").trim().toLowerCase();
+            if (!opt.id || !opt.name || !nameKey) return acc;
+            if (acc.some((row) => row.name.trim().toLowerCase() === nameKey)) return acc;
+            acc.push(opt);
+            return acc;
+          }, []);
+          setLocationOptions(unique);
         }
       } catch (err) {
         console.error("Failed to load FoT locations", err);

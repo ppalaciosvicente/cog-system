@@ -211,6 +211,10 @@ export default function EnterContributionsPage() {
     return value.trim().toLowerCase() === "check";
   }
 
+  function isValidDateInput(value: string) {
+    return /^\d{4}-\d{2}-\d{2}$/.test(value.trim());
+  }
+
   function updateRow(rowId: number, field: keyof DraftRow, value: string) {
     if (field === "dateDeposited") {
       const nextDate = value;
@@ -218,17 +222,20 @@ export default function EnterContributionsPage() {
         const targetIndex = current.findIndex((row) => row.id === rowId);
         if (targetIndex === -1) return current;
 
+        const canPropagate = isValidDateInput(nextDate);
         return current.map((row, index) => {
           if (row.id === rowId) {
             return { ...row, dateDeposited: nextDate };
           }
-          if (index > targetIndex && !row.dateDeposited.trim() && nextDate.trim()) {
+          if (canPropagate && index > targetIndex && !row.dateDeposited.trim()) {
             return { ...row, dateDeposited: nextDate };
           }
           return row;
         });
       });
-      setLastDateDeposited((current) => (nextDate.trim() ? nextDate : current));
+      if (isValidDateInput(nextDate)) {
+        setLastDateDeposited(nextDate);
+      }
       return;
     }
 
@@ -353,7 +360,7 @@ export default function EnterContributionsPage() {
     setRows((current) => {
       const next = EMPTY_ROW();
       const date = lastDateDeposited.trim();
-      if (date) next.dateDeposited = date;
+      if (isValidDateInput(date)) next.dateDeposited = date;
       return [...current, next];
     });
   }
@@ -694,7 +701,6 @@ export default function EnterContributionsPage() {
                 fontSize: 13,
                 color: "#6b7280",
               }}
-              className={forms.mobileOnly}
             >
               Tip: scroll horizontally to see all columns →
             </p>
@@ -904,7 +910,6 @@ export default function EnterContributionsPage() {
                     fontSize: 13,
                     color: "#6b7280",
                   }}
-                  className={forms.mobileOnly}
                 >
                   Tip: scroll horizontally to see all columns →
                 </p>

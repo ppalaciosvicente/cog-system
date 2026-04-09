@@ -660,6 +660,18 @@ export default function EnterContributionsPage() {
             {memberError ? <p className={forms.error}>{memberError}</p> : null}
             {saveError ? <p className={forms.error}>{saveError}</p> : null}
 
+            <p
+              style={{
+                marginTop: 16,
+                marginBottom: 8,
+                fontStyle: "italic",
+                fontSize: 13,
+                color: "#6b7280",
+              }}
+              className={forms.mobileOnly}
+            >
+              Tip: scroll horizontally to see all columns →
+            </p>
             <div className={forms.tableWrap} style={{ marginTop: 12 }}>
               <table className={forms.table}>
                 <thead>
@@ -858,6 +870,18 @@ export default function EnterContributionsPage() {
             ) : null}
             {!loadingDailyEntries && dailyEntryRows.length > 0 ? (
               <>
+                <p
+                  style={{
+                    marginTop: 16,
+                    marginBottom: 8,
+                    fontStyle: "italic",
+                    fontSize: 13,
+                    color: "#6b7280",
+                  }}
+                  className={forms.mobileOnly}
+                >
+                  Tip: scroll horizontally to see all columns →
+                </p>
                 <div className={forms.tableWrap} style={{ marginTop: 12 }}>
                   <table className={forms.table}>
                     <thead>

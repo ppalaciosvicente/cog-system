@@ -619,7 +619,7 @@ export default function ViewContributionsPage() {
                 })}
               </div>
             </div>
-            <div style={{ marginTop: 18 }} />
+            <div style={{ marginTop: 28 }} />
             <div className={forms.formGrid}>
               <div className={forms.col}>
                 <div className={forms.row}>

@@ -118,6 +118,7 @@ export default function EnterContributionsPage() {
   const [memberWarning, setMemberWarning] = useState<string | null>(null);
   const [memberError, setMemberError] = useState<string | null>(null);
   const [rows, setRows] = useState<DraftRow[]>([EMPTY_ROW(), EMPTY_ROW(), EMPTY_ROW()]);
+  const [lastDateDeposited, setLastDateDeposited] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
@@ -211,6 +212,26 @@ export default function EnterContributionsPage() {
   }
 
   function updateRow(rowId: number, field: keyof DraftRow, value: string) {
+    if (field === "dateDeposited") {
+      const nextDate = value;
+      setRows((current) => {
+        const targetIndex = current.findIndex((row) => row.id === rowId);
+        if (targetIndex === -1) return current;
+
+        return current.map((row, index) => {
+          if (row.id === rowId) {
+            return { ...row, dateDeposited: nextDate };
+          }
+          if (index > targetIndex && !row.dateDeposited.trim() && nextDate.trim()) {
+            return { ...row, dateDeposited: nextDate };
+          }
+          return row;
+        });
+      });
+      setLastDateDeposited((current) => (nextDate.trim() ? nextDate : current));
+      return;
+    }
+
     setRows((current) =>
       current.map((row) => {
         if (row.id !== rowId) return row;
@@ -329,7 +350,12 @@ export default function EnterContributionsPage() {
   }
 
   function addRow() {
-    setRows((current) => [...current, EMPTY_ROW()]);
+    setRows((current) => {
+      const next = EMPTY_ROW();
+      const date = lastDateDeposited.trim();
+      if (date) next.dateDeposited = date;
+      return [...current, next];
+    });
   }
 
   function removeRow(rowId: number) {

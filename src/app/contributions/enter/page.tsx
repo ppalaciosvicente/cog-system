@@ -212,7 +212,10 @@ export default function EnterContributionsPage() {
   }
 
   function isValidDateInput(value: string) {
-    return /^\d{4}-\d{2}-\d{2}$/.test(value.trim());
+    const trimmed = value.trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return false;
+    const year = Number(trimmed.slice(0, 4));
+    return Number.isFinite(year) && year >= 1900;
   }
 
   function updateRow(rowId: number, field: keyof DraftRow, value: string) {

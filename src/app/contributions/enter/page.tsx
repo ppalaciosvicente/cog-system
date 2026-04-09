@@ -225,20 +225,26 @@ export default function EnterContributionsPage() {
         const targetIndex = current.findIndex((row) => row.id === rowId);
         if (targetIndex === -1) return current;
 
+        const priorValue = current[targetIndex]?.dateDeposited ?? "";
         const canPropagate = isValidDateInput(nextDate);
+
         return current.map((row, index) => {
           if (row.id === rowId) {
             return { ...row, dateDeposited: nextDate };
           }
-          if (canPropagate && index > targetIndex && !row.dateDeposited.trim()) {
+          if (
+            canPropagate &&
+            index > targetIndex &&
+            (!row.dateDeposited.trim() ||
+              row.dateDeposited === priorValue ||
+              row.dateDeposited === lastDateDeposited)
+          ) {
             return { ...row, dateDeposited: nextDate };
           }
           return row;
         });
       });
-      if (isValidDateInput(nextDate)) {
-        setLastDateDeposited(nextDate);
-      }
+      if (isValidDateInput(nextDate)) setLastDateDeposited(nextDate);
       return;
     }
 

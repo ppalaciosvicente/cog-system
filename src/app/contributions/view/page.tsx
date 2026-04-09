@@ -296,48 +296,6 @@ export default function ViewContributionsPage() {
     }
   }
 
-  function downloadCsv() {
-    setExportError(null);
-    if (!rows.length) {
-      setExportError("No results to download.");
-      return;
-    }
-    const header = [
-      "Member",
-      "Country",
-      "Amount",
-      "Fund Type",
-      "Currency",
-      "Contribution Type",
-      "Check No.",
-      "Date Deposited",
-      "Date Entered",
-      "Comments",
-    ];
-    const body = rows.map((row) => [
-      `"${row.memberName.replace(/"/g, '""')}"`,
-      row.memberCountryCode ? (countryNameByCode[row.memberCountryCode] ?? row.memberCountryCode) : "",
-      `"${formatAmount(row.amount)}"`,
-      `"${row.fundType.replace(/"/g, '""')}"`,
-      row.currencyCode,
-      `"${row.contributionType.replace(/"/g, '""')}"`,
-      `"${(row.checkNo ?? "").replace(/"/g, '""')}"`,
-      row.dateDeposited,
-      row.dateEntered.slice(0, 10),
-      `"${(row.comments ?? "").replace(/"/g, '""')}"`,
-    ]);
-    const csv = [header.join(","), ...body.map((line) => line.join(","))].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `contributions-${startDate}-to-${endDate}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(url);
-  }
-
   function downloadPdf() {
     setExportError(null);
     if (!rows.length) {
@@ -803,13 +761,6 @@ export default function ViewContributionsPage() {
               <div className={forms.actionsRow} style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                 <h2 style={{ margin: 0 }}>Results</h2>
                 <div className={forms.tableActions}>
-                  <button
-                    type="button"
-                    className={`${forms.button} ${forms.actionsRowPrimaryButton}`}
-                    onClick={() => void downloadCsv()}
-                  >
-                    Download CSV
-                  </button>
                   <button
                     type="button"
                     className={`${forms.button} ${forms.actionsRowPrimaryButton}`}

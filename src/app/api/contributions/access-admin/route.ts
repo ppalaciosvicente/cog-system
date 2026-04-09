@@ -520,14 +520,15 @@ export async function GET(request: NextRequest) {
     .filter((row): row is NonNullable<typeof row> => row !== null)
     .sort((a, b) => a.memberName.localeCompare(b.memberName));
 
-  // Eligible members: contribution-eligible statuses, excluding those who already have a contrib role
+  // Eligible members: baptized + in-fellowship statuses, excluding those who already have a contrib role
   const eligibleMembers: EligibleMember[] = [];
   try {
     const donorStatusIds = await getContributionDonorStatusIds(supabase);
     const { data: eligibleData, error: eligibleErr } = await supabase
       .from("emcmember")
-      .select("id,fname,lname,statusid,email")
-      .in("statusid", donorStatusIds);
+      .select("id,fname,lname,statusid,baptized,email")
+      .in("statusid", donorStatusIds)
+      .eq("baptized", true);
     if (eligibleErr) {
       throw new Error(eligibleErr.message);
     }
@@ -535,6 +536,8 @@ export async function GET(request: NextRequest) {
       rows.filter((r) => r.roleName).map((r) => r.memberId),
     );
     for (const row of (eligibleData ?? []) as MemberRow[]) {
+      const email = String((row as any).email ?? "").trim();
+      if (!email) continue;
       if (memberIdsWithRole.has(row.id)) continue;
       eligibleMembers.push({ id: row.id, name: displayName(row) });
     }

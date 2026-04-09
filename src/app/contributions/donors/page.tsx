@@ -78,6 +78,7 @@ type DonorPayload = {
 type EditDraft = {
   id: number;
   memberId: string;
+  donorLabel: string;
   amount: string;
   fundType: string;
   currencyCode: string;
@@ -119,6 +120,7 @@ function toEditDraft(row: ContributionRecord): EditDraft {
   return {
     id: row.id,
     memberId: String(row.memberId),
+    donorLabel: row.memberName,
     amount: String(row.amount),
     fundType: row.fundType,
     currencyCode: row.currencyCode,
@@ -1006,24 +1008,11 @@ export default function ContributionDonorsPage() {
                         <label className={forms.label} htmlFor="donor-edit-member">
                           Donor
                         </label>
-                        <div className={forms.control}>
-                          <select
-                            id="donor-edit-member"
-                            className={forms.field}
-                            value={editDraft.memberId}
-                            onChange={(event) => updateEditField("memberId", event.target.value)}
-                            disabled={loadingEditOptions}
-                          >
-                            <option value="">Select donor</option>
-                            {editHouseholdOptions.map((household) => (
-                              <option key={household.value} value={String(household.value)}>
-                                {household.label}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
+                        <div className={forms.control}>{editDraft.donorLabel || editDraft.memberId}</div>
+                        <p style={{ marginTop: 6, fontSize: 13, color: "#6b7280" }}>
+                          Donor changes aren&apos;t editable here. Delete and re-enter if the donor was incorrect.
+                        </p>
                       </div>
-                      {loadingEditOptions ? <p style={{ marginTop: 12 }}>Loading donors...</p> : null}
                       <div className={forms.row}>
                         <label className={forms.label} htmlFor="donor-edit-amount">
                           Amount

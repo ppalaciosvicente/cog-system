@@ -40,6 +40,7 @@ const DEFAULT_CURRENCY_OPTIONS: CurrencyOption[] = [
 type EditDraft = {
   id: number;
   memberId: string;
+  memberLabel: string;
   amount: string;
   fundType: string;
   currencyCode: string;
@@ -71,6 +72,7 @@ function toEditDraft(row: ContributionRecord): EditDraft {
   return {
     id: row.id,
     memberId: String(row.memberId),
+    memberLabel: row.memberName,
     amount: String(row.amount),
     fundType: row.fundType,
     currencyCode: row.currencyCode,
@@ -103,7 +105,6 @@ export default function ViewContributionsPage() {
   const [currencyOptions, setCurrencyOptions] = useState<CurrencyOption[]>(DEFAULT_CURRENCY_OPTIONS);
   const [householdDefaultCurrencyByRepresentative, setHouseholdDefaultCurrencyByRepresentative] =
     useState<Record<string, string>>({});
-  const [householdOptions, setHouseholdOptions] = useState<HouseholdOption[]>([]);
   const [rows, setRows] = useState<ContributionRecord[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -132,7 +133,6 @@ export default function ViewContributionsPage() {
         const payload = await getContributionMemberOptionsCached();
 
         if (!cancelled) {
-          setHouseholdOptions(payload.households ?? []);
           setHouseholdDefaultCurrencyByRepresentative(
             payload.householdDefaultCurrencyByRepresentative ?? {},
           );
@@ -934,21 +934,10 @@ export default function ViewContributionsPage() {
                     <label className={forms.label} htmlFor="edit-contribution-member">
                       Member
                     </label>
-                    <div className={forms.control}>
-                      <select
-                        id="edit-contribution-member"
-                        className={forms.field}
-                        value={editDraft.memberId}
-                        onChange={(event) => updateEditField("memberId", event.target.value)}
-                      >
-                        <option value="">Select member</option>
-                        {householdOptions.map((household) => (
-                          <option key={household.value} value={String(household.value)}>
-                            {household.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    <div className={forms.control}>{editDraft.memberLabel}</div>
+                    <p style={{ marginTop: 6, fontSize: 13, color: "#6b7280" }}>
+                      Member changes aren&apos;t editable here. Delete and re-enter if the member was incorrect.
+                    </p>
                   </div>
                   <div className={forms.row}>
                     <label className={forms.label} htmlFor="edit-contribution-amount">

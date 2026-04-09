@@ -1000,6 +1000,9 @@ export default function EnterContributionsPage() {
                     <label className={forms.label}>Member</label>
                     <div className={forms.control}>{editDraft.donorLabel}</div>
                   </div>
+                  <p style={{ marginTop: -4, marginBottom: 10, fontSize: 13, color: "#6b7280" }}>
+                    Donor changes aren&apos;t editable here. Delete and re-enter if the donor was incorrect.
+                  </p>
                   <div className={forms.row}>
                     <label className={forms.label} htmlFor="edit-amount">
                       Amount

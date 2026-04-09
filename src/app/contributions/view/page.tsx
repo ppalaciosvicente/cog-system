@@ -925,20 +925,28 @@ export default function ViewContributionsPage() {
 
           {editDraft ? (
             <div className={forms.modalBackdrop} role="dialog" aria-modal="true">
-              <div className={forms.modalCard}>
-                <h2 className={forms.modalTitle}>Edit Contribution</h2>
-                <p className={forms.modalText}>Update the saved contribution and save your changes.</p>
-                {editError ? <p className={forms.error}>{editError}</p> : null}
-                <div className={forms.col}>
-                  <div className={forms.row}>
-                    <label className={forms.label} htmlFor="edit-contribution-member">
-                      Member
-                    </label>
-                    <div className={forms.control}>{editDraft.memberLabel}</div>
-                    <p style={{ marginTop: 6, fontSize: 13, color: "#6b7280" }}>
-                      Member changes aren&apos;t editable here. Delete and re-enter if the member was incorrect.
-                    </p>
-                  </div>
+            <div className={forms.modalCard}>
+              <h2 className={forms.modalTitle}>Edit Contribution</h2>
+              <p className={forms.modalText}>Update the saved contribution and save your changes.</p>
+              <p
+                style={{
+                  marginTop: -4,
+                  marginBottom: 10,
+                  fontSize: 13,
+                  color: "#6b7280",
+                  fontStyle: "italic",
+                }}
+              >
+                Member changes aren&apos;t editable here. Delete and re-enter if the member was incorrect.
+              </p>
+              {editError ? <p className={forms.error}>{editError}</p> : null}
+              <div className={forms.col}>
+                <div className={forms.row}>
+                  <label className={forms.label} htmlFor="edit-contribution-member">
+                    Member
+                  </label>
+                  <div className={forms.control}>{editDraft.memberLabel}</div>
+                </div>
                   <div className={forms.row}>
                     <label className={forms.label} htmlFor="edit-contribution-amount">
                       Amount

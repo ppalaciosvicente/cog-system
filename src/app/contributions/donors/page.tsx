@@ -1002,6 +1002,17 @@ export default function ContributionDonorsPage() {
                   <div className={forms.modalCard}>
                     <h2 className={forms.modalTitle}>Edit Contribution</h2>
                     <p className={forms.modalText}>Update the saved contribution and save your changes.</p>
+                    <p
+                      style={{
+                        marginTop: -4,
+                        marginBottom: 10,
+                        fontSize: 13,
+                        color: "#6b7280",
+                        fontStyle: "italic",
+                      }}
+                    >
+                      Donor changes aren&apos;t editable here. Delete and re-enter if the donor was incorrect.
+                    </p>
                     {editError ? <p className={forms.error}>{editError}</p> : null}
                     <div className={forms.col}>
                       <div className={forms.row}>

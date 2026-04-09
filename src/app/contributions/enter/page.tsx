@@ -382,18 +382,21 @@ export default function EnterContributionsPage() {
   function buildPayloadRows(): ContributionDraftInput[] {
     const nonEmptyRows = rows.filter((row) => {
       const contributionType = row.contributionType.trim();
-      return [
+      const hasCoreValues = [
         row.memberQuery,
         row.memberId,
         row.amount,
         row.fundType,
         row.checkNo,
-        row.dateDeposited,
         row.comments,
         row.currencyCode,
-      ].some((value) => String(value ?? "").trim() !== "")
-        || (contributionType !== "" && contributionType !== DEFAULT_CONTRIBUTION_TYPE)
-        || (row.dateEntered.trim() !== "" && row.dateEntered !== todayDateString());
+      ].some((value) => String(value ?? "").trim() !== "");
+
+      const hasNonDefaultType = contributionType !== "" && contributionType !== DEFAULT_CONTRIBUTION_TYPE;
+      const hasNonDefaultDateEntered =
+        row.dateEntered.trim() !== "" && row.dateEntered !== todayDateString();
+
+      return hasCoreValues || hasNonDefaultType || hasNonDefaultDateEntered;
     });
 
     if (!nonEmptyRows.length) {
@@ -919,6 +922,7 @@ export default function EnterContributionsPage() {
                     fontSize: 13,
                     color: "#6b7280",
                   }}
+                  className={forms.mobileOnly}
                 >
                   Tip: scroll horizontally to see all columns →
                 </p>

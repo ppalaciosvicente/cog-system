@@ -1020,9 +1020,6 @@ export default function ContributionDonorsPage() {
                           Donor
                         </label>
                         <div className={forms.control}>{editDraft.donorLabel || editDraft.memberId}</div>
-                        <p style={{ marginTop: 6, fontSize: 13, color: "#6b7280" }}>
-                          Donor changes aren&apos;t editable here. Delete and re-enter if the donor was incorrect.
-                        </p>
                       </div>
                       <div className={forms.row}>
                         <label className={forms.label} htmlFor="donor-edit-amount">

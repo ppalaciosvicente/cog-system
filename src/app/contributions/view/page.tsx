@@ -619,7 +619,7 @@ export default function ViewContributionsPage() {
                 })}
               </div>
             </div>
-            <div style={{ marginTop: 8 }} />
+            <div style={{ marginTop: 18 }} />
             <div className={forms.formGrid}>
               <div className={forms.col}>
                 <div className={forms.row}>
@@ -772,6 +772,18 @@ export default function ViewContributionsPage() {
                 </div>
               </div>
               {exportError ? <p className={forms.error}>{exportError}</p> : null}
+              <p
+                style={{
+                  marginTop: 4,
+                  marginBottom: 8,
+                  fontStyle: "italic",
+                  fontSize: 13,
+                  color: "#6b7280",
+                }}
+                className={forms.mobileOnly}
+              >
+                Tip: scroll horizontally to see all columns →
+              </p>
               <div className={forms.tableWrap}>
                 <table className={forms.table}>
                   <thead>

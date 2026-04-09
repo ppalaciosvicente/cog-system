@@ -289,13 +289,13 @@ export async function PUT(request: NextRequest) {
   const { error: updateRegErr } = await supabase
     .from("fotreg")
     .update({
+      locationid: locationIdValue,
       totalinparty: Number.isFinite(totalInParty) ? totalInParty : null,
       accommodation: stayingAt || null,
       alleightdays: allEightDays,
       days: allEightDays ? null : daysAtFeast || null,
     })
-    .eq("id", regIdValue)
-    .eq("locationid", locationIdValue);
+    .eq("id", regIdValue);
 
   if (updateRegErr) {
     return NextResponse.json(

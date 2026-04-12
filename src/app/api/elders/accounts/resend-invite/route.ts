@@ -126,6 +126,7 @@ export async function POST(request: NextRequest) {
   }
 
   let authUserId = String(account.authuserid ?? "").trim() || null;
+  let usedExistingAuthUser = Boolean(authUserId);
   if (authUserId) {
     const { data: linkedAuthData } = await supabase.auth.admin.getUserById(authUserId);
     const linkedAuthEmail = String(linkedAuthData?.user?.email ?? "")
@@ -133,6 +134,7 @@ export async function POST(request: NextRequest) {
       .toLowerCase();
     if (!linkedAuthEmail || linkedAuthEmail !== memberEmail) {
       authUserId = null;
+      usedExistingAuthUser = false;
     }
   }
 
@@ -142,18 +144,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: existingAuth.error.message }, { status: 500 });
     }
     authUserId = existingAuth.id;
+    usedExistingAuthUser = Boolean(authUserId);
     if (!authUserId) {
-      const { data: createdUser, error: createUserErr } = await supabase.auth.admin.createUser({
-        email: memberEmail,
-        email_confirm: true,
-      });
-      if (createUserErr || !createdUser.user?.id) {
+      const { data: inviteData, error: inviteErr } =
+        await supabase.auth.admin.inviteUserByEmail(memberEmail, {
+          redirectTo: `${appOrigin}/auth/callback?next=/reset-password`,
+        });
+      if (inviteErr || !inviteData.user?.id) {
         return NextResponse.json(
-          { error: createUserErr?.message ?? "Failed to create auth user." },
+          { error: inviteErr?.message ?? "Failed to create auth user." },
           { status: 500 },
         );
       }
-      authUserId = createdUser.user.id;
+      authUserId = inviteData.user.id;
+      usedExistingAuthUser = false;
     }
   }
 
@@ -167,12 +171,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: accountUpdateErr.message }, { status: 500 });
   }
 
-  const { error: resetErr } = await supabase.auth.resetPasswordForEmail(memberEmail, {
-    redirectTo,
-  });
-  if (resetErr) {
-    return NextResponse.json({ error: resetErr.message }, { status: 500 });
+  if (usedExistingAuthUser) {
+    const { error: resetErr } = await supabase.auth.resetPasswordForEmail(memberEmail, {
+      redirectTo,
+    });
+    if (resetErr) {
+      return NextResponse.json({ error: resetErr.message }, { status: 500 });
+    }
+    return NextResponse.json({ ok: true, sent: "reset" as const });
   }
 
-  return NextResponse.json({ ok: true, sent: "reset" as const });
+  return NextResponse.json({ ok: true, sent: "invite" as const });
 }

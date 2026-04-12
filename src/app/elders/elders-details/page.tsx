@@ -548,12 +548,19 @@ export default function EldersDetailsPage() {
       });
       const payload = (await response.json().catch(() => ({}))) as {
         error?: string;
+        sent?: "reset" | "invite";
       };
       if (!response.ok) {
         setDetailError(payload.error ?? "Failed to resend invitation email.");
         return;
       }
-      setInviteMsg("Invitation email sent.");
+      if (payload.sent === "invite") {
+        setInviteMsg("Invite email sent with first-time password setup link.");
+      } else if (payload.sent === "reset") {
+        setInviteMsg("Password reset email sent.");
+      } else {
+        setInviteMsg("Email sent.");
+      }
     } finally {
       setSendingInvite(false);
     }

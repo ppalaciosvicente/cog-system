@@ -109,6 +109,7 @@ async function ensureActiveAccountForMember(
 
   let accountId: number | null = null;
   let authUserId: string | null = null;
+  let usedExistingAuthUser = false;
 
   const { data: existingAccount, error: existingErr } = await supabase
     .from("emcaccounts")
@@ -131,6 +132,9 @@ async function ensureActiveAccountForMember(
       if (!linkedAuthEmail || linkedAuthEmail !== memberEmail) {
         authUserId = null;
       }
+      if (authUserId) {
+        usedExistingAuthUser = true;
+      }
     }
     if (!existingAccount.isactive) {
       const { error: reactivateErr } = await supabase
@@ -143,35 +147,28 @@ async function ensureActiveAccountForMember(
     }
   }
 
+  let existingAuthResult: { id: string | null; error: { message: string } | null } | null = null;
+
   if (!authUserId) {
-    const existingAuth = await findAuthUserIdByEmail(supabase, memberEmail);
-    if (existingAuth.error) {
-      return { accountId: null as number | null, error: existingAuth.error.message };
+    existingAuthResult = await findAuthUserIdByEmail(supabase, memberEmail);
+    if (existingAuthResult.error) {
+      return { accountId: null as number | null, error: existingAuthResult.error.message };
     }
 
-    if (existingAuth.id) {
-      authUserId = existingAuth.id;
+    if (existingAuthResult.id) {
+      authUserId = existingAuthResult.id;
+      usedExistingAuthUser = true;
     } else {
-      const { data: createdUser, error: createUserErr } = await supabase.auth.admin.createUser({
-        email: memberEmail,
-        email_confirm: true,
-      });
-      if (createUserErr || !createdUser.user?.id) {
+      const redirectTo = `${appOrigin}/auth/callback?next=/reset-password`;
+      const { data: inviteData, error: inviteErr } =
+        await supabase.auth.admin.inviteUserByEmail(memberEmail, { redirectTo });
+      if (inviteErr || !inviteData.user?.id) {
         return {
           accountId: null as number | null,
-          error:
-            createUserErr?.message ?? "Failed to create auth user from member email.",
+          error: inviteErr?.message ?? "Failed to create auth user from member email.",
         };
       }
-      authUserId = createdUser.user.id;
-    }
-
-    const redirectTo = `${appOrigin}/auth/callback?next=/reset-password`;
-    const { error: resetErr } = await supabase.auth.resetPasswordForEmail(memberEmail, {
-      redirectTo,
-    });
-    if (resetErr) {
-      return { accountId: null as number | null, error: resetErr.message };
+      authUserId = inviteData.user.id;
     }
   }
 
@@ -196,6 +193,17 @@ async function ensureActiveAccountForMember(
       .eq("id", accountId);
     if (accountUpdateErr) {
       return { accountId: null as number | null, error: accountUpdateErr.message };
+    }
+  }
+
+  // Existing auth user: send reset; brand-new user already received invite above.
+  if (authUserId && usedExistingAuthUser) {
+    const redirectTo = `${appOrigin}/auth/callback?next=/reset-password`;
+    const { error: resetErr } = await supabase.auth.resetPasswordForEmail(memberEmail, {
+      redirectTo,
+    });
+    if (resetErr) {
+      return { accountId: null as number | null, error: resetErr.message };
     }
   }
 

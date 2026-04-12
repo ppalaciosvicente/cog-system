@@ -776,14 +776,22 @@ export default function EldersDetailsPage() {
 
       <div className={forms.topBar}>
         <div className={forms.topBack}>
-          <BackLink
-            fallbackHref="/elders"
-            className={`${forms.linkButton} ${forms.linkButtonLight}`}
-            aria-disabled={editMode}
-            style={editMode ? { pointerEvents: "none", opacity: 0.5 } : undefined}
-          >
-            &lt;- Back
-          </BackLink>
+          {editMode ? (
+            <span
+              className={`${forms.linkButton} ${forms.linkButtonLight}`}
+              aria-disabled
+              style={{ pointerEvents: "none", opacity: 0.5 }}
+            >
+              &lt;- Back
+            </span>
+          ) : (
+            <BackLink
+              fallbackHref="/elders"
+              className={`${forms.linkButton} ${forms.linkButtonLight}`}
+            >
+              &lt;- Back
+            </BackLink>
+          )}
         </div>
 
         {isAdmin && (

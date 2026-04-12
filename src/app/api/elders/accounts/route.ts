@@ -243,7 +243,6 @@ export async function POST(request: NextRequest) {
   }
   const accountId = ensured.accountId;
   const sent = ensured.sent ?? null;
-  const sent = ensured.sent ?? null;
 
   const { data: existingRole, error: roleLookupErr } = await supabase
     .from("emcaccountroles")

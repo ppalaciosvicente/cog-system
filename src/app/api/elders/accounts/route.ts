@@ -242,7 +242,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: ensured.error ?? "Failed to ensure account." }, { status: 500 });
   }
   const accountId = ensured.accountId;
-  const sent = ensured.sent ?? null;
 
   const { data: existingRole, error: roleLookupErr } = await supabase
     .from("emcaccountroles")
@@ -476,7 +475,7 @@ export async function PUT(request: NextRequest) {
     accountId,
     emcRoleName: emcRoleName || null,
     contribRoleName: contribRoleName || null,
-    sent,
+    sent: ensured.sent ?? null,
   });
 }
 

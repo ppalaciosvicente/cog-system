@@ -691,32 +691,36 @@ export default function EldersDetailsPage() {
 
     const headers = await getAuthHeaders();
     if (roleChanged) {
-      const response = await fetch("/api/elders/accounts", {
-        method: "PUT",
-        headers,
-        credentials: "same-origin",
-        body: JSON.stringify({
-          memberId: form.id,
-          emcRoleName: form.emcaccessrole,
-          contribRoleName: form.contribaccessrole,
-        }),
-      });
-      if (!response.ok) {
-        const payload = (await response.json().catch(() => ({}))) as {
+      let responsePayload: { error?: string; sent?: "invite" | "reset" } = {};
+      try {
+        const response = await fetch("/api/elders/accounts", {
+          method: "PUT",
+          headers,
+          credentials: "same-origin",
+          body: JSON.stringify({
+            memberId: form.id,
+            emcRoleName: form.emcaccessrole,
+            contribRoleName: form.contribaccessrole,
+          }),
+        });
+        responsePayload = (await response.json().catch(() => ({}))) as {
           error?: string;
+          sent?: "invite" | "reset";
         };
-        setDetailError(
-          `Saved elder changes, but failed to update account access: ${payload.error ?? "Unknown error."}`,
-        );
+        if (!response.ok) {
+          setDetailError(
+            `Saved elder changes, but failed to update account access: ${responsePayload.error ?? "Unknown error."}`,
+          );
+          return;
+        }
+      } catch (err) {
+        setDetailError("Saved elder changes, but failed to update account access (network error).");
         return;
       }
       delete accessCacheRef.current[form.id];
-      const payload = (await response.json().catch(() => ({}))) as {
-        sent?: "invite" | "reset";
-      };
-      if (payload.sent === "invite") {
+      if (responsePayload.sent === "invite") {
         setInviteMsg("Invite email sent with first-time password setup link.");
-      } else if (payload.sent === "reset") {
+      } else if (responsePayload.sent === "reset") {
         setInviteMsg("Password reset email sent.");
       } else {
         setInviteMsg(null);
@@ -772,14 +776,24 @@ export default function EldersDetailsPage() {
 
       <div className={forms.topBar}>
         <div className={forms.topBack}>
-          <BackLink fallbackHref="/elders" className={`${forms.linkButton} ${forms.linkButtonLight}`}>
+          <BackLink
+            fallbackHref="/elders"
+            className={`${forms.linkButton} ${forms.linkButtonLight}`}
+            aria-disabled={editMode}
+            style={editMode ? { pointerEvents: "none", opacity: 0.5 } : undefined}
+          >
             &lt;- Back
           </BackLink>
         </div>
 
         {isAdmin && (
           <div className={`${forms.topGroup} ${forms.topGroupAdd}`}>
-            <Link href="/elders/add" className={forms.linkButton}>
+            <Link
+              href="/elders/add"
+              className={forms.linkButton}
+              aria-disabled={editMode}
+              style={editMode ? { pointerEvents: "none", opacity: 0.5 } : undefined}
+            >
               Add Elder
             </Link>
           </div>
@@ -797,6 +811,8 @@ export default function EldersDetailsPage() {
               setSelectedId(e.target.value ? Number(e.target.value) : null)
             }
             className={forms.selectContact}
+            disabled={editMode}
+            style={editMode ? { opacity: 0.6, cursor: "not-allowed" } : undefined}
           >
             {sortedOptions.length === 0 && (
               <option value="">(no members)</option>
@@ -854,7 +870,7 @@ export default function EldersDetailsPage() {
             </button>
             <button
               className={forms.button}
-              disabled={!form || sendingInvite}
+              disabled={!form || sendingInvite || editMode}
               onClick={() => void resendInvitationEmail()}
               style={{ background: "#1d4ed8", color: "#fff" }}
             >

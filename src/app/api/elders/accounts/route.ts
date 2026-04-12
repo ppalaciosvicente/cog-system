@@ -29,6 +29,12 @@ type AccountRoleWithAccountId = {
   emcroles?: { rolename?: string | null } | { rolename?: string | null }[] | null;
 };
 
+type EnsureAccountResult = {
+  accountId: number | null;
+  error: string | null;
+  sent?: "invite" | "reset";
+};
+
 function resolveAppOrigin(request: NextRequest) {
   const configured = String(process.env.NEXT_PUBLIC_APP_URL ?? "")
     .trim()
@@ -87,7 +93,7 @@ async function ensureActiveAccountForMember(
   supabase: ReturnType<typeof createServiceRoleClient>,
   request: NextRequest,
   memberId: number,
-) {
+): Promise<EnsureAccountResult> {
   const appOrigin = resolveAppOrigin(request);
 
   const { data: member, error: memberErr } = await supabase
@@ -97,19 +103,17 @@ async function ensureActiveAccountForMember(
     .maybeSingle();
 
   if (memberErr) {
-    return { accountId: null as number | null, error: memberErr.message };
+    return { accountId: null, error: memberErr.message };
   }
   const memberEmail = String(member?.email ?? "").trim().toLowerCase();
   if (!memberEmail) {
-    return {
-      accountId: null as number | null,
-      error: "Selected member does not have an email address.",
-    };
+    return { accountId: null, error: "Selected member does not have an email address." };
   }
 
   let accountId: number | null = null;
   let authUserId: string | null = null;
   let usedExistingAuthUser = false;
+  let sent: "invite" | "reset" | undefined;
 
   const { data: existingAccount, error: existingErr } = await supabase
     .from("emcaccounts")
@@ -118,7 +122,7 @@ async function ensureActiveAccountForMember(
     .maybeSingle();
 
   if (existingErr) {
-    return { accountId: null as number | null, error: existingErr.message };
+    return { accountId: null, error: existingErr.message };
   }
 
   if (existingAccount?.id) {
@@ -142,7 +146,7 @@ async function ensureActiveAccountForMember(
         .update({ isactive: true })
         .eq("id", accountId);
       if (reactivateErr) {
-        return { accountId: null as number | null, error: reactivateErr.message };
+        return { accountId: null, error: reactivateErr.message };
       }
     }
   }
@@ -152,7 +156,7 @@ async function ensureActiveAccountForMember(
   if (!authUserId) {
     existingAuthResult = await findAuthUserIdByEmail(supabase, memberEmail);
     if (existingAuthResult.error) {
-      return { accountId: null as number | null, error: existingAuthResult.error.message };
+      return { accountId: null, error: existingAuthResult.error.message };
     }
 
     if (existingAuthResult.id) {
@@ -164,11 +168,12 @@ async function ensureActiveAccountForMember(
         await supabase.auth.admin.inviteUserByEmail(memberEmail, { redirectTo });
       if (inviteErr || !inviteData.user?.id) {
         return {
-          accountId: null as number | null,
+          accountId: null,
           error: inviteErr?.message ?? "Failed to create auth user from member email.",
         };
       }
       authUserId = inviteData.user.id;
+      sent = "invite";
     }
   }
 
@@ -180,10 +185,7 @@ async function ensureActiveAccountForMember(
       .single();
 
     if (createErr || !created?.id) {
-      return {
-        accountId: null as number | null,
-        error: createErr?.message ?? "Failed to create account.",
-      };
+      return { accountId: null, error: createErr?.message ?? "Failed to create account." };
     }
     accountId = created.id as number;
   } else {
@@ -192,7 +194,7 @@ async function ensureActiveAccountForMember(
       .update({ authuserid: authUserId, isactive: true })
       .eq("id", accountId);
     if (accountUpdateErr) {
-      return { accountId: null as number | null, error: accountUpdateErr.message };
+      return { accountId: null, error: accountUpdateErr.message };
     }
   }
 
@@ -203,11 +205,12 @@ async function ensureActiveAccountForMember(
       redirectTo,
     });
     if (resetErr) {
-      return { accountId: null as number | null, error: resetErr.message };
+      return { accountId: null, error: resetErr.message };
     }
+    sent = sent ?? "reset";
   }
 
-  return { accountId, error: null as string | null };
+  return { accountId, error: null, sent };
 }
 
 export async function POST(request: NextRequest) {
@@ -239,6 +242,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: ensured.error ?? "Failed to ensure account." }, { status: 500 });
   }
   const accountId = ensured.accountId;
+  const sent = ensured.sent ?? null;
 
   const { data: existingRole, error: roleLookupErr } = await supabase
     .from("emcaccountroles")
@@ -467,7 +471,13 @@ export async function PUT(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, accountId, emcRoleName: emcRoleName || null, contribRoleName: contribRoleName || null });
+  return NextResponse.json({
+    ok: true,
+    accountId,
+    emcRoleName: emcRoleName || null,
+    contribRoleName: contribRoleName || null,
+    sent,
+  });
 }
 
 export async function PATCH(request: NextRequest) {

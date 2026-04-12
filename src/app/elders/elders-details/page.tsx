@@ -711,6 +711,16 @@ export default function EldersDetailsPage() {
         return;
       }
       delete accessCacheRef.current[form.id];
+      const payload = (await response.json().catch(() => ({}))) as {
+        sent?: "invite" | "reset";
+      };
+      if (payload.sent === "invite") {
+        setInviteMsg("Invite email sent with first-time password setup link.");
+      } else if (payload.sent === "reset") {
+        setInviteMsg("Password reset email sent.");
+      } else {
+        setInviteMsg(null);
+      }
     }
 
     setSaveMsg("Saved.");

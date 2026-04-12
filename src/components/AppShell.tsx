@@ -156,22 +156,30 @@ export function AppShell({ children }: AppShellProps) {
       const { data, error } = await supabase.auth.getUser();
       if (cancelled) return;
       const unauthenticated = Boolean(error) || !data.user;
-      if (unauthenticated && !AUTH_PATH_PREFIXES.some((prefix) => pathname?.startsWith(prefix))) {
-        setRedirecting(true);
-        router.replace("/login");
+      const isAuthPath = AUTH_PATH_PREFIXES.some((prefix) => pathname?.startsWith(prefix));
+
+      if (unauthenticated) {
+        if (!isAuthPath) {
+          setRedirecting(true);
+          router.replace("/login");
+          return;
+        }
+        // On auth pages, we still want to render the screen even if unauthenticated.
+        setRedirecting(false);
+        setAuthReady(true);
         return;
       }
 
       // If authenticated, verify they still have app access; otherwise sign out and redirect.
-      if (!unauthenticated) {
-        const access = await loadCurrentAppAccess(supabase);
-        if (!access.ok) {
-          await supabase.auth.signOut().catch(() => undefined);
-          setRedirecting(true);
-          router.replace("/login?noAccess=1");
-          return;
-        }
+      const access = await loadCurrentAppAccess(supabase);
+      if (!access.ok) {
+        await supabase.auth.signOut().catch(() => undefined);
+        setRedirecting(true);
+        router.replace("/login?noAccess=1");
+        return;
       }
+
+      setRedirecting(false);
       setAuthReady(true);
     }
     void checkSession();

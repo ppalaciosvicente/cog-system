@@ -889,7 +889,11 @@ export default function EldersAreasPage() {
       )}
 
       {sortedRows.length > 0 ? (
-        <div className={forms.tableWrap} style={{ marginTop: 12 }}>
+        <div style={{ marginTop: 12 }}>
+          <p className={forms.subtle} style={{ margin: "0 0 6px", fontSize: 13 }}>
+            Tip: On small screens you can swipe the table horizontally.
+          </p>
+          <div className={forms.tableWrap}>
           <table className={forms.table}>
             <thead>
               <tr>
@@ -945,6 +949,7 @@ export default function EldersAreasPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       ) : (
         <p>No elder area assignments found.</p>

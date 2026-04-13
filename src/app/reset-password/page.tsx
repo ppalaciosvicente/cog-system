@@ -23,10 +23,44 @@ export default function ResetPasswordPage() {
       setLoading(true);
       setError(null);
       try {
-        const urlError = new URLSearchParams(window.location.search).get(
-          "error",
-        );
+        const currentUrl = new URL(window.location.href);
+
+        const urlError = currentUrl.searchParams.get("error");
         if (urlError && !cancelled) setError(urlError);
+
+        const code = currentUrl.searchParams.get("code");
+        if (code) {
+          const { error: exchangeErr } =
+            await supabase.auth.exchangeCodeForSession(code);
+          if (exchangeErr && !cancelled) {
+            setError(exchangeErr.message);
+          } else if (!cancelled) {
+            setReady(true);
+            currentUrl.searchParams.delete("code");
+            router.replace(currentUrl.pathname);
+            return;
+          }
+        }
+
+        // Older email links include access_token/refresh_token in the hash.
+        const hashParams = new URLSearchParams(
+          currentUrl.hash.replace(/^#/, ""),
+        );
+        const accessToken = hashParams.get("access_token");
+        const refreshToken = hashParams.get("refresh_token");
+        if (accessToken && refreshToken) {
+          const { error: setErr } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          if (setErr && !cancelled) {
+            setError(setErr.message);
+          } else if (!cancelled) {
+            setReady(true);
+            router.replace(currentUrl.pathname);
+            return;
+          }
+        }
 
         const { data } = await supabase.auth.getSession();
         if (!cancelled) {

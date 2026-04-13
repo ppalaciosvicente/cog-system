@@ -32,7 +32,7 @@ type AccountRoleWithAccountId = {
 type EnsureAccountResult = {
   accountId: number | null;
   error: string | null;
-  sent?: "invite" | "reset";
+  sent?: "invite" | "reset" | "rate_limited";
 };
 
 function resolveAppOrigin(request: NextRequest) {
@@ -167,13 +167,19 @@ async function ensureActiveAccountForMember(
       const { data: inviteData, error: inviteErr } =
         await supabase.auth.admin.inviteUserByEmail(memberEmail, { redirectTo });
       if (inviteErr || !inviteData.user?.id) {
-        return {
-          accountId: null,
-          error: inviteErr?.message ?? "Failed to create auth user from member email.",
-        };
+        const msg = String(inviteErr?.message ?? "").toLowerCase();
+        const rateLimited = msg.includes("rate limit") || msg.includes("once every 60 seconds");
+        if (!rateLimited) {
+          return {
+            accountId: null,
+            error: inviteErr?.message ?? "Failed to create auth user from member email.",
+          };
+        }
+        sent = "rate_limited";
+      } else {
+        authUserId = inviteData.user.id;
+        sent = "invite";
       }
-      authUserId = inviteData.user.id;
-      sent = "invite";
     }
   }
 
@@ -205,9 +211,15 @@ async function ensureActiveAccountForMember(
       redirectTo,
     });
     if (resetErr) {
-      return { accountId: null, error: resetErr.message };
+      const msg = String(resetErr.message ?? "").toLowerCase();
+      const rateLimited = msg.includes("rate limit") || msg.includes("once every 60 seconds");
+      if (!rateLimited) {
+        return { accountId: null, error: resetErr.message };
+      }
+      sent = sent ?? "rate_limited";
+    } else {
+      sent = sent ?? "reset";
     }
-    sent = sent ?? "reset";
   }
 
   return { accountId, error: null, sent };

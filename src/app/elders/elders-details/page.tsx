@@ -691,7 +691,7 @@ export default function EldersDetailsPage() {
 
     const headers = await getAuthHeaders();
     if (roleChanged) {
-      let responsePayload: { error?: string; sent?: "invite" | "reset" } = {};
+      let responsePayload: { error?: string; sent?: "invite" | "reset" | "rate_limited" } = {};
       try {
         const response = await fetch("/api/elders/accounts", {
           method: "PUT",
@@ -722,6 +722,10 @@ export default function EldersDetailsPage() {
         setInviteMsg("Invite email sent with first-time password setup link.");
       } else if (responsePayload.sent === "reset") {
         setInviteMsg("Password reset email sent.");
+      } else if (responsePayload.sent === "rate_limited") {
+        setInviteMsg(
+          "Account updated. Email already sent recently; Supabase rate limit applies for about a minute.",
+        );
       } else {
         setInviteMsg(null);
       }

@@ -897,8 +897,17 @@ export default function EldersAreasPage() {
 
       {sortedRows.length > 0 ? (
         <div style={{ marginTop: 12 }}>
-          <p className={forms.subtle} style={{ margin: "0 0 6px", fontSize: 13 }}>
-            Tip: On small screens you can swipe the table horizontally.
+          <p
+            style={{
+              marginTop: 0,
+              marginBottom: 6,
+              fontStyle: "italic",
+              fontSize: 13,
+              color: "#6b7280",
+            }}
+            className={forms.mobileOnly}
+          >
+            Tip: scroll horizontally to see all columns →
           </p>
           <div className={forms.tableWrap}>
           <table className={forms.table}>

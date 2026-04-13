@@ -175,12 +175,25 @@ async function ensureActiveAccountForMember(
             error: inviteErr?.message ?? "Failed to create auth user from member email.",
           };
         }
+
+        // Try to find the auth user that may have been created by the prior invite
+        const { id: postRateLimitAuthId } = await findAuthUserIdByEmail(supabase, memberEmail);
+        authUserId = postRateLimitAuthId;
         sent = "rate_limited";
       } else {
         authUserId = inviteData.user.id;
         sent = "invite";
       }
     }
+  }
+
+  if (!authUserId) {
+    return {
+      accountId: null,
+      error:
+        "Email invite was rate-limited. Please wait about a minute and try saving access again (auth user not created yet).",
+      sent: sent ?? "rate_limited",
+    };
   }
 
   if (!accountId) {

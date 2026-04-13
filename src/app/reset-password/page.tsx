@@ -169,7 +169,7 @@ export default function ResetPasswordPage() {
           Invite accepted. Please set your password to finish account setup.
         </p>
         <p className={styles.subtitle}>
-          If this link is expired, request a new one from Reset your password.
+          If this link expired, request a new one from Forgot Password.
         </p>
         <form onSubmit={onSubmit}>
           <div className={styles.fieldGroup}>
@@ -201,6 +201,9 @@ export default function ResetPasswordPage() {
 
         {error && <p className={styles.error}>{error}</p>}
         <div className={styles.links}>
+          <Link href="/forgot-password" className={styles.link}>
+            Forgot Password
+          </Link>
           <Link href="/login" className={styles.link}>
             Back to login
           </Link>

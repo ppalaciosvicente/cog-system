@@ -202,7 +202,10 @@ export default function FotRegEditPage() {
   const formDisabled = saving || saved;
 
   return (
-    <main className={`${forms.page} ${forms.pageNarrow}`} style={{ overflowX: "hidden" }}>
+    <main
+      className={`${forms.page} ${forms.pageNarrow} ${forms.compactPage}`}
+      style={{ overflowX: "hidden" }}
+    >
       <h1 className={forms.h1}>{headingText}</h1>
       <div className={forms.backRow}>
         <BackLink fallbackHref="/fot-reg" className={`${forms.linkButton} ${forms.linkButtonLight}`}>
@@ -220,20 +223,17 @@ export default function FotRegEditPage() {
 
       {!loading && row ? (
         <>
-          <div style={{ marginBottom: 16, lineHeight: 1.45 }}>
-            <p style={{ margin: 0 }}>
-              <strong>Contact:</strong> {row.contactName || "Unknown contact"}
-            </p>
-          </div>
+      <div style={{ marginBottom: 12, lineHeight: 1.45 }}>
+        <p style={{ margin: 0 }}>
+          <strong>Contact:</strong> {row.contactName || "Unknown contact"}
+        </p>
+      </div>
 
-          <div style={{ borderTop: "1px solid #d1d5db", paddingTop: 14 }}>
-            <div
-              className={forms.row}
-              style={{ marginBottom: 10, gridTemplateColumns: "minmax(0, 1fr) minmax(220px, 1fr)" }}
-            >
-              <label className={forms.label} htmlFor="location-name">
-                Location name
-              </label>
+      <div style={{ borderTop: "1px solid #d1d5db", paddingTop: 12 }}>
+        <div className={forms.row} style={{ marginBottom: 10 }}>
+          <label className={forms.label} htmlFor="location-name">
+            Location name
+          </label>
               <select
                 id="location-name"
                 className={forms.selectContact}

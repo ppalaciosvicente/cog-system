@@ -6,6 +6,7 @@ import Link from "next/link";
 import { getAuthHeaders } from "@/lib/supabase/client";
 import { BackLink } from "@/components/BackLink";
 import forms from "@/styles/forms.module.css";
+import styles from "./page.module.css";
 
 type DetailRow = {
   regId: string;
@@ -229,7 +230,7 @@ export default function FotRegEditPage() {
         </p>
       </div>
 
-      <div style={{ borderTop: "1px solid #d1d5db", paddingTop: 12 }}>
+      <div style={{ borderTop: "1px solid #d1d5db", paddingTop: 12 }} className={styles.formStack}>
         <div className={forms.row} style={{ marginBottom: 10 }}>
           <label className={forms.label} htmlFor="location-name">
             Location name

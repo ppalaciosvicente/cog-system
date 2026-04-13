@@ -1,0 +1,16 @@
+.formStack {
+  display: grid;
+  gap: 12px;
+}
+
+@media (max-width: 720px) {
+  .formStack .row,
+  .formStack [class*="row"] {
+    grid-template-columns: 1fr !important;
+    align-items: start;
+  }
+
+  .formStack label {
+    margin-bottom: 4px;
+  }
+}

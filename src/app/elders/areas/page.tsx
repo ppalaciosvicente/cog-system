@@ -166,6 +166,7 @@ export default function EldersAreasPage() {
     { value: number; label: string }[]
   >([]);
   const [formError, setFormError] = useState<string | null>(null);
+  const [formSuccess, setFormSuccess] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<{
     memberId: string;
@@ -540,6 +541,7 @@ export default function EldersAreasPage() {
 
   async function handleAdd() {
     setFormError(null);
+    setFormSuccess(null);
 
     const memberId = Number(form.memberId);
     if (!memberId || Number.isNaN(memberId)) {
@@ -681,6 +683,8 @@ export default function EldersAreasPage() {
         stateCode: "",
         congregationId: "",
       });
+
+      setFormSuccess("Assignment successfully added.");
     } finally {
       setSaving(false);
     }
@@ -875,6 +879,9 @@ export default function EldersAreasPage() {
           )}
 
           {formError && <p className={forms.error}>{formError}</p>}
+          {formSuccess && (
+            <p style={{ color: "#166534", marginTop: 4 }}>{formSuccess}</p>
+          )}
           <div className={forms.actions}>
             <button
               type="button"

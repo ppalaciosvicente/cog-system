@@ -113,7 +113,7 @@ async function ensureActiveAccountForMember(
   let accountId: number | null = null;
   let authUserId: string | null = null;
   let usedExistingAuthUser = false;
-  let sent: "invite" | "reset" | undefined;
+  let sent: "invite" | "reset" | "rate_limited" | undefined;
 
   const { data: existingAccount, error: existingErr } = await supabase
     .from("emcaccounts")

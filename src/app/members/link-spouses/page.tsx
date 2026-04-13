@@ -563,7 +563,7 @@ export default function LinkSpousesPage() {
   }
 
   return (
-    <main className={`${forms.page} ${forms.compactPage}`}>
+    <main className={`${forms.page} ${forms.compactPage} ${styles.pageNoOverflow}`}>
       <h1 className={forms.h1}>Link Spouses</h1>
 
       <div className={forms.backRow}>

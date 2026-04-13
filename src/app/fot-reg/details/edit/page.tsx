@@ -203,10 +203,7 @@ export default function FotRegEditPage() {
   const formDisabled = saving || saved;
 
   return (
-    <main
-      className={`${forms.page} ${forms.pageNarrow} ${forms.compactPage}`}
-      style={{ overflowX: "hidden" }}
-    >
+    <main className={`${forms.page} ${forms.pageNarrow}`} style={{ overflowX: "hidden" }}>
       <h1 className={forms.h1}>{headingText}</h1>
       <div className={forms.backRow}>
         <BackLink fallbackHref="/fot-reg" className={`${forms.linkButton} ${forms.linkButtonLight}`}>

@@ -689,52 +689,7 @@ export default function EldersDetailsPage() {
       return;
     }
 
-    const headers = await getAuthHeaders();
-    if (roleChanged) {
-      let responsePayload: { error?: string; sent?: "invite" | "reset" | "rate_limited" } = {};
-      try {
-        const response = await fetch("/api/elders/accounts", {
-          method: "PUT",
-          headers,
-          credentials: "same-origin",
-          body: JSON.stringify({
-            memberId: form.id,
-            emcRoleName: form.emcaccessrole,
-            contribRoleName: form.contribaccessrole,
-          }),
-        });
-        responsePayload = (await response.json().catch(() => ({}))) as {
-          error?: string;
-          sent?: "invite" | "reset";
-        };
-        if (!response.ok) {
-          setDetailError(
-            `Saved elder changes, but failed to update account access: ${responsePayload.error ?? "Unknown error."}`,
-          );
-          return;
-        }
-      } catch (err) {
-        setDetailError("Saved elder changes, but failed to update account access (network error).");
-        return;
-      }
-      delete accessCacheRef.current[form.id];
-      if (responsePayload.sent === "invite") {
-        setInviteMsg("Invite email sent with first-time password setup link.");
-      } else if (responsePayload.sent === "reset") {
-        setInviteMsg("Password reset email sent.");
-      } else if (responsePayload.sent === "rate_limited") {
-        setInviteMsg(
-          "Account updated. Email already sent recently; Supabase rate limit applies for about a minute.",
-        );
-      } else {
-        setInviteMsg(null);
-      }
-    }
-
-    setSaveMsg("Saved.");
-    setDirty(false);
-    setEditMode(false);
-    detailCacheRef.current[form.id] = {
+    const updatedMember = {
       id: form.id,
       fname: form.fname,
       lname: form.lname,
@@ -751,7 +706,53 @@ export default function EldersDetailsPage() {
       datecreated: form.datecreated,
       dateupdated: payload.dateupdated,
     };
-    setMember(form);
+
+    let accessError: string | null = null;
+    let inviteMessage: string | null = null;
+
+    const headers = await getAuthHeaders();
+    if (roleChanged) {
+      let responsePayload: { error?: string; sent?: "invite" | "reset" | "rate_limited" } = {};
+      try {
+        const response = await fetch("/api/elders/accounts", {
+          method: "PUT",
+          headers,
+          credentials: "same-origin",
+          body: JSON.stringify({
+            memberId: form.id,
+            emcRoleName: form.emcaccessrole,
+            contribRoleName: form.contribaccessrole,
+          }),
+        });
+        responsePayload = (await response.json().catch(() => ({}))) as {
+          error?: string;
+          sent?: "invite" | "reset" | "rate_limited";
+        };
+        if (!response.ok) {
+          accessError = `Saved elder changes, but failed to update account access: ${responsePayload.error ?? "Unknown error."}`;
+        } else {
+          delete accessCacheRef.current[form.id];
+          if (responsePayload.sent === "invite") {
+            inviteMessage = "Invite email sent with first-time password setup link.";
+          } else if (responsePayload.sent === "reset") {
+            inviteMessage = "Password reset email sent.";
+          } else if (responsePayload.sent === "rate_limited") {
+            inviteMessage =
+              "Account updated. Email already sent recently; Supabase rate limit applies for about a minute.";
+          }
+        }
+      } catch (err) {
+        accessError = "Saved elder changes, but failed to update account access (network error).";
+      }
+    }
+
+    setInviteMsg(inviteMessage);
+    setDetailError(accessError);
+    setSaveMsg(accessError ? "Saved member, but account access needs attention." : "Saved.");
+    setDirty(false);
+    setEditMode(false);
+    detailCacheRef.current[form.id] = updatedMember;
+    setMember(updatedMember);
 
     setSelectedId(form.id);
   }

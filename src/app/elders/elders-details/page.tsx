@@ -703,6 +703,8 @@ export default function EldersDetailsPage() {
       cellphone: form.cellphone,
       email: form.email,
       eldertypeid: form.eldertypeid,
+      emcaccessrole: form.emcaccessrole,
+      contribaccessrole: form.contribaccessrole,
       datecreated: form.datecreated,
       dateupdated: payload.dateupdated,
     };

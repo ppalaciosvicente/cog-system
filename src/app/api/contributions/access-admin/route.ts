@@ -752,7 +752,7 @@ export async function POST(request: NextRequest) {
   }
 
   const subject = "COG PKG - Access to Contributions System";
-  const html = `<!doctype html><html><body><p>Hello,</p><p>Use this link to access the Contributions System:</p><p><a href="${actionLink}">${actionLink}</a></p><p>If you did not request this, you can ignore this email.</p></body></html>`;
+  const html = `<!doctype html><html><body><p>Hello,</p><p>Use this link to access the COG PKG Contributions System:</p><p><a href="${actionLink}">${actionLink}</a></p><p>Thanks,<br/>COG-PKG Team</p><p>If you did not request this, you can ignore this email.</p></body></html>`;
 
   try {
     await sendSmtpEmail(memberEmail, subject, html);

@@ -16,6 +16,7 @@ type SetRolePayload = {
   roleName?: string;
   emcRoleName?: string | null;
   contribRoleName?: string | null;
+  skipEmail?: boolean;
 };
 
 type AccountRow = {
@@ -93,7 +94,9 @@ async function ensureActiveAccountForMember(
   supabase: ReturnType<typeof createServiceRoleClient>,
   request: NextRequest,
   memberId: number,
+  options?: { skipEmail?: boolean },
 ): Promise<EnsureAccountResult> {
+  const skipEmail = Boolean(options?.skipEmail);
   const appOrigin = resolveAppOrigin(request);
 
   const { data: member, error: memberErr } = await supabase
@@ -154,6 +157,13 @@ async function ensureActiveAccountForMember(
   let existingAuthResult: { id: string | null; error: { message: string } | null } | null = null;
 
   if (!authUserId) {
+    if (skipEmail) {
+      return {
+        accountId: null,
+        error: "Cannot ensure account without sending email (auth user missing).",
+      };
+    }
+
     existingAuthResult = await findAuthUserIdByEmail(supabase, memberEmail);
     if (existingAuthResult.error) {
       return { accountId: null, error: existingAuthResult.error.message };
@@ -218,7 +228,7 @@ async function ensureActiveAccountForMember(
   }
 
   // Existing auth user: send reset; brand-new user already received invite above.
-  if (authUserId && usedExistingAuthUser) {
+  if (authUserId && usedExistingAuthUser && !skipEmail) {
     const redirectTo = `${appOrigin}/auth/callback?next=/reset-password`;
     const { error: resetErr } = await supabase.auth.resetPasswordForEmail(memberEmail, {
       redirectTo,
@@ -412,7 +422,9 @@ export async function PUT(request: NextRequest) {
   }
 
   const supabase = createServiceRoleClient();
-  const ensured = await ensureActiveAccountForMember(supabase, request, memberId);
+  const ensured = await ensureActiveAccountForMember(supabase, request, memberId, {
+    skipEmail: Boolean(payload.skipEmail),
+  });
   if (ensured.error || !ensured.accountId) {
     return NextResponse.json({ error: ensured.error ?? "Failed to ensure account." }, { status: 500 });
   }

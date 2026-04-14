@@ -724,6 +724,7 @@ export default function EldersDetailsPage() {
             memberId: form.id,
             emcRoleName: form.emcaccessrole,
             contribRoleName: form.contribaccessrole,
+            skipEmail: removingElderType,
           }),
         });
         responsePayload = (await response.json().catch(() => ({}))) as {

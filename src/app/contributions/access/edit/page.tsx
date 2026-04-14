@@ -194,6 +194,7 @@ function ContributionAccessEditInner() {
       setError("Contrib user requires at least one country.");
       return;
     }
+    const shouldSendInvite = !hasExistingAccess;
     setSaving(true);
     setError(null);
     setSaveMsg(null);
@@ -207,7 +208,7 @@ function ContributionAccessEditInner() {
           memberId: row.memberId,
           roleName: roleName || null,
           countryCodes: roleName === "contrib_user" ? countryCodes : [],
-          sendEmail: !hasExistingAccess,
+          sendEmail: shouldSendInvite,
         }),
       });
       const payload = (await response.json().catch(() => ({}))) as { error?: string };
@@ -215,7 +216,7 @@ function ContributionAccessEditInner() {
         setError(payload.error ?? "Failed to save contributions access.");
         return;
       }
-      setSaveMsg("Saved.");
+      setSaveMsg(shouldSendInvite ? "Saved. Invitation email sent." : "Saved.");
     } finally {
       setSaving(false);
     }

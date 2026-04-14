@@ -259,7 +259,7 @@ export default function FotResendInvitationsPage() {
     <main className={forms.page}>
       <h1 className={forms.h1}>Resend specific FoT invitations</h1>
       <div className={forms.backRow}>
-        <BackLink fallbackHref="/fot-reg/send-yearly" className={`${forms.linkButton} ${forms.linkButtonLight}`}>
+        <BackLink fallbackHref="/fot-reg" className={`${forms.linkButton} ${forms.linkButtonLight}`}>
           &lt;- Back
         </BackLink>
       </div>

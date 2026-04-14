@@ -187,6 +187,18 @@ export default function ContributionsAccessPage() {
               </Link>
             </div>
 
+            <p
+              style={{
+                margin: "0 0 8px",
+                fontStyle: "italic",
+                fontSize: 13,
+                color: "#6b7280",
+              }}
+              className={forms.mobileOnly}
+            >
+              Tip: scroll horizontally to see all columns →
+            </p>
+
             {rows.length ? (
               <div className={forms.tableWrap}>
                 <table className={forms.table}>

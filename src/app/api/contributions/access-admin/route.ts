@@ -712,7 +712,7 @@ export async function POST(request: NextRequest) {
     supabase,
     request,
     memberId,
-    false,
+    true,
   );
   if (ensured.error || !ensured.accountId) {
     return NextResponse.json(

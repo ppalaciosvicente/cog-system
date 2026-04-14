@@ -152,7 +152,7 @@ export default function ContributionsAccessPage() {
       if (!response.ok) {
         throw new Error(payload.error ?? "Failed to resend invitation.");
       }
-      setSaveMsg("Invitation resent.");
+      setSaveMsg("Password reset email sent.");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to resend invitation.";
       setError(message);

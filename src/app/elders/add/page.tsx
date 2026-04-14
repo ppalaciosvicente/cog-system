@@ -403,6 +403,7 @@ export default function EldersAddPage() {
     const hasAnyAccess = Boolean(form.emcaccessrole || form.contribaccessrole);
 
     if (hasAnyAccess) {
+      let rolePayload: { error?: string; sent?: "invite" | "reset" | "rate_limited" } = {};
       const roleResponse = await fetch("/api/elders/accounts", {
         method: "PUT",
         headers,
@@ -414,13 +415,29 @@ export default function EldersAddPage() {
         }),
       });
       if (!roleResponse.ok) {
-        const rolePayload = (await roleResponse.json().catch(() => ({}))) as {
+        rolePayload = (await roleResponse.json().catch(() => ({}))) as {
           error?: string;
         };
         setDetailError(
           `Elder was saved, but failed to set access: ${rolePayload.error ?? "Unknown error."}`,
         );
         return;
+      }
+      rolePayload = (await roleResponse.json().catch(() => ({}))) as {
+        error?: string;
+        sent?: "invite" | "reset" | "rate_limited";
+      };
+      const sent = rolePayload.sent;
+      if (sent === "invite") {
+        setSaveMsg("Saved. Invite email sent with first-time password link.");
+      } else if (sent === "reset") {
+        setSaveMsg("Saved. Password reset email sent.");
+      } else if (sent === "rate_limited") {
+        setSaveMsg(
+          "Saved. Account updated; email was recently sent (Supabase rate limit ~1 minute).",
+        );
+      } else {
+        setSaveMsg("Saved.");
       }
     } else {
       const deactivateResponse = await fetch("/api/elders/accounts", {
@@ -438,9 +455,8 @@ export default function EldersAddPage() {
         );
         return;
       }
+      setSaveMsg("Saved. Access set to No access (no email sent).");
     }
-
-    setSaveMsg("Saved.");
     setDirty(false);
   }
 

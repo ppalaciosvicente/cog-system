@@ -243,6 +243,17 @@ function ContributionAccessEditInner() {
 
         return (
           <div style={{ display: "grid", gap: 12, maxWidth: 640 }}>
+            <p
+              style={{
+                margin: "0 0 4px",
+                fontStyle: "italic",
+                fontSize: 13,
+                color: "#6b7280",
+              }}
+              className={forms.mobileOnly}
+            >
+              Tip: scroll horizontally to see all columns →
+            </p>
             <div style={{ display: "grid", gap: 8 }}>
               <label className={forms.label}>Select member</label>
               <div className={forms.autocompleteWrap}>

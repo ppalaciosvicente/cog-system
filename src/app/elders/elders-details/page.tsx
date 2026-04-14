@@ -1002,7 +1002,6 @@ export default function EldersDetailsPage() {
                   setField("eldertypeid", nextElderTypeId);
                   if (!nextElderTypeId) {
                     setField("emcaccessrole", null);
-                    setField("contribaccessrole", null);
                   }
                 }}
               />
@@ -1038,7 +1037,7 @@ export default function EldersDetailsPage() {
                 <SelectRow
                   label="Contributions Access**"
                   value={form.contribaccessrole ?? ""}
-                  disabled={!editMode || !form.eldertypeid}
+                  disabled={!editMode}
                   options={[
                     { value: "", label: "No access" },
                     { value: "contrib_admin", label: "Admin" },

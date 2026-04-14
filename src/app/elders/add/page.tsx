@@ -590,9 +590,21 @@ export default function EldersAddPage() {
 
       <hr className={forms.hr} />
 
-      {saveMsg && <div className={forms.actionsMsg}>{saveMsg}</div>}
-      {validationError && <div className={forms.error}>{validationError}</div>}
-      {detailError && <div className={forms.error}>{detailError}</div>}
+      {saveMsg && (
+        <div className={forms.actionsMsg} style={{ marginBottom: 12 }}>
+          {saveMsg}
+        </div>
+      )}
+      {validationError && (
+        <div className={forms.error} style={{ marginBottom: 12 }}>
+          {validationError}
+        </div>
+      )}
+      {detailError && (
+        <div className={forms.error} style={{ marginBottom: 12 }}>
+          {detailError}
+        </div>
+      )}
 
       {detailLoading && <p>Loading member…</p>}
 

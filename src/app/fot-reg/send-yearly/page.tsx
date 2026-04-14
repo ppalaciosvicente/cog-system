@@ -371,8 +371,12 @@ export default function FotSendYearlyPage() {
         </BackLink>
       </div>
 
-      <p className={forms.error} style={{ margin: "20px 0 22px", fontWeight: 400 }}>
-        <strong>WARNING:</strong> Only use this screen if you know what you are doing!
+      <p
+        className={forms.error}
+        style={{ margin: "20px 0 22px", fontWeight: 400 }}
+      >
+        <strong>WARNING:</strong> Only use this screen if you know what you are
+        doing!
       </p>
 
       {isNarrow ? (
@@ -386,8 +390,9 @@ export default function FotSendYearlyPage() {
             color: "#7c2d12",
           }}
         >
-          This tool is best used on a desktop screen. For a safer experience, switch to a
-          larger device. You can still scroll horizontally to use it here.
+          This page is best used on a desktop screen. For a safer experience,
+          switch to a larger device. You can still scroll horizontally to use it
+          here.
         </div>
       ) : null}
 
@@ -443,9 +448,9 @@ export default function FotSendYearlyPage() {
                   fontWeight: 400,
                 }}
               >
-                <strong>WARNING:</strong> with this action, all currently saved FoT registrations
-                will be deleted and all previously sent FoT registration links
-                will stop working.
+                <strong>WARNING:</strong> with this action, all currently saved
+                FoT registrations will be deleted and all previously sent FoT
+                registration links will stop working.
               </p>
               <button
                 type="button"

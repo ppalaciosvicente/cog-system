@@ -44,6 +44,7 @@ export default function FotSendYearlyPage() {
   const supabase = useMemo(() => createClient(), []);
   const [pageLoading, setPageLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isNarrow, setIsNarrow] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [issuing, setIssuing] = useState(false);
   const [issueMsg, setIssueMsg] = useState<string | null>(null);
@@ -135,6 +136,13 @@ export default function FotSendYearlyPage() {
       cancelled = true;
     };
   }, [supabase]);
+
+  useEffect(() => {
+    const handler = () => setIsNarrow(window.innerWidth < 900);
+    handler();
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
 
   async function runResetAndIssue(options: {
     sendEmails: boolean;
@@ -367,10 +375,29 @@ export default function FotSendYearlyPage() {
         <strong>WARNING:</strong> Only use this screen if you know what you are doing!
       </p>
 
+      {isNarrow ? (
+        <div
+          style={{
+            margin: "0 0 18px",
+            padding: "12px 14px",
+            borderRadius: 10,
+            border: "1px solid #f97316",
+            background: "#fff7ed",
+            color: "#7c2d12",
+          }}
+        >
+          This tool is best used on a desktop screen. For a safer experience, switch to a
+          larger device. You can still scroll horizontally to use it here.
+        </div>
+      ) : null}
+
       {error ? <p className={forms.error}>{error}</p> : null}
 
       {isAdmin ? (
-        <section className={forms.sectionCard}>
+        <section
+          className={forms.sectionCard}
+          style={isNarrow ? { overflowX: "auto" } : undefined}
+        >
           <div style={{ display: "grid", gap: 26 }}>
             <div>
               <p style={{ margin: "0 0 8px" }}>

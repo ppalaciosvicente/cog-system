@@ -716,7 +716,7 @@ export async function GET(request: NextRequest) {
     });
 
     const filename = `tax-receipts-${startDate}-to-${endDate}.pdf`;
-    return new Response(pdf, {
+    return new Response(new Uint8Array(pdf), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",

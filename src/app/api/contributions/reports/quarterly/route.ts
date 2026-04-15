@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import PDFDocument from "pdfkit";
 import { getContributionAccess } from "@/lib/contributions";
+import { sendTaxReceiptEmail } from "@/lib/email/tax-receipt";
 import { buildHouseholdOptions } from "@/lib/households";
 import { getCountryNameByCodeMap } from "@/lib/report-country-cache";
 import { createServiceRoleClient } from "@/lib/supabase/service";
@@ -23,6 +24,7 @@ type ScopedMemberRow = {
   statecode: string | null;
   zip: string | null;
   countrycode: string | null;
+  email: string | null;
 };
 
 type ContributionBaseRow = {
@@ -63,6 +65,29 @@ type DonorSection = {
 };
 
 type PageSize = "LETTER" | "A4";
+
+type ContributionAccessOk = {
+  ok: true;
+  isAdmin: boolean;
+  allowedCountryCodes: string[];
+};
+
+type TaxReceiptPreviewRow = {
+  representativeId: number;
+  memberName: string;
+  email: string;
+  address: string;
+  canSendEmail: boolean;
+};
+
+class HttpError extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
 
 function isValidDateOnly(value: string) {
   return /^\d{4}-\d{2}-\d{2}$/.test(value);
@@ -400,12 +425,239 @@ function buildQuarterlyPdf({
   });
 }
 
+async function loadTaxReceiptData(args: {
+  access: ContributionAccessOk;
+  startDate: string;
+  endDate: string;
+  requestedCountryCodes: string[];
+  memberIdFilter: number | null;
+  deductibleOnly: boolean;
+}) {
+  const { access, startDate, endDate, requestedCountryCodes, memberIdFilter, deductibleOnly } =
+    args;
+  const supabase = createServiceRoleClient();
+  let memberQuery = supabase
+    .from("emcmember")
+    .select(
+      "id,fname,lname,householdid,spouseid,address,address2,city,statecode,zip,countrycode,email",
+    );
+
+  if (!access.isAdmin) {
+    if (!access.allowedCountryCodes.length) {
+      throw new HttpError(400, "No contribution regions are assigned to this account yet.");
+    }
+    if (requestedCountryCodes.length > 0) {
+      const invalidCodes = requestedCountryCodes.filter(
+        (code) => !access.allowedCountryCodes.includes(code),
+      );
+      if (invalidCodes.length > 0) {
+        throw new HttpError(400, "One or more selected countries are outside your scope.");
+      }
+    }
+
+    const activeCountryCodes =
+      requestedCountryCodes.length > 0 ? requestedCountryCodes : access.allowedCountryCodes;
+    if (!activeCountryCodes.length) {
+      throw new HttpError(400, "Select at least one country.");
+    }
+    memberQuery = memberQuery.in("countrycode", activeCountryCodes);
+  } else if (requestedCountryCodes.length > 0) {
+    memberQuery = memberQuery.in("countrycode", requestedCountryCodes);
+  }
+
+  const { data: memberRows, error: memberErr } = await memberQuery.limit(5000);
+  if (memberErr) throw new Error(memberErr.message);
+
+  const scopedMembers = (memberRows ?? []) as ScopedMemberRow[];
+  if (!scopedMembers.length) {
+    throw new HttpError(400, "No donors were found in the selected scope.");
+  }
+
+  const households = buildHouseholdOptions(scopedMembers);
+  let filteredHouseholds = households;
+  if (memberIdFilter) {
+    const match = households.find((household) => household.memberIds.includes(memberIdFilter));
+    if (!match) throw new HttpError(404, "Donor not found in scope.");
+    filteredHouseholds = [match];
+  }
+
+  const householdByMemberId = new Map<
+    number,
+    { label: string; memberIds: number[]; representativeId: number }
+  >();
+  filteredHouseholds.forEach((household) => {
+    household.memberIds.forEach((memberId) => {
+      householdByMemberId.set(memberId, {
+        label: household.label,
+        memberIds: household.memberIds,
+        representativeId: household.value,
+      });
+    });
+  });
+
+  const scopedMemberIds = filteredHouseholds.flatMap((h) => h.memberIds);
+  const [
+    { data: fundTypeRows, error: fundTypeErr },
+    { data: contributionTypeRows, error: contributionTypeErr },
+  ] = await Promise.all([
+    supabase.from("contribfundtype").select("id,name").order("name", { ascending: true }),
+    supabase
+      .from("contribtype")
+      .select("id,name,taxdeductable")
+      .order("name", { ascending: true }),
+  ]);
+  if (fundTypeErr) throw new Error(fundTypeErr.message);
+  if (contributionTypeErr) throw new Error(contributionTypeErr.message);
+
+  const deductibleContributionTypeIds = new Set<number>(
+    ((contributionTypeRows ?? []) as ContributionTypeRow[])
+      .filter((row) => row.taxdeductable)
+      .map((row) => row.id),
+  );
+  const fundTypeNameById = new Map<number, string>(
+    ((fundTypeRows ?? []) as LookupRow[])
+      .filter((row): row is LookupRow & { name: string } => Boolean(row.name))
+      .map((row) => [row.id, row.name]),
+  );
+  const contributionTypeNameById = new Map<number, string>(
+    ((contributionTypeRows ?? []) as ContributionTypeRow[])
+      .filter((row): row is ContributionTypeRow & { name: string } => Boolean(row.name))
+      .map((row) => [row.id, row.name]),
+  );
+
+  let countryNameByCode = new Map<string, string>();
+  countryNameByCode = await getCountryNameByCodeMap(supabase);
+
+  const contributionRows: ContributionBaseRow[] = [];
+  for (let from = 0; from < MAX_ROWS; from += PAGE_SIZE) {
+    let query = supabase
+      .from("contribcontribution")
+      .select("id,memberid,amount,checkno,datedeposited,fundtypeid,contributiontypeid,currencycode")
+      .in("memberid", scopedMemberIds)
+      .gte("datedeposited", startDate)
+      .lte("datedeposited", endDate)
+      .order("memberid", { ascending: true })
+      .order("datedeposited", { ascending: true })
+      .order("id", { ascending: true });
+
+    if (deductibleOnly) {
+      query = query.in("contributiontypeid", [...deductibleContributionTypeIds]);
+    }
+
+    const { data, error } = await query.range(from, from + PAGE_SIZE - 1);
+    if (error) throw new Error(error.message);
+
+    const pageRows = (data ?? []) as ContributionBaseRow[];
+    contributionRows.push(...pageRows);
+    if (pageRows.length < PAGE_SIZE) break;
+  }
+
+  if (!contributionRows.length) {
+    const scopeLabel = deductibleOnly ? "tax-deductible contributions" : "contributions";
+    throw new HttpError(400, `No ${scopeLabel} were found for the selected period.`);
+  }
+
+  const memberById = new Map<number, ScopedMemberRow>(scopedMembers.map((row) => [row.id, row]));
+  const sectionsByRepresentativeId = new Map<number, DonorSection>();
+  contributionRows.forEach((row) => {
+    const household = householdByMemberId.get(row.memberid);
+    const member = memberById.get(row.memberid);
+    if (!household || !member) return;
+
+    const representative = memberById.get(household.representativeId) ?? member;
+    const existing = sectionsByRepresentativeId.get(household.representativeId) ?? {
+      label: household.label,
+      representative,
+      rows: [],
+      totalsByCurrency: new Map<string, number>(),
+      locale: "en-US",
+    };
+    const currencyCode = normalizeCode(row.currencycode) || "USD";
+
+    existing.rows.push({
+      dateDeposited: row.datedeposited,
+      contributionType:
+        contributionTypeNameById.get(row.contributiontypeid) ?? String(row.contributiontypeid),
+      amount: Number(row.amount),
+      currencyCode,
+      fundType: fundTypeNameById.get(row.fundtypeid) ?? String(row.fundtypeid),
+      checkNo: row.checkno,
+    });
+    existing.totalsByCurrency.set(
+      currencyCode,
+      (existing.totalsByCurrency.get(currencyCode) ?? 0) + Number(row.amount),
+    );
+    sectionsByRepresentativeId.set(household.representativeId, existing);
+  });
+
+  const sections = [...sectionsByRepresentativeId.values()].sort((a, b) =>
+    normalizeName(a.label).localeCompare(normalizeName(b.label)),
+  );
+
+  const representativeCountryCodes = Array.from(
+    new Set(scopedMembers.map((row) => normalizeCode(row.countrycode)).filter(Boolean)),
+  );
+  const { data: localeRows, error: localeErr } = await supabase
+    .from("contribcountrylocale")
+    .select("countrycode,locale")
+    .in("countrycode", representativeCountryCodes.length ? representativeCountryCodes : ["__none__"]);
+  if (localeErr && !isMissingRelationError(localeErr)) {
+    throw new Error(localeErr.message);
+  }
+  const localeByCountryCode = new Map<string, string>(
+    ((localeRows ?? []) as Array<{ countrycode: string | null; locale: string | null }>)
+      .map((row) => [normalizeCode(row.countrycode), normalizeLocale(row.locale)] as const)
+      .filter(([countryCode, locale]) => Boolean(countryCode && locale)),
+  );
+
+  return {
+    startDate,
+    endDate,
+    sections,
+    localeByCountryCode,
+    countryNameByCode,
+  };
+}
+
+function parseRequestedCountryCodes(values: string[]) {
+  return Array.from(new Set(values.map((value) => normalizeCode(value)).filter(Boolean)));
+}
+
+function formatPostalAddress(row: ScopedMemberRow, countryNameByCode: Map<string, string>) {
+  return [
+    row.address,
+    row.address2,
+    formatAddressLine(row),
+    countryNameByCode.get(normalizeCode(row.countrycode)) ?? row.countrycode ?? "",
+  ]
+    .map((part) => String(part ?? "").trim())
+    .filter(Boolean)
+    .join(", ");
+}
+
+function toPreviewRows(
+  sections: DonorSection[],
+  countryNameByCode: Map<string, string>,
+): TaxReceiptPreviewRow[] {
+  return sections.map((section) => {
+    const email = String(section.representative.email ?? "").trim();
+    return {
+      representativeId: section.representative.id,
+      memberName: section.label,
+      email,
+      address: formatPostalAddress(section.representative, countryNameByCode),
+      canSendEmail: Boolean(email),
+    };
+  });
+}
+
 export async function GET(request: NextRequest) {
   try {
-    const access = await getContributionAccess(request);
-    if (!access.ok) {
-      return NextResponse.json({ error: access.error }, { status: access.status });
+    const accessRaw = await getContributionAccess(request);
+    if (!accessRaw.ok) {
+      return NextResponse.json({ error: accessRaw.error }, { status: accessRaw.status });
     }
+    const access = accessRaw as ContributionAccessOk;
 
     const startDate = String(request.nextUrl.searchParams.get("startDate") ?? "").trim();
     const endDate = String(request.nextUrl.searchParams.get("endDate") ?? "").trim();
@@ -415,6 +667,9 @@ export async function GET(request: NextRequest) {
     const deductibleOnly =
       String(request.nextUrl.searchParams.get("deductibleOnly") ?? "").trim().toLowerCase() ===
       "true";
+    const preview =
+      String(request.nextUrl.searchParams.get("preview") ?? "").trim().toLowerCase() === "true";
+
     if (!isValidDateOnly(startDate) || !isValidDateOnly(endDate)) {
       return NextResponse.json(
         { error: "Start date deposited and end date deposited are required." },
@@ -428,240 +683,40 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const supabase = createServiceRoleClient();
-    const requestedCountryCodes = Array.from(
-      new Set(
-        request.nextUrl.searchParams
-          .getAll("country")
-          .map((value) => normalizeCode(value))
-          .filter(Boolean),
-      ),
+    const requestedCountryCodes = parseRequestedCountryCodes(
+      request.nextUrl.searchParams.getAll("country"),
     );
-    let memberQuery = supabase
-      .from("emcmember")
-      .select("id,fname,lname,householdid,spouseid,address,address2,city,statecode,zip,countrycode");
-
-    if (!access.isAdmin) {
-      if (!access.allowedCountryCodes.length) {
-        return NextResponse.json(
-          { error: "No contribution regions are assigned to this account yet." },
-          { status: 400 },
-        );
-      }
-      if (requestedCountryCodes.length > 0) {
-        const invalidCodes = requestedCountryCodes.filter(
-          (code) => !access.allowedCountryCodes.includes(code),
-        );
-        if (invalidCodes.length > 0) {
-          return NextResponse.json(
-            { error: "One or more selected countries are outside your scope." },
-            { status: 400 },
-          );
-        }
-      }
-
-      const activeCountryCodes =
-        requestedCountryCodes.length > 0 ? requestedCountryCodes : access.allowedCountryCodes;
-      if (!activeCountryCodes.length) {
-        return NextResponse.json(
-          { error: "Select at least one country." },
-          { status: 400 },
-        );
-      }
-
-      memberQuery = memberQuery.in("countrycode", activeCountryCodes);
-    } else if (requestedCountryCodes.length > 0) {
-      memberQuery = memberQuery.in("countrycode", requestedCountryCodes);
-    }
-
-    const { data: memberRows, error: memberErr } = await memberQuery.limit(5000);
-    if (memberErr) {
-      return NextResponse.json({ error: memberErr.message }, { status: 500 });
-    }
-
-    const scopedMembers = (memberRows ?? []) as ScopedMemberRow[];
-    if (!scopedMembers.length) {
-      return NextResponse.json({ error: "No donors were found in the selected scope." }, { status: 400 });
-    }
-
-    const households = buildHouseholdOptions(scopedMembers);
-    let filteredHouseholds = households;
-
-    if (memberIdFilter) {
-      const match = households.find((household) => household.memberIds.includes(memberIdFilter));
-      if (!match) {
-        return NextResponse.json({ error: "Donor not found in scope." }, { status: 404 });
-      }
-      filteredHouseholds = [match];
-    }
-
-    const householdByMemberId = new Map<number, { label: string; memberIds: number[]; representativeId: number }>();
-    filteredHouseholds.forEach((household) => {
-      household.memberIds.forEach((memberId) => {
-        householdByMemberId.set(memberId, {
-          label: household.label,
-          memberIds: household.memberIds,
-          representativeId: household.value,
-        });
-      });
+    const data = await loadTaxReceiptData({
+      access,
+      startDate,
+      endDate,
+      requestedCountryCodes,
+      memberIdFilter,
+      deductibleOnly,
     });
 
-    const scopedMemberIds = filteredHouseholds.flatMap((h) => h.memberIds);
-    const [
-      { data: fundTypeRows, error: fundTypeErr },
-      { data: contributionTypeRows, error: contributionTypeErr },
-    ] = await Promise.all([
-      supabase.from("contribfundtype").select("id,name").order("name", { ascending: true }),
-      supabase
-        .from("contribtype")
-        .select("id,name,taxdeductable")
-        .order("name", { ascending: true }),
-    ]);
-
-    if (fundTypeErr) {
-      return NextResponse.json({ error: fundTypeErr.message }, { status: 500 });
-    }
-    if (contributionTypeErr) {
-      return NextResponse.json({ error: contributionTypeErr.message }, { status: 500 });
-    }
-    const deductibleContributionTypeIds = new Set<number>(
-      ((contributionTypeRows ?? []) as ContributionTypeRow[])
-        .filter((row) => row.taxdeductable)
-        .map((row) => row.id),
-    );
-    const fundTypeNameById = new Map<number, string>(
-      ((fundTypeRows ?? []) as LookupRow[])
-        .filter((row): row is LookupRow & { name: string } => Boolean(row.name))
-        .map((row) => [row.id, row.name]),
-    );
-    const contributionTypeNameById = new Map<number, string>(
-      ((contributionTypeRows ?? []) as ContributionTypeRow[])
-        .filter((row): row is ContributionTypeRow & { name: string } => Boolean(row.name))
-        .map((row) => [row.id, row.name]),
-    );
-    let countryNameByCode = new Map<string, string>();
-    try {
-      countryNameByCode = await getCountryNameByCodeMap(supabase);
-    } catch (countryError) {
-      return NextResponse.json(
-        { error: countryError instanceof Error ? countryError.message : "Failed to load countries." },
-        { status: 500 },
-      );
-    }
-
-    const contributionRows: ContributionBaseRow[] = [];
-    for (let from = 0; from < MAX_ROWS; from += PAGE_SIZE) {
-      let query = supabase
-        .from("contribcontribution")
-        .select("id,memberid,amount,checkno,datedeposited,fundtypeid,contributiontypeid,currencycode")
-        .in("memberid", scopedMemberIds)
-        .gte("datedeposited", startDate)
-        .lte("datedeposited", endDate)
-        .order("memberid", { ascending: true })
-        .order("datedeposited", { ascending: true })
-        .order("id", { ascending: true });
-
-      if (deductibleOnly) {
-        query = query.in("contributiontypeid", [...deductibleContributionTypeIds]);
-      }
-
-      const { data, error } = await query.range(from, from + PAGE_SIZE - 1);
-
-      if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
-      }
-
-      const pageRows = (data ?? []) as ContributionBaseRow[];
-      contributionRows.push(...pageRows);
-      if (pageRows.length < PAGE_SIZE) {
-        break;
-      }
-    }
-
-    if (!contributionRows.length) {
-      const scopeLabel = deductibleOnly ? "tax-deductible contributions" : "contributions";
-      return NextResponse.json(
-        { error: `No ${scopeLabel} were found for the selected period.` },
-        { status: 400 },
-      );
-    }
-
-    const memberById = new Map<number, ScopedMemberRow>(scopedMembers.map((row) => [row.id, row]));
-    const sectionsByRepresentativeId = new Map<number, DonorSection>();
-
-    contributionRows.forEach((row) => {
-      const household = householdByMemberId.get(row.memberid);
-      const member = memberById.get(row.memberid);
-      if (!household || !member) {
-        return;
-      }
-
-      const representative = memberById.get(household.representativeId) ?? member;
-      const existing = sectionsByRepresentativeId.get(household.representativeId) ?? {
-        label: household.label,
-        representative,
-        rows: [],
-        totalsByCurrency: new Map<string, number>(),
-        locale: "en-US",
-      };
-      const currencyCode = normalizeCode(row.currencycode) || "USD";
-
-      existing.rows.push({
-        dateDeposited: row.datedeposited,
-        contributionType:
-          contributionTypeNameById.get(row.contributiontypeid) ?? String(row.contributiontypeid),
-        amount: Number(row.amount),
-        currencyCode,
-        fundType: fundTypeNameById.get(row.fundtypeid) ?? String(row.fundtypeid),
-        checkNo: row.checkno,
+    if (preview) {
+      return NextResponse.json({
+        recipients: toPreviewRows(data.sections, data.countryNameByCode),
       });
-      existing.totalsByCurrency.set(
-        currencyCode,
-        (existing.totalsByCurrency.get(currencyCode) ?? 0) + Number(row.amount),
-      );
-      sectionsByRepresentativeId.set(household.representativeId, existing);
-    });
-
-    const sections = [...sectionsByRepresentativeId.values()].sort((a, b) =>
-      normalizeName(a.label).localeCompare(normalizeName(b.label)),
-    );
-
-    const representativeCountryCodes = Array.from(
-      new Set(
-        scopedMembers
-          .map((row) => normalizeCode(row.countrycode))
-          .filter(Boolean),
-      ),
-    );
-    const { data: localeRows, error: localeErr } = await supabase
-      .from("contribcountrylocale")
-      .select("countrycode,locale")
-      .in("countrycode", representativeCountryCodes.length ? representativeCountryCodes : ["__none__"]);
-    if (localeErr && !isMissingRelationError(localeErr)) {
-      return NextResponse.json({ error: localeErr.message }, { status: 500 });
     }
-    const localeByCountryCode = new Map<string, string>(
-      ((localeRows ?? []) as Array<{ countrycode: string | null; locale: string | null }>)
-        .map((row) => [normalizeCode(row.countrycode), normalizeLocale(row.locale)] as const)
-        .filter(([countryCode, locale]) => Boolean(countryCode && locale)),
-    );
 
+    const sectionsWithLocale = data.sections.map((section) => ({
+      ...section,
+      locale: data.localeByCountryCode.get(normalizeCode(section.representative.countrycode)) ?? "en-US",
+    }));
     const pdf = await buildQuarterlyPdf({
       startDate,
       endDate,
-      sections: sections.map((section) => ({
-        ...section,
-        locale:
-          localeByCountryCode.get(normalizeCode(section.representative.countrycode)) ?? "en-US",
-      })),
-      countryNameByCode,
-      showCheckNo: sections.some((section) =>
+      sections: sectionsWithLocale,
+      countryNameByCode: data.countryNameByCode,
+      showCheckNo: sectionsWithLocale.some((section) =>
         section.rows.some((row) => String(row.checkNo ?? "").trim() !== ""),
       ),
     });
 
     const filename = `tax-receipts-${startDate}-to-${endDate}.pdf`;
-    return new Response(pdf as any, {
+    return new Response(pdf, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
@@ -671,6 +726,128 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to generate Quarterly report.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    const status = error instanceof HttpError ? error.status : 500;
+    return NextResponse.json({ error: message }, { status });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const accessRaw = await getContributionAccess(request);
+    if (!accessRaw.ok) {
+      return NextResponse.json({ error: accessRaw.error }, { status: accessRaw.status });
+    }
+    const access = accessRaw as ContributionAccessOk;
+
+    const body = (await request.json().catch(() => ({}))) as {
+      startDate?: string;
+      endDate?: string;
+      countries?: string[];
+      representativeIds?: number[];
+    };
+    const startDate = String(body.startDate ?? "").trim();
+    const endDate = String(body.endDate ?? "").trim();
+    const requestedCountryCodes = parseRequestedCountryCodes(body.countries ?? []);
+    const representativeIds = Array.from(
+      new Set((body.representativeIds ?? []).map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0)),
+    );
+
+    if (!isValidDateOnly(startDate) || !isValidDateOnly(endDate)) {
+      return NextResponse.json(
+        { error: "Start date deposited and end date deposited are required." },
+        { status: 400 },
+      );
+    }
+    if (startDate > endDate) {
+      return NextResponse.json(
+        { error: "Start date deposited cannot be later than end date deposited." },
+        { status: 400 },
+      );
+    }
+    if (!representativeIds.length) {
+      return NextResponse.json({ error: "Select at least one member to send." }, { status: 400 });
+    }
+
+    const data = await loadTaxReceiptData({
+      access,
+      startDate,
+      endDate,
+      requestedCountryCodes,
+      memberIdFilter: null,
+      deductibleOnly: true,
+    });
+
+    const sectionByRepresentativeId = new Map<number, DonorSection>(
+      data.sections.map((section) => [section.representative.id, section]),
+    );
+    const sent: string[] = [];
+    const missingEmail: string[] = [];
+    const failed: Array<{ memberName: string; email: string; error: string }> = [];
+
+    for (const representativeId of representativeIds) {
+      const section = sectionByRepresentativeId.get(representativeId);
+      if (!section) {
+        failed.push({
+          memberName: `Representative #${representativeId}`,
+          email: "",
+          error: "Recipient not found in current scope.",
+        });
+        continue;
+      }
+
+      const memberName = section.label;
+      const email = String(section.representative.email ?? "").trim();
+      if (!email) {
+        missingEmail.push(memberName);
+        continue;
+      }
+
+      try {
+        const sectionWithLocale = {
+          ...section,
+          locale:
+            data.localeByCountryCode.get(normalizeCode(section.representative.countrycode)) ??
+            "en-US",
+        };
+        const pdf = await buildQuarterlyPdf({
+          startDate,
+          endDate,
+          sections: [sectionWithLocale],
+          countryNameByCode: data.countryNameByCode,
+          showCheckNo: section.rows.some((row) => String(row.checkNo ?? "").trim() !== ""),
+        });
+        const filename = `tax-receipt-${representativeId}-${startDate}-to-${endDate}.pdf`;
+        await sendTaxReceiptEmail({
+          to: email,
+          recipientName: memberName,
+          startDate,
+          endDate,
+          pdf,
+          filename,
+        });
+        sent.push(memberName);
+      } catch (sendError) {
+        failed.push({
+          memberName,
+          email,
+          error: sendError instanceof Error ? sendError.message : "Unknown email send error",
+        });
+      }
+    }
+
+    return NextResponse.json({
+      ok: true,
+      requested: representativeIds.length,
+      sentCount: sent.length,
+      failedCount: failed.length,
+      missingEmailCount: missingEmail.length,
+      sent,
+      missingEmail,
+      failed,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to send tax receipt emails.";
+    const status = error instanceof HttpError ? error.status : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }

@@ -16,12 +16,6 @@ import { buildSimplePdf } from "@/lib/simple-pdf";
 import { getAuthHeaders } from "@/lib/supabase/client";
 import forms from "@/styles/forms.module.css";
 
-type HouseholdOption = {
-  value: number;
-  label: string;
-  memberIds: number[];
-};
-
 type CurrencyOption = {
   code: string;
   name: string;
@@ -53,6 +47,25 @@ type EditDraft = {
 type Mode = "view" | "grandTotal" | "totalPerDonor" | "taxReceipts";
 type SortKey = "memberName" | "contributionType" | "dateDeposited" | "dateEntered";
 type SortDirection = "asc" | "desc";
+
+type TaxReceiptRecipientRow = {
+  representativeId: number;
+  memberName: string;
+  email: string;
+  address: string;
+  canSendEmail: boolean;
+  selected: boolean;
+};
+
+type TaxReceiptSendResult = {
+  requested: number;
+  sentCount: number;
+  failedCount: number;
+  missingEmailCount: number;
+  sent: string[];
+  missingEmail: string[];
+  failed: Array<{ memberName: string; email: string; error: string }>;
+};
 
 function todayDateString() {
   return new Date().toISOString().slice(0, 10);
@@ -120,6 +133,13 @@ export default function ViewContributionsPage() {
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [exportError, setExportError] = useState<string | null>(null);
   const [mode, setMode] = useState<Mode>("view");
+  const [taxReceiptRecipients, setTaxReceiptRecipients] = useState<TaxReceiptRecipientRow[]>([]);
+  const [taxReceiptLoading, setTaxReceiptLoading] = useState(false);
+  const [taxReceiptSendLoading, setTaxReceiptSendLoading] = useState(false);
+  const [taxReceiptSendError, setTaxReceiptSendError] = useState<string | null>(null);
+  const [taxReceiptSendResult, setTaxReceiptSendResult] = useState<TaxReceiptSendResult | null>(
+    null,
+  );
 
   function isCashFundType(value: string) {
     return value.trim().toLowerCase() === "cash";
@@ -137,7 +157,7 @@ export default function ViewContributionsPage() {
             payload.householdDefaultCurrencyByRepresentative ?? {},
           );
         }
-      } catch (loadError) {
+      } catch {
         // Non-blocking for filters; ignore.
       }
     }
@@ -233,6 +253,110 @@ export default function ViewContributionsPage() {
     }
   }
 
+  async function loadTaxReceiptRecipientsPreview() {
+    setTaxReceiptLoading(true);
+    setTaxReceiptSendError(null);
+    setTaxReceiptSendResult(null);
+    try {
+      const headers = await getAuthHeaders();
+      const params = new URLSearchParams({
+        startDate,
+        endDate,
+        deductibleOnly: "true",
+        preview: "true",
+      });
+      if (countryCode) params.append("country", countryCode);
+      const response = await fetch(`/api/contributions/reports/quarterly?${params.toString()}`, {
+        credentials: "include",
+        headers,
+      });
+      const payload = (await response.json().catch(() => ({}))) as {
+        error?: string;
+        recipients?: Array<{
+          representativeId: number;
+          memberName: string;
+          email: string;
+          address: string;
+          canSendEmail: boolean;
+        }>;
+      };
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Failed to load tax receipt recipients.");
+      }
+      const rows = (payload.recipients ?? []).map((row) => ({
+        ...row,
+        selected: Boolean(row.canSendEmail),
+      }));
+      setTaxReceiptRecipients(rows);
+    } catch (previewError) {
+      setTaxReceiptRecipients([]);
+      setTaxReceiptSendError(
+        previewError instanceof Error
+          ? previewError.message
+          : "Failed to load tax receipt recipients.",
+      );
+    } finally {
+      setTaxReceiptLoading(false);
+    }
+  }
+
+  async function sendSelectedTaxReceipts() {
+    if (taxReceiptSendLoading) return;
+    const selectedIds = taxReceiptRecipients
+      .filter((row) => row.selected && row.canSendEmail)
+      .map((row) => row.representativeId);
+    if (!selectedIds.length) {
+      setTaxReceiptSendError("Select at least one member with an email address.");
+      return;
+    }
+
+    setTaxReceiptSendLoading(true);
+    setTaxReceiptSendError(null);
+    setTaxReceiptSendResult(null);
+    try {
+      const headers = await getAuthHeaders();
+      const response = await fetch("/api/contributions/reports/quarterly", {
+        method: "POST",
+        credentials: "include",
+        headers,
+        body: JSON.stringify({
+          startDate,
+          endDate,
+          countries: countryCode ? [countryCode] : [],
+          representativeIds: selectedIds,
+        }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as {
+        error?: string;
+        requested?: number;
+        sentCount?: number;
+        failedCount?: number;
+        missingEmailCount?: number;
+        sent?: string[];
+        missingEmail?: string[];
+        failed?: Array<{ memberName: string; email: string; error: string }>;
+      };
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Failed to send tax receipts.");
+      }
+      setTaxReceiptSendResult({
+        requested: Number(payload.requested ?? selectedIds.length),
+        sentCount: Number(payload.sentCount ?? 0),
+        failedCount: Number(payload.failedCount ?? 0),
+        missingEmailCount: Number(payload.missingEmailCount ?? 0),
+        sent: Array.isArray(payload.sent) ? payload.sent : [],
+        missingEmail: Array.isArray(payload.missingEmail) ? payload.missingEmail : [],
+        failed: Array.isArray(payload.failed) ? payload.failed : [],
+      });
+    } catch (sendError) {
+      setTaxReceiptSendError(
+        sendError instanceof Error ? sendError.message : "Failed to send tax receipts.",
+      );
+    } finally {
+      setTaxReceiptSendLoading(false);
+    }
+  }
+
   async function downloadReport(kind: Mode) {
     const friendlyName =
       kind === "grandTotal"
@@ -243,6 +367,11 @@ export default function ViewContributionsPage() {
     setReportDownloading(kind);
     setReportError(null);
     setReportMessage(null);
+    setTaxReceiptSendError(null);
+    setTaxReceiptSendResult(null);
+    if (kind !== "taxReceipts") {
+      setTaxReceiptRecipients([]);
+    }
 
     try {
       const headers = await getAuthHeaders();
@@ -285,6 +414,9 @@ export default function ViewContributionsPage() {
       link.remove();
       window.URL.revokeObjectURL(url);
       setReportMessage(`${friendlyName} report downloaded.`);
+      if (kind === "taxReceipts") {
+        await loadTaxReceiptRecipientsPreview();
+      }
     } catch (downloadError) {
       setReportError(
         downloadError instanceof Error
@@ -571,6 +703,10 @@ export default function ViewContributionsPage() {
   const showContributionTypeFilter = mode !== "taxReceipts";
   const isTaxReceipts = mode === "taxReceipts";
   const requireCountry = mode === "taxReceipts";
+  const selectedTaxReceiptCount = taxReceiptRecipients.filter(
+    (row) => row.selected && row.canSendEmail,
+  ).length;
+  const sendableTaxReceiptCount = taxReceiptRecipients.filter((row) => row.canSendEmail).length;
 
   return (
     <ContributionPage
@@ -608,6 +744,9 @@ export default function ViewContributionsPage() {
                           setMode(value);
                           setReportError(null);
                           setReportMessage(null);
+                          setTaxReceiptRecipients([]);
+                          setTaxReceiptSendError(null);
+                          setTaxReceiptSendResult(null);
                           if (value !== "view") {
                             setHasSearched(false);
                           }
@@ -755,6 +894,138 @@ export default function ViewContributionsPage() {
             {error ? <p className={forms.error}>{error}</p> : null}
             {reportError ? <p className={forms.error}>{reportError}</p> : null}
             {reportMessage ? <p className={forms.actionsMsg}>{reportMessage}</p> : null}
+            {isTaxReceipts && reportMessage ? (
+              <div style={{ marginTop: 14, borderTop: "1px solid #e5e7eb", paddingTop: 14 }}>
+                <p style={{ margin: "0 0 10px", fontWeight: 600 }}>
+                  Tax receipts for the following members have been downloaded:
+                </p>
+
+                {taxReceiptLoading ? <p style={{ marginTop: 0 }}>Loading member list...</p> : null}
+                {taxReceiptSendError ? <p className={forms.error}>{taxReceiptSendError}</p> : null}
+                {!taxReceiptLoading && !taxReceiptRecipients.length ? (
+                  <p style={{ marginTop: 0 }}>
+                    No tax receipt recipients were found for the selected period and country.
+                  </p>
+                ) : null}
+
+                {!taxReceiptLoading && taxReceiptRecipients.length ? (
+                  <>
+                    <div className={forms.actionsRow} style={{ marginBottom: 10 }}>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setTaxReceiptRecipients((current) =>
+                            current.map((row) =>
+                              row.canSendEmail ? { ...row, selected: true } : row,
+                            ),
+                          )
+                        }
+                        disabled={!sendableTaxReceiptCount}
+                      >
+                        Select All
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setTaxReceiptRecipients((current) =>
+                            current.map((row) => ({ ...row, selected: false })),
+                          )
+                        }
+                        disabled={!taxReceiptRecipients.length}
+                      >
+                        Select None
+                      </button>
+                      <span style={{ color: "#374151", fontSize: 14 }}>
+                        {selectedTaxReceiptCount} selected of {sendableTaxReceiptCount} emailable
+                        receipts
+                      </span>
+                    </div>
+
+                    <div className={forms.tableWrap}>
+                      <table className={forms.table}>
+                        <thead>
+                          <tr>
+                            <th className={forms.th}>Member Name</th>
+                            <th className={forms.th}>Email Address</th>
+                            <th className={forms.th}>Address</th>
+                            <th className={forms.th}>Send</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {taxReceiptRecipients.map((row) => (
+                            <tr
+                              key={row.representativeId}
+                              style={row.canSendEmail ? undefined : { background: "#fef2f2" }}
+                            >
+                              <td className={forms.td}>{row.memberName}</td>
+                              <td
+                                className={forms.td}
+                                style={row.canSendEmail ? undefined : { color: "#b91c1c", fontWeight: 600 }}
+                              >
+                                {row.email || "No email on file"}
+                              </td>
+                              <td className={forms.td}>{row.address}</td>
+                              <td className={forms.td}>
+                                <input
+                                  type="checkbox"
+                                  checked={row.selected}
+                                  disabled={!row.canSendEmail || taxReceiptSendLoading}
+                                  onChange={(event) =>
+                                    setTaxReceiptRecipients((current) =>
+                                      current.map((item) =>
+                                        item.representativeId === row.representativeId
+                                          ? { ...item, selected: event.target.checked }
+                                          : item,
+                                      ),
+                                    )
+                                  }
+                                />
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className={forms.actions} style={{ marginTop: 10 }}>
+                      <button
+                        type="button"
+                        className={forms.button}
+                        onClick={() => void sendSelectedTaxReceipts()}
+                        disabled={taxReceiptSendLoading || !selectedTaxReceiptCount}
+                      >
+                        {taxReceiptSendLoading
+                          ? "Sending..."
+                          : "Send Selected Tax Receipts by Email"}
+                      </button>
+                    </div>
+
+                    {taxReceiptSendResult ? (
+                      <div style={{ marginTop: 12 }}>
+                        <p className={forms.actionsMsg} style={{ marginBottom: 8 }}>
+                          Email send complete: {taxReceiptSendResult.sentCount} sent,{" "}
+                          {taxReceiptSendResult.failedCount} failed,{" "}
+                          {taxReceiptSendResult.missingEmailCount} with no email.
+                        </p>
+
+                        {taxReceiptSendResult.failed.length ? (
+                          <p className={forms.error} style={{ margin: "6px 0" }}>
+                            Failed to send (mail by post):{" "}
+                            {taxReceiptSendResult.failed.map((item) => item.memberName).join(", ")}
+                          </p>
+                        ) : null}
+                        {taxReceiptSendResult.missingEmail.length ? (
+                          <p className={forms.error} style={{ margin: "6px 0" }}>
+                            No email in system (mail by post):{" "}
+                            {taxReceiptSendResult.missingEmail.join(", ")}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </>
+                ) : null}
+              </div>
+            ) : null}
           </section>
 
           {isViewMode && hasSearched ? (

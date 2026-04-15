@@ -106,12 +106,12 @@ export async function sendTaxReceiptEmail({
   const toEmail = String(to ?? "").trim();
   if (!toEmail) throw new Error("Missing destination email");
 
-  const subject = `Your Tax Receipt (${startDate} to ${endDate})`;
+  const subject = `COG-PKG Tax Receipt (${startDate} to ${endDate})`;
   const safeName = String(recipientName ?? "").trim() || "Member";
   const html = [
     `<p>Dear ${safeName},</p>`,
     `<p>Please find your tax receipt attached for the period ${startDate} to ${endDate}.</p>`,
-    "<p>Sincerely,<br/>Contributions Team</p>",
+    "<p>Sincerely,<br/>COG-PKG Team</p>",
   ].join("");
 
   const fromAddress = fromEmail.includes("<")

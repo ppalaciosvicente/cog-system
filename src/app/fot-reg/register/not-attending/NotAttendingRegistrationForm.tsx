@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import forms from "@/styles/forms.module.css";
+import styles from "./page.module.css";
 
 type NotAttendingRegistrationFormProps = {
   firstName: string;
@@ -95,7 +96,10 @@ export default function NotAttendingRegistrationForm({
   const isSaved = Boolean(success);
 
   return (
-    <main className={`${forms.page} ${forms.pageWarn} ${forms.pageNarrow}`}>
+    <main
+      className={`${forms.page} ${forms.pageWarn} ${forms.pageNarrow}`}
+      style={{ overflowX: "hidden" }}
+    >
       <h1 className={forms.h1}>Welcome {firstName || "Member"}</h1>
       <h2 style={{ margin: "0 0 14px", fontSize: 24, lineHeight: 1.25 }}>
         You are registering to not attend any of the {currentYear} Feast of
@@ -136,7 +140,10 @@ export default function NotAttendingRegistrationForm({
             </p>
           </div>
 
-          <div style={{ borderTop: "1px solid #d1d5db", paddingTop: 14 }}>
+          <div
+            style={{ borderTop: "1px solid #d1d5db", paddingTop: 14 }}
+            className={styles.formStack}
+          >
             <div
               className={forms.row}
               style={{

@@ -1,10 +1,13 @@
 .shell {
   min-height: 100vh;
+  padding-top: calc(70px + env(safe-area-inset-top, 0px));
 }
 
 .topBar {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 30;
   display: flex;
   align-items: center;
@@ -142,10 +145,14 @@
 }
 
 .content {
-  padding: calc(16px + env(safe-area-inset-top, 0px)) 16px 16px;
+  padding: 16px;
 }
 
 @media (min-width: 1024px) {
+  .shell {
+    padding-top: 0;
+  }
+
   .topBar {
     display: none;
   }

@@ -88,6 +88,22 @@ type EditDraft = {
   comments: string;
 };
 
+type TaxReceiptRecipientPreview = {
+  representativeId: number;
+  memberName: string;
+  email: string;
+  address: string;
+  canSendEmail: boolean;
+};
+
+type TaxReceiptSendResult = {
+  sentCount: number;
+  failedCount: number;
+  missingEmailCount: number;
+  missingEmail: string[];
+  failed: Array<{ memberName: string; email: string; error: string }>;
+};
+
 function formatDate(value: string | null | undefined) {
   if (!value) return "";
   return value.slice(0, 10);
@@ -156,6 +172,13 @@ export default function ContributionDonorsPage() {
   const [editSaving, setEditSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [downloadingReceipt, setDownloadingReceipt] = useState(false);
+  const [taxReceiptPreviewLoading, setTaxReceiptPreviewLoading] = useState(false);
+  const [sendingTaxReceipt, setSendingTaxReceipt] = useState(false);
+  const [taxReceiptMessage, setTaxReceiptMessage] = useState<string | null>(null);
+  const [taxReceiptError, setTaxReceiptError] = useState<string | null>(null);
+  const [taxReceiptPreview, setTaxReceiptPreview] = useState<TaxReceiptRecipientPreview | null>(null);
+  const [taxReceiptRange, setTaxReceiptRange] = useState<{ startDate: string; endDate: string } | null>(null);
+  const [taxReceiptSendResult, setTaxReceiptSendResult] = useState<TaxReceiptSendResult | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [browseAll, setBrowseAll] = useState(false);
 
@@ -444,6 +467,98 @@ export default function ContributionDonorsPage() {
     }
   }
 
+  async function loadTaxReceiptPreview(
+    effectiveStart: string,
+    effectiveEnd: string,
+    memberId: string,
+  ) {
+    setTaxReceiptPreviewLoading(true);
+    setTaxReceiptError(null);
+    setTaxReceiptSendResult(null);
+    try {
+      const headers = await getAuthHeaders();
+      const params = new URLSearchParams({
+        memberId,
+        startDate: effectiveStart,
+        endDate: effectiveEnd,
+        deductibleOnly: "true",
+        preview: "true",
+      });
+      const response = await fetch(`/api/contributions/reports/quarterly?${params.toString()}`, {
+        credentials: "include",
+        headers,
+      });
+      const payload = (await response.json().catch(() => ({}))) as {
+        error?: string;
+        recipients?: TaxReceiptRecipientPreview[];
+      };
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Failed to load tax receipt email preview.");
+      }
+      setTaxReceiptPreview(payload.recipients?.[0] ?? null);
+      setTaxReceiptRange({ startDate: effectiveStart, endDate: effectiveEnd });
+    } catch (previewError) {
+      setTaxReceiptPreview(null);
+      setTaxReceiptRange(null);
+      setTaxReceiptError(
+        previewError instanceof Error
+          ? previewError.message
+          : "Failed to load tax receipt email preview.",
+      );
+    } finally {
+      setTaxReceiptPreviewLoading(false);
+    }
+  }
+
+  async function sendTaxReceiptByEmail() {
+    if (!taxReceiptPreview || !taxReceiptRange || sendingTaxReceipt) return;
+    if (!taxReceiptPreview.canSendEmail) {
+      setTaxReceiptError("This donor does not have an email address.");
+      return;
+    }
+
+    setSendingTaxReceipt(true);
+    setTaxReceiptError(null);
+    setTaxReceiptSendResult(null);
+    try {
+      const headers = await getAuthHeaders();
+      const response = await fetch("/api/contributions/reports/quarterly", {
+        method: "POST",
+        credentials: "include",
+        headers,
+        body: JSON.stringify({
+          startDate: taxReceiptRange.startDate,
+          endDate: taxReceiptRange.endDate,
+          representativeIds: [taxReceiptPreview.representativeId],
+        }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as {
+        error?: string;
+        sentCount?: number;
+        failedCount?: number;
+        missingEmailCount?: number;
+        missingEmail?: string[];
+        failed?: Array<{ memberName: string; email: string; error: string }>;
+      };
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Failed to send tax receipt email.");
+      }
+      setTaxReceiptSendResult({
+        sentCount: Number(payload.sentCount ?? 0),
+        failedCount: Number(payload.failedCount ?? 0),
+        missingEmailCount: Number(payload.missingEmailCount ?? 0),
+        missingEmail: Array.isArray(payload.missingEmail) ? payload.missingEmail : [],
+        failed: Array.isArray(payload.failed) ? payload.failed : [],
+      });
+    } catch (sendError) {
+      setTaxReceiptError(
+        sendError instanceof Error ? sendError.message : "Failed to send tax receipt email.",
+      );
+    } finally {
+      setSendingTaxReceipt(false);
+    }
+  }
+
   async function downloadTaxReceipt() {
     if (!selectedId || !detail) return;
     const contributions = detail.contributions.filter((row) => row.taxDeductible);
@@ -456,6 +571,11 @@ export default function ContributionDonorsPage() {
     const effectiveEnd = endDate || todayDateString();
 
     setError(null);
+    setTaxReceiptMessage(null);
+    setTaxReceiptError(null);
+    setTaxReceiptPreview(null);
+    setTaxReceiptRange(null);
+    setTaxReceiptSendResult(null);
     setDownloadingReceipt(true);
     try {
       const headers = await getAuthHeaders();
@@ -486,12 +606,15 @@ export default function ContributionDonorsPage() {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
+      setTaxReceiptMessage("Tax receipt downloaded.");
+      await loadTaxReceiptPreview(effectiveStart, effectiveEnd, selectedId);
     } catch (downloadError) {
-      setError(
+      const message =
         downloadError instanceof Error
           ? downloadError.message
-          : "Failed to generate tax receipt.",
-      );
+          : "Failed to generate tax receipt.";
+      setError(message);
+      setTaxReceiptError(message);
     } finally {
       setDownloadingReceipt(false);
     }
@@ -628,6 +751,11 @@ export default function ContributionDonorsPage() {
     setSearchResults([]);
     setStartDate(currentYearStartDateString());
     setEndDate(todayDateString());
+    setTaxReceiptMessage(null);
+    setTaxReceiptError(null);
+    setTaxReceiptPreview(null);
+    setTaxReceiptRange(null);
+    setTaxReceiptSendResult(null);
     setShowDetails(false);
   }
 
@@ -657,6 +785,11 @@ export default function ContributionDonorsPage() {
                       setSelectedId("");
                       setDetail(null);
                       setEditDraft(null);
+                      setTaxReceiptMessage(null);
+                      setTaxReceiptError(null);
+                      setTaxReceiptPreview(null);
+                      setTaxReceiptRange(null);
+                      setTaxReceiptSendResult(null);
                       setBrowseAll(false);
                     }}
                   />
@@ -892,7 +1025,14 @@ export default function ContributionDonorsPage() {
                       <button
                         type="button"
                         className={`${forms.button} ${forms.actionsRowPrimaryButton}`}
-                        onClick={() => void reloadSelectedDonor()}
+                        onClick={() => {
+                          setTaxReceiptMessage(null);
+                          setTaxReceiptError(null);
+                          setTaxReceiptPreview(null);
+                          setTaxReceiptRange(null);
+                          setTaxReceiptSendResult(null);
+                          void reloadSelectedDonor();
+                        }}
                         disabled={loadingDetail}
                       >
                         {loadingDetail ? "Loading..." : "Apply Dates"}
@@ -929,6 +1069,81 @@ export default function ContributionDonorsPage() {
                   </div>
                     );
                   })()
+                ) : null}
+                {taxReceiptMessage || taxReceiptError || taxReceiptPreview || taxReceiptPreviewLoading ? (
+                  <div style={{ marginTop: 8, marginBottom: 12 }}>
+                    {taxReceiptMessage ? (
+                      <p className={forms.actionsMsg} style={{ margin: "0 0 8px" }}>
+                        {taxReceiptMessage}
+                      </p>
+                    ) : null}
+                    {taxReceiptError ? <p className={forms.error}>{taxReceiptError}</p> : null}
+                    {taxReceiptPreviewLoading ? <p style={{ marginTop: 0 }}>Loading email preview...</p> : null}
+                    {taxReceiptPreview && taxReceiptRange ? (
+                      <div style={{ border: "1px solid #e5e7eb", borderRadius: 10, padding: 10 }}>
+                        <p style={{ margin: "0 0 8px", fontWeight: 600 }}>
+                          Receipt ready to send by email:
+                        </p>
+                        <p style={{ margin: "0 0 4px" }}>
+                          <strong>Member:</strong> {taxReceiptPreview.memberName}
+                        </p>
+                        <p style={{ margin: "0 0 4px" }}>
+                          <strong>Email:</strong>{" "}
+                          <span
+                            style={
+                              taxReceiptPreview.canSendEmail
+                                ? undefined
+                                : { color: "#b91c1c", fontWeight: 600 }
+                            }
+                          >
+                            {taxReceiptPreview.email || "No email on file"}
+                          </span>
+                        </p>
+                        <p style={{ margin: "0 0 4px" }}>
+                          <strong>Address:</strong> {taxReceiptPreview.address || ""}
+                        </p>
+                        <p style={{ margin: "0 0 10px", color: "#4b5563" }}>
+                          <strong>Period:</strong> {taxReceiptRange.startDate} to{" "}
+                          {taxReceiptRange.endDate}
+                        </p>
+                        <div className={forms.actions} style={{ marginTop: 14 }}>
+                          <button
+                            type="button"
+                            className={forms.button}
+                            onClick={() => void sendTaxReceiptByEmail()}
+                            disabled={sendingTaxReceipt || !taxReceiptPreview.canSendEmail}
+                          >
+                            {sendingTaxReceipt ? "Sending..." : "Send Tax Receipt by Email"}
+                          </button>
+                        </div>
+                        {taxReceiptSendResult ? (
+                          <div style={{ marginTop: 10 }}>
+                            <p className={forms.actionsMsg} style={{ marginBottom: 6 }}>
+                              Email send complete: {taxReceiptSendResult.sentCount} sent,{" "}
+                              {taxReceiptSendResult.failedCount} failed.
+                            </p>
+                            {taxReceiptSendResult.failed.length ? (
+                              <p className={forms.error} style={{ margin: "6px 0" }}>
+                                Failed to send:{" "}
+                                {taxReceiptSendResult.failed
+                                  .map((item) =>
+                                    `${item.memberName}${item.email ? ` (${item.email})` : ""}${
+                                      item.error ? ` - ${item.error}` : ""
+                                    }`,
+                                  )
+                                  .join("; ")}
+                              </p>
+                            ) : null}
+                            {taxReceiptSendResult.missingEmail.length ? (
+                              <p className={forms.error} style={{ margin: "6px 0" }}>
+                                No email in system: {taxReceiptSendResult.missingEmail.join(", ")}
+                              </p>
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </div>
                 ) : null}
                 <div className={forms.tableWrap}>
                   <table className={forms.table}>

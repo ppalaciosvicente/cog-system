@@ -124,6 +124,13 @@ function formatAddressLine(row: ScopedMemberRow) {
   return [row.city, row.statecode, row.zip].filter(Boolean).join(", ");
 }
 
+function formatFirstLastName(row: Pick<ScopedMemberRow, "fname" | "lname">) {
+  return [row.fname, row.lname]
+    .map((part) => String(part ?? "").trim())
+    .filter(Boolean)
+    .join(" ");
+}
+
 function normalizeName(value: string | null | undefined) {
   return String(value ?? "")
     .trim()
@@ -796,6 +803,8 @@ export async function POST(request: NextRequest) {
       }
 
       const memberName = section.label;
+      const recipientGreetingName =
+        formatFirstLastName(section.representative) || memberName;
       const email = String(section.representative.email ?? "").trim();
       if (!email) {
         missingEmail.push(memberName);
@@ -819,7 +828,7 @@ export async function POST(request: NextRequest) {
         const filename = `tax-receipt-${representativeId}-${startDate}-to-${endDate}.pdf`;
         await sendTaxReceiptEmail({
           to: email,
-          recipientName: memberName,
+          recipientName: recipientGreetingName,
           startDate,
           endDate,
           pdf,

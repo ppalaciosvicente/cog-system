@@ -1004,14 +1004,19 @@ export default function ViewContributionsPage() {
                       <div style={{ marginTop: 12 }}>
                         <p className={forms.actionsMsg} style={{ marginBottom: 8 }}>
                           Email send complete: {taxReceiptSendResult.sentCount} sent,{" "}
-                          {taxReceiptSendResult.failedCount} failed,{" "}
-                          {taxReceiptSendResult.missingEmailCount} with no email.
+                          {taxReceiptSendResult.failedCount} failed.
                         </p>
 
                         {taxReceiptSendResult.failed.length ? (
                           <p className={forms.error} style={{ margin: "6px 0" }}>
                             Failed to send (mail by post):{" "}
-                            {taxReceiptSendResult.failed.map((item) => item.memberName).join(", ")}
+                            {taxReceiptSendResult.failed
+                              .map((item) =>
+                                `${item.memberName}${
+                                  item.email ? ` (${item.email})` : ""
+                                }${item.error ? ` - ${item.error}` : ""}`,
+                              )
+                              .join("; ")}
                           </p>
                         ) : null}
                         {taxReceiptSendResult.missingEmail.length ? (

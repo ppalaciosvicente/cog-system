@@ -421,7 +421,7 @@ export default function EldersGroupEmailPage() {
     <main className={forms.page}>
       <h1 className={forms.h1}>Group Email</h1>
       <div className={forms.backRow}>
-        <BackLink fallbackHref="/elders" className={`${forms.linkButton} ${forms.linkButtonLight}`}>
+        <BackLink fallbackHref="/emc" className={`${forms.linkButton} ${forms.linkButtonLight}`}>
           &lt;- Back
         </BackLink>
       </div>

@@ -9,7 +9,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 14px;
+  padding: calc(12px + env(safe-area-inset-top, 0px)) 14px 12px;
   background: #ffffff;
   border-bottom: 1px solid #e5e7eb;
 }
@@ -142,7 +142,7 @@
 }
 
 .content {
-  padding: 16px;
+  padding: calc(16px + env(safe-area-inset-top, 0px)) 16px 16px;
 }
 
 @media (min-width: 1024px) {

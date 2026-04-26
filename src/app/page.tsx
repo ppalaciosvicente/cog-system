@@ -80,7 +80,10 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <main className={forms.page} style={{ marginTop: 16 }}>
+      <main
+        className={forms.page}
+        style={{ marginTop: "calc(72px + env(safe-area-inset-top, 0px))" }}
+      >
         Loading…
       </main>
     );
@@ -94,7 +97,10 @@ export default function HomePage() {
   }
 
   return (
-    <main className={forms.page} style={{ marginTop: 16 }}>
+    <main
+      className={forms.page}
+      style={{ marginTop: "calc(72px + env(safe-area-inset-top, 0px))" }}
+    >
       <h1 className={forms.h1}>COG PKG Management System</h1>
       {!error && roleSummary ? <p>Logged in as {roleSummary}</p> : null}
       {!error && (

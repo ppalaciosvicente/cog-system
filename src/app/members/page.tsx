@@ -155,7 +155,7 @@ export default function MembersPage() {
 
   const [memberOptions, setMemberOptions] = useState<MemberOption[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [backHref, setBackHref] = useState("/");
+  const [backHref, setBackHref] = useState("/emc");
   const [memberSearch, setMemberSearch] = useState("");
   const [searchResults, setSearchResults] = useState<HouseholdOption[]>([]);
   const [selectedLabel, setSelectedLabel] = useState("");
@@ -541,7 +541,7 @@ export default function MembersPage() {
           const safeReturnTo =
             returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//")
               ? returnTo
-              : "/";
+              : "/emc";
           setBackHref(safeReturnTo);
           const preId = pre ? Number(pre) : NaN;
           if (

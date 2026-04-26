@@ -96,7 +96,7 @@ export default function FotRegistrationPage() {
     <main className={forms.page}>
       <h1 className={forms.h1}>{currentYear} Feast of Tabernacles Registration</h1>
       <div className={forms.backRow}>
-        <BackLink fallbackHref="/" className={`${forms.linkButton} ${forms.linkButtonLight}`}>
+        <BackLink fallbackHref="/emc" className={`${forms.linkButton} ${forms.linkButtonLight}`}>
           &lt;- Back to Dashboard
         </BackLink>
       </div>

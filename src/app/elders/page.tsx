@@ -119,7 +119,7 @@ export default function EldersPage() {
       <main className={forms.page}>
         <h1 className={forms.h1}>Elders</h1>
         <div className={forms.backRow}>
-          <BackLink fallbackHref="/" className={`${forms.linkButton} ${forms.linkButtonLight}`}>
+          <BackLink fallbackHref="/emc" className={`${forms.linkButton} ${forms.linkButtonLight}`}>
             &lt;- Back to Dashboard
           </BackLink>
         </div>
@@ -132,7 +132,7 @@ export default function EldersPage() {
     <main className={forms.page}>
       <h1 className={forms.h1}>Elders</h1>
       <div className={forms.backRow}>
-        <BackLink fallbackHref="/" className={`${forms.linkButton} ${forms.linkButtonLight}`}>
+        <BackLink fallbackHref="/emc" className={`${forms.linkButton} ${forms.linkButtonLight}`}>
           &lt;- Back to Dashboard
         </BackLink>
       </div>

@@ -1009,7 +1009,7 @@ export default function ViewContributionsPage() {
 
                         {taxReceiptSendResult.failed.length ? (
                           <p className={forms.error} style={{ margin: "6px 0" }}>
-                            Failed to send (mail by post):{" "}
+                            Failed to send:{" "}
                             {taxReceiptSendResult.failed
                               .map((item) =>
                                 `${item.memberName}${

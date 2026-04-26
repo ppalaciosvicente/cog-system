@@ -1082,7 +1082,7 @@ export default function ContributionDonorsPage() {
                     {taxReceiptPreview && taxReceiptRange ? (
                       <div style={{ border: "1px solid #e5e7eb", borderRadius: 10, padding: 10 }}>
                         <p style={{ margin: "0 0 8px", fontWeight: 600 }}>
-                          Receipt ready to send by email:
+                          Tax receipt ready to send by email:
                         </p>
                         <p style={{ margin: "0 0 4px" }}>
                           <strong>Member:</strong> {taxReceiptPreview.memberName}
@@ -1098,9 +1098,6 @@ export default function ContributionDonorsPage() {
                           >
                             {taxReceiptPreview.email || "No email on file"}
                           </span>
-                        </p>
-                        <p style={{ margin: "0 0 4px" }}>
-                          <strong>Address:</strong> {taxReceiptPreview.address || ""}
                         </p>
                         <p style={{ margin: "0 0 10px", color: "#4b5563" }}>
                           <strong>Period:</strong> {taxReceiptRange.startDate} to{" "}

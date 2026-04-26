@@ -79,7 +79,11 @@ export default function HomePage() {
   }, [router, supabase]);
 
   if (loading) {
-    return <main className={forms.page}>Loading…</main>;
+    return (
+      <main className={forms.page} style={{ marginTop: 16 }}>
+        Loading…
+      </main>
+    );
   }
 
   if (redirecting) return null;
@@ -90,7 +94,7 @@ export default function HomePage() {
   }
 
   return (
-    <main className={forms.page}>
+    <main className={forms.page} style={{ marginTop: 16 }}>
       <h1 className={forms.h1}>COG PKG Management System</h1>
       {!error && roleSummary ? <p>Logged in as {roleSummary}</p> : null}
       {!error && (

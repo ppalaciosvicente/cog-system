@@ -987,7 +987,7 @@ export default function ViewContributionsPage() {
                       </table>
                     </div>
 
-                    <div className={forms.actions} style={{ marginTop: 10 }}>
+                    <div className={forms.actions} style={{ marginTop: 18 }}>
                       <button
                         type="button"
                         className={forms.button}

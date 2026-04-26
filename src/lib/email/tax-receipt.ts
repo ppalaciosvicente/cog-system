@@ -105,6 +105,12 @@ export async function sendTaxReceiptEmail({
 
   const toEmail = String(to ?? "").trim();
   if (!toEmail) throw new Error("Missing destination email");
+  const failTestEmail = String(process.env.TAX_RECEIPT_FAIL_TEST_EMAIL ?? "")
+    .trim()
+    .toLowerCase();
+  if (failTestEmail && toEmail.toLowerCase() === failTestEmail) {
+    throw new Error("Simulated tax receipt email failure (test mode).");
+  }
 
   const subject = `COG-PKG Tax Receipt (${startDate} to ${endDate})`;
   const safeName = String(recipientName ?? "").trim() || "Member";

@@ -19,6 +19,7 @@ type MemberRow = {
   id: number;
   fname: string | null;
   lname: string | null;
+  email?: string | null;
 };
 
 type AccountRow = {
@@ -53,6 +54,13 @@ type UpdatePayload = {
 type EligibleMember = {
   id: number;
   name: string;
+};
+
+type RecoveryLinkData = {
+  properties?: {
+    action_link?: string | null;
+  } | null;
+  action_link?: string | null;
 };
 
 function resolveAppOrigin(request: NextRequest) {
@@ -536,7 +544,7 @@ export async function GET(request: NextRequest) {
       rows.filter((r) => r.roleName).map((r) => r.memberId),
     );
     for (const row of (eligibleData ?? []) as MemberRow[]) {
-      const email = String((row as any).email ?? "").trim();
+      const email = String(row.email ?? "").trim();
       if (!email) continue;
       if (memberIdsWithRole.has(row.id)) continue;
       eligibleMembers.push({ id: row.id, name: displayName(row) });
@@ -743,7 +751,9 @@ export async function POST(request: NextRequest) {
     email: memberEmail,
     options: { redirectTo },
   });
-  const actionLink = (linkData as any)?.properties?.action_link ?? (linkData as any)?.action_link;
+  const recoveryLinkData = linkData as RecoveryLinkData | null;
+  const actionLink =
+    recoveryLinkData?.properties?.action_link ?? recoveryLinkData?.action_link;
   if (linkErr || !actionLink) {
     return NextResponse.json(
       { error: linkErr?.message ?? "Failed to generate link." },

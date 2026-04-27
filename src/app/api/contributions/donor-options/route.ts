@@ -48,14 +48,6 @@ function cacheKey(access: Extract<Awaited<ReturnType<typeof getContributionAcces
   });
 }
 
-function applyScopeFilters(query: any, access: Extract<Awaited<ReturnType<typeof getContributionAccess>>, { ok: true }>, donorStatusIds: number[]) {
-  let scopedQuery = (query as any).in("statusid", donorStatusIds as number[]);
-  if (!access.isAdmin) {
-    scopedQuery = scopedQuery.in("countrycode", access.allowedCountryCodes as string[]);
-  }
-  return scopedQuery;
-}
-
 async function buildHouseholdsWithCurrency(
   supabase: ReturnType<typeof createServiceRoleClient>,
   members: DonorMemberRow[],
@@ -126,16 +118,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ households: [], warning: access.scopeWarning });
     }
 
-    let searchQuery = applyScopeFilters(
-      supabase
-        .from("emcmember")
-        .select("id,fname,lname,countrycode,statecode,householdid,spouseid")
-        .order("lname", { ascending: true })
-        .order("fname", { ascending: true })
-        .limit(limit),
-      access,
-      donorStatusIds,
-    );
+    let searchQuery = supabase
+      .from("emcmember")
+      .select("id,fname,lname,countrycode,statecode,householdid,spouseid")
+      .order("lname", { ascending: true })
+      .order("fname", { ascending: true })
+      .limit(limit)
+      .in("statusid", donorStatusIds);
+    if (!access.isAdmin) {
+      searchQuery = searchQuery.in("countrycode", access.allowedCountryCodes);
+    }
 
     searchTokens.forEach((token) => {
       const escapedToken = token.replace(/[%_]/g, "\\$&");
@@ -163,16 +155,16 @@ export async function GET(request: NextRequest) {
     matchedMembers.forEach((member) => expandedMembers.set(member.id, member));
 
     if (householdIds.length > 0) {
-      const householdQuery = applyScopeFilters(
-        supabase
-          .from("emcmember")
-          .select("id,fname,lname,countrycode,statecode,householdid,spouseid")
-          .in("householdid", householdIds)
-          .order("lname", { ascending: true })
-          .order("fname", { ascending: true }),
-        access,
-        donorStatusIds,
-      );
+      let householdQuery = supabase
+        .from("emcmember")
+        .select("id,fname,lname,countrycode,statecode,householdid,spouseid")
+        .in("householdid", householdIds)
+        .order("lname", { ascending: true })
+        .order("fname", { ascending: true })
+        .in("statusid", donorStatusIds);
+      if (!access.isAdmin) {
+        householdQuery = householdQuery.in("countrycode", access.allowedCountryCodes);
+      }
       const { data: householdRows, error: householdErr } = await householdQuery;
       if (householdErr) {
         return NextResponse.json({ error: householdErr.message }, { status: 500 });
@@ -185,16 +177,16 @@ export async function GET(request: NextRequest) {
 
     const extraIds = spouseIds.filter((id) => !memberIds.includes(id));
     if (extraIds.length > 0) {
-      const spouseQuery = applyScopeFilters(
-        supabase
-          .from("emcmember")
-          .select("id,fname,lname,countrycode,statecode,householdid,spouseid")
-          .in("id", extraIds)
-          .order("lname", { ascending: true })
-          .order("fname", { ascending: true }),
-        access,
-        donorStatusIds,
-      );
+      let spouseQuery = supabase
+        .from("emcmember")
+        .select("id,fname,lname,countrycode,statecode,householdid,spouseid")
+        .in("id", extraIds)
+        .order("lname", { ascending: true })
+        .order("fname", { ascending: true })
+        .in("statusid", donorStatusIds);
+      if (!access.isAdmin) {
+        spouseQuery = spouseQuery.in("countrycode", access.allowedCountryCodes);
+      }
       const { data: spouseRows, error: spouseErr } = await spouseQuery;
       if (spouseErr) {
         return NextResponse.json({ error: spouseErr.message }, { status: 500 });
@@ -236,15 +228,15 @@ export async function GET(request: NextRequest) {
   }
   const eligibleMembers: DonorMemberRow[] = [];
   for (let from = 0; from < MAX_MEMBER_ROWS; from += PAGE_SIZE) {
-    const eligibleMemberQuery = applyScopeFilters(
-      supabase
-        .from("emcmember")
-        .select("id,fname,lname,countrycode,statecode,householdid,spouseid")
-        .order("id", { ascending: true })
-        .range(from, from + PAGE_SIZE - 1),
-      access,
-      donorStatusIds,
-    );
+    let eligibleMemberQuery = supabase
+      .from("emcmember")
+      .select("id,fname,lname,countrycode,statecode,householdid,spouseid")
+      .order("id", { ascending: true })
+      .range(from, from + PAGE_SIZE - 1)
+      .in("statusid", donorStatusIds);
+    if (!access.isAdmin) {
+      eligibleMemberQuery = eligibleMemberQuery.in("countrycode", access.allowedCountryCodes);
+    }
 
     const { data: eligibleMemberRows, error: eligibleMemberErr } = await eligibleMemberQuery;
     if (eligibleMemberErr) {

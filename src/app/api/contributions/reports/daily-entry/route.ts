@@ -176,7 +176,7 @@ export async function GET(request: NextRequest) {
     const pdf = await buildDailyEntryPdf(summary);
     const filename = `daily-entry-report-${summary.dateEntered}.pdf`;
 
-    return new NextResponse(pdf as any, {
+    return new NextResponse(pdf as BodyInit, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",

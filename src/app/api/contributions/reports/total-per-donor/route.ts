@@ -588,7 +588,7 @@ export async function GET(request: NextRequest) {
     });
 
     const filename = `total-per-donor-${startDate}-to-${endDate}.pdf`;
-    return new Response(pdf as any, {
+    return new Response(pdf as BodyInit, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",

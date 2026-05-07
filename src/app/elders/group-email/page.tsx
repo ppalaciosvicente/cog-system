@@ -22,6 +22,14 @@ type CongregationRecord = {
   name: string | null;
 };
 
+type MemberEmailRow = {
+  id: number;
+  fname: string | null;
+  lname: string | null;
+  email: string | null;
+  householdid: number | null;
+};
+
 function displayName(m: { fname: string | null; lname: string | null }) {
   const ln = (m.lname ?? "").trim();
   const fn = (m.fname ?? "").trim();
@@ -52,6 +60,29 @@ function hasAnyRole(roleNames: (string | null | undefined)[], candidates: string
     normalizeRoleName(candidate),
   );
   return normalizedRoles.some((role) => normalizedCandidates.includes(role));
+}
+
+function buildNoEmailListByHousehold(members: MemberEmailRow[]) {
+  const households = new Map<number, MemberEmailRow[]>();
+  members.forEach((member) => {
+    const householdKey = member.householdid ?? member.id;
+    households.set(householdKey, [...(households.get(householdKey) ?? []), member]);
+  });
+
+  const names: string[] = [];
+  households.forEach((householdMembers) => {
+    const householdHasEmail = householdMembers.some((member) =>
+      String(member.email ?? "").trim(),
+    );
+    if (householdHasEmail) return;
+
+    householdMembers
+      .map((member) => displayName(member))
+      .filter(Boolean)
+      .forEach((name) => names.push(name));
+  });
+
+  return names.join("\n");
 }
 
 
@@ -303,7 +334,7 @@ export default function EldersGroupEmailPage() {
       try {
         let query = supabase
           .from("emcmember")
-          .select("id,fname,lname,email")
+          .select("id,fname,lname,email,householdid")
           .eq("baptized", true)
           .eq("statusid", 1)
           .order("lname", { ascending: true })
@@ -360,12 +391,7 @@ export default function EldersGroupEmailPage() {
 
         const { data, error } = await query;
         if (cancelled) return;
-        let list = (data ?? []) as {
-          id: number;
-          fname: string | null;
-          lname: string | null;
-          email: string | null;
-        }[];
+        let list = (data ?? []) as MemberEmailRow[];
 
         if (error || list.length === 0) {
           const response = await fetch("/api/elders/group-email", {
@@ -384,6 +410,7 @@ export default function EldersGroupEmailPage() {
               fname: string | null;
               lname: string | null;
               email: string | null;
+              householdid: number | null;
             }[];
           };
           if (!response.ok) {
@@ -401,11 +428,7 @@ export default function EldersGroupEmailPage() {
         );
         setEmailList(uniqueEmails.join(", "));
 
-        const noEmailNames = list
-          .filter((row) => !String(row.email ?? "").trim())
-          .map((row) => displayName(row))
-          .filter(Boolean);
-        setNoEmailList(noEmailNames.join("\n"));
+        setNoEmailList(buildNoEmailListByHousehold(list));
       } finally {
         if (!cancelled) setEmailLoading(false);
       }

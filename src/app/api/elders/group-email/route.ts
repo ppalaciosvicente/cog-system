@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
   if (includeAllMembers) {
     const { data, error } = await supabase
       .from("emcmember")
-      .select("id,fname,lname,email")
+      .select("id,fname,lname,email,householdid")
       .eq("baptized", true)
       .eq("statusid", 1)
       .order("lname", { ascending: true })
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
 
   let query = supabase
     .from("emcmember")
-    .select("id,fname,lname,email")
+    .select("id,fname,lname,email,householdid")
     .eq("baptized", true)
     .eq("statusid", 1)
     .order("lname", { ascending: true })

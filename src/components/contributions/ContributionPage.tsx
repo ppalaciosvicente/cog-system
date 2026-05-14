@@ -32,6 +32,7 @@ export function ContributionPage({
   description,
   backHref = "/contributions",
   showBackLink = true,
+  showRoleSummary = false,
   pageClassName,
   children,
 }: ContributionPageProps) {
@@ -115,6 +116,18 @@ export function ContributionPage({
       <div className={forms.topBar}>
         <h1 className={forms.h1}>{title}</h1>
       </div>
+      {showRoleSummary ? (
+        <>
+          <p style={{ margin: "8px 0 0", fontStyle: "italic" }}>
+            Logged in as: {access.roleNames.join(", ")}
+          </p>
+          {access.scopeLabel ? (
+            <p style={{ margin: "8px 0 0", fontStyle: "italic" }}>
+              Scope: {access.scopeLabel}
+            </p>
+          ) : null}
+        </>
+      ) : null}
       {showBackLink ? (
         <div className={forms.backRow}>
           <BackLink

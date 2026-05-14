@@ -118,13 +118,13 @@ export function AppShell({ children }: AppShellProps) {
     initialIdentity.canAccessContributions,
   );
   const [roleSummary, setRoleSummary] = useState<string | null>(initialIdentity.roleSummary);
-  const [contributionScopeLabel, setContributionScopeLabel] = useState<string | null>(
+  const [, setContributionScopeLabel] = useState<string | null>(
     initialIdentity.contributionScopeLabel,
   );
   const [isContributionAdmin, setIsContributionAdmin] = useState(
     initialIdentity.isContributionAdmin,
   );
-  const [emcAreasLabel, setEmcAreasLabel] = useState<string | null>(initialIdentity.emcAreasLabel);
+  const [, setEmcAreasLabel] = useState<string | null>(initialIdentity.emcAreasLabel);
   const lastAuthUserIdRef = useRef<string | null>(null);
 
   const showShell = useMemo(() => {
@@ -442,10 +442,6 @@ export function AppShell({ children }: AppShellProps) {
     };
   }, [showShell, pathname]);
 
-  const visibleContributionScopeLabel = pathname?.startsWith("/contributions")
-    ? contributionScopeLabel
-    : null;
-
   const isContributionPath = Boolean(pathname?.startsWith("/contributions"));
   const isSystemChooser = pathname === "/";
   const isEmcAdmin = useMemo(
@@ -555,24 +551,14 @@ export function AppShell({ children }: AppShellProps) {
       >
         <div className={styles.brand}>{brand}</div>
         {isContributionPath && pathname !== "/" ? (
-          <>
-            {roleSummary ? (
-              <div className={styles.scopeLabel}>Logged in as: {roleSummary}</div>
-            ) : null}
-            {visibleContributionScopeLabel ? (
-              <div className={styles.scopeLabel}>Scope: {visibleContributionScopeLabel}</div>
-            ) : null}
-          </>
+          roleSummary ? (
+            <div className={styles.scopeLabel}>Logged in as: {roleSummary}</div>
+          ) : null
         ) : null}
         {!isContributionPath && pathname !== "/" ? (
-          <>
-            {roleSummary ? (
-              <div className={styles.scopeLabel}>Logged in as: {roleSummary}</div>
-            ) : null}
-            {emcAreasLabel ? (
-              <div className={styles.scopeLabel}>Areas of responsibility: {emcAreasLabel}</div>
-            ) : null}
-          </>
+          roleSummary ? (
+            <div className={styles.scopeLabel}>Logged in as: {roleSummary}</div>
+          ) : null
         ) : null}
         <nav className={styles.nav} aria-label="Main navigation">
           {navItems.map((item) => {

@@ -22,6 +22,7 @@ type ContributionPageAccess = Extract<ContributionAccess, { ok: true }> & {
   scopeCountries?: string[];
   scopeLabel?: string;
 };
+type ContributionPageFailure = Extract<ContributionAccess, { ok: false }>;
 
 let cachedContributionAccess: ContributionPageAccess | null = null;
 let cachedContributionAccessAt = 0;
@@ -37,7 +38,9 @@ export function ContributionPage({
   children,
 }: ContributionPageProps) {
   const router = useRouter();
-  const [access, setAccess] = useState<ContributionAccess | ContributionPageAccess | null>(null);
+  const [access, setAccess] = useState<
+    ContributionPageFailure | ContributionPageAccess | null
+  >(cachedContributionAccess);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

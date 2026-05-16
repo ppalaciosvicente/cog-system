@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { requireRole } from "@/lib/authz";
 import { sendFotInviteEmail } from "@/lib/email/fot-invite";
+import { createFotToken, hashFotToken } from "@/lib/fot/tokens";
 import { createServiceRoleClient } from "@/lib/supabase/service";
 
 type Payload = {
@@ -19,7 +20,6 @@ type MemberRow = {
 
 type ActiveTokenRow = {
   memberid: number | string | null;
-  tokenhash: string | null;
 };
 
 function normalizeBaseUrl(value: string | null | undefined) {
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
   const memberIdsSet = members.map((m) => m.id);
   const { data: tokenData, error: tokenErr } = await supabase
     .from("fotregtoken")
-    .select("memberid,tokenhash")
+    .select("memberid")
     .eq("isactive", true)
     .in("memberid", memberIdsSet);
   if (tokenErr) {
@@ -84,15 +84,13 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const tokenHashByMemberId = ((tokenData ?? []) as ActiveTokenRow[]).reduce<Record<number, string>>(
+  const activeTokenMemberIds = ((tokenData ?? []) as ActiveTokenRow[]).reduce<Set<number>>(
     (acc, row) => {
       const memberId = Number(row.memberid ?? 0);
-      const tokenHash = String(row.tokenhash ?? "").trim();
-      if (!Number.isFinite(memberId) || memberId <= 0 || !tokenHash) return acc;
-      acc[memberId] = tokenHash;
+      if (Number.isFinite(memberId) && memberId > 0) acc.add(memberId);
       return acc;
     },
-    {},
+    new Set<number>(),
   );
 
   const emailResults = {
@@ -103,8 +101,7 @@ export async function POST(request: NextRequest) {
 
   for (const member of members) {
     emailResults.attempted += 1;
-    const tokenHash = tokenHashByMemberId[member.id] ?? "";
-    if (!tokenHash) {
+    if (!activeTokenMemberIds.has(member.id)) {
       emailResults.failed.push({
         memberId: member.id,
         email: String(member.email ?? "").trim(),
@@ -113,7 +110,24 @@ export async function POST(request: NextRequest) {
       continue;
     }
 
-    const link = `${baseUrl}${path}?t=${encodeURIComponent(tokenHash)}`;
+    const token = createFotToken();
+    const tokenHash = hashFotToken(token);
+    const { error: updateTokenErr } = await supabase
+      .from("fotregtoken")
+      .update({ tokenhash: tokenHash })
+      .eq("memberid", member.id)
+      .eq("isactive", true);
+
+    if (updateTokenErr) {
+      emailResults.failed.push({
+        memberId: member.id,
+        email: String(member.email ?? "").trim(),
+        error: `Failed to rotate FoT registration link: ${updateTokenErr.message}`,
+      });
+      continue;
+    }
+
+    const link = `${baseUrl}${path}?t=${encodeURIComponent(token)}`;
 
     try {
       await sendFotInviteEmail({

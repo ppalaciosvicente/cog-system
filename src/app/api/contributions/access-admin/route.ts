@@ -251,6 +251,10 @@ function normalizeCode(value: string | null | undefined) {
     .toUpperCase();
 }
 
+function domainFromEmail(value: string) {
+  return value.split("@")[1]?.trim() || "localhost";
+}
+
 async function sendSmtpEmail(to: string, subject: string, html: string) {
   const smtpHost = String(process.env.SMTP_HOST ?? "").trim();
   const smtpPort = Number(process.env.SMTP_PORT ?? 465);
@@ -273,6 +277,7 @@ async function sendSmtpEmail(to: string, subject: string, html: string) {
   const fromAddress = fromEmail.includes("<")
     ? fromEmail.slice(fromEmail.indexOf("<") + 1, fromEmail.indexOf(">")).trim()
     : fromEmail;
+  const mailDomain = domainFromEmail(fromAddress);
 
   const socket = smtpSecure
     ? tls.connect({ host: smtpHost, port: smtpPort, servername: smtpHost })
@@ -321,7 +326,7 @@ async function sendSmtpEmail(to: string, subject: string, html: string) {
 
   try {
     await readResponse(["220"]);
-    await send("EHLO emc.local", ["250"]);
+    await send(`EHLO ${mailDomain}`, ["250"]);
     await send("AUTH LOGIN", ["334"]);
     await send(Buffer.from(smtpUser).toString("base64"), ["334"]);
     await send(Buffer.from(smtpPass).toString("base64"), ["235"]);
@@ -335,7 +340,7 @@ async function sendSmtpEmail(to: string, subject: string, html: string) {
       `Subject: ${subject}`,
       "MIME-Version: 1.0",
       'Content-Type: text/html; charset="UTF-8"',
-      `Message-ID: <${randomUUID()}@emc.local>`,
+      `Message-ID: <${randomUUID()}@${mailDomain}>`,
       "",
       html,
       ".",

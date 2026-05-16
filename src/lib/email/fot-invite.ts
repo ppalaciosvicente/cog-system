@@ -12,6 +12,10 @@ function asBool(value: string | undefined, fallback: boolean) {
   return ["1", "true", "yes", "y", "on"].includes(text);
 }
 
+function domainFromEmail(value: string) {
+  return value.split("@")[1]?.trim() || "localhost";
+}
+
 function readResponse(
   socket: net.Socket | tls.TLSSocket,
   state: { buffer: string },
@@ -99,6 +103,7 @@ export async function sendFotInviteEmail(message: FotInviteMessage) {
   const fromAddress = fromEmail.includes("<")
     ? fromEmail.slice(fromEmail.indexOf("<") + 1, fromEmail.indexOf(">")).trim()
     : fromEmail;
+  const mailDomain = domainFromEmail(fromAddress);
 
   const socket = smtpSecure
     ? tls.connect({ host: smtpHost, port: smtpPort, servername: smtpHost })
@@ -112,7 +117,7 @@ export async function sendFotInviteEmail(message: FotInviteMessage) {
   const state = { buffer: "" };
   try {
     await readResponse(socket, state, ["220"]);
-    await smtpCommand(socket, state, "EHLO emc.local", ["250"]);
+    await smtpCommand(socket, state, `EHLO ${mailDomain}`, ["250"]);
     await smtpCommand(socket, state, "AUTH LOGIN", ["334"]);
     await smtpCommand(socket, state, Buffer.from(smtpUser).toString("base64"), ["334"]);
     await smtpCommand(socket, state, Buffer.from(smtpPass).toString("base64"), ["235"]);
@@ -126,7 +131,7 @@ export async function sendFotInviteEmail(message: FotInviteMessage) {
       `Subject: ${subject}`,
       "MIME-Version: 1.0",
       'Content-Type: text/html; charset="UTF-8"',
-      `Message-ID: <${randomUUID()}@emc.local>`,
+      `Message-ID: <${randomUUID()}@${mailDomain}>`,
       "",
       html,
       ".",

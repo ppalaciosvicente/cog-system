@@ -17,6 +17,10 @@ function asBool(value: string | undefined, fallback: boolean) {
   return ["1", "true", "yes", "y", "on"].includes(text);
 }
 
+function domainFromEmail(value: string) {
+  return value.split("@")[1]?.trim() || "localhost";
+}
+
 function readResponse(
   socket: net.Socket | tls.TLSSocket,
   state: { buffer: string },
@@ -117,6 +121,7 @@ export async function sendTaxReceiptEmail({
   const fromAddress = fromEmail.includes("<")
     ? fromEmail.slice(fromEmail.indexOf("<") + 1, fromEmail.indexOf(">")).trim()
     : fromEmail;
+  const mailDomain = domainFromEmail(fromAddress);
   const boundary = `emc-tax-receipt-${randomUUID()}`;
   const attachmentBase64 = chunkBase64(pdf.toString("base64"));
 
@@ -125,7 +130,7 @@ export async function sendTaxReceiptEmail({
     `To: ${toEmail}`,
     `Subject: ${subject}`,
     "MIME-Version: 1.0",
-    `Message-ID: <${randomUUID()}@emc.local>`,
+    `Message-ID: <${randomUUID()}@${mailDomain}>`,
     `Content-Type: multipart/mixed; boundary="${boundary}"`,
     "",
     `--${boundary}`,
@@ -158,7 +163,7 @@ export async function sendTaxReceiptEmail({
   const state = { buffer: "" };
   try {
     await readResponse(socket, state, ["220"]);
-    await smtpCommand(socket, state, "EHLO emc.local", ["250"]);
+    await smtpCommand(socket, state, `EHLO ${mailDomain}`, ["250"]);
     await smtpCommand(socket, state, "AUTH LOGIN", ["334"]);
     await smtpCommand(socket, state, Buffer.from(smtpUser).toString("base64"), ["334"]);
     await smtpCommand(socket, state, Buffer.from(smtpPass).toString("base64"), ["235"]);

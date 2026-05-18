@@ -503,6 +503,7 @@ export default function EldersAddPage() {
             <input
               id="memberSelect"
               type="search"
+              autoComplete="off"
               className={forms.field}
               placeholder="Type at least 2 letters to search"
               value={memberSearch}

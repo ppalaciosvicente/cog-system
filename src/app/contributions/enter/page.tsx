@@ -740,6 +740,7 @@ export default function EnterContributionsPage() {
                           <input
                             className={forms.field}
                             type="search"
+                            autoComplete="off"
                             value={row.memberQuery}
                             placeholder="Type last name or first name"
                             onChange={(event) =>

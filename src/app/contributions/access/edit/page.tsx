@@ -249,6 +249,7 @@ function ContributionAccessEditInner() {
               <div className={forms.autocompleteWrap}>
                 <input
                   type="text"
+                  autoComplete="off"
                   className={forms.field}
                   placeholder="Type at least 2 letters to search members"
                   value={memberSearch}

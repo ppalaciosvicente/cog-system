@@ -546,6 +546,7 @@ export default function UnlinkSpousesPage() {
           <div className={forms.autocompleteWrap} style={{ width: "100%", maxWidth: 520 }}>
             <input
               type="search"
+              autoComplete="off"
               className={forms.field}
               placeholder="Type at least 2 letters to search households"
               value={householdSearch}

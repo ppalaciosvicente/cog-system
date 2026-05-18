@@ -778,6 +778,7 @@ export default function ContributionDonorsPage() {
                     id="contrib-donor-member"
                     className={forms.field}
                     type="search"
+                    autoComplete="off"
                     value={donorQuery}
                     placeholder="Type last name or first name"
                     onChange={(event) => {

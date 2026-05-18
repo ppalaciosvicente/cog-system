@@ -322,6 +322,7 @@ export default function FotResendInvitationsPage() {
             <div className={forms.autocompleteWrap} style={{ minWidth: 320 }}>
               <input
                 type="search"
+                autoComplete="off"
                 value={query}
                 onChange={(e) => {
                   setQuery(e.target.value);

@@ -1075,6 +1075,7 @@ export default function MembersPage() {
             <input
               id="memberSelect"
               type="search"
+              autoComplete="off"
               className={forms.field}
               placeholder="Type at least 2 letters to search contacts"
               value={memberSearch}

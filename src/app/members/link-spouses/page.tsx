@@ -581,6 +581,7 @@ export default function LinkSpousesPage() {
             <div className={forms.autocompleteWrap} style={{ width: "100%", maxWidth: 520 }}>
               <input
                 type="search"
+                autoComplete="off"
                 className={forms.field}
                 placeholder="Type at least 2 letters to search"
                 value={memberASearch}
@@ -666,6 +667,7 @@ export default function LinkSpousesPage() {
             <div className={forms.autocompleteWrap} style={{ width: "100%", maxWidth: 520 }}>
               <input
                 type="search"
+                autoComplete="off"
                 className={forms.field}
                 placeholder="Type at least 2 letters to search"
                 value={memberBSearch}

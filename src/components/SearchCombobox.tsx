@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
 import forms from "@/styles/forms.module.css";
 
 type SearchComboboxProps<T> = {
@@ -52,7 +53,9 @@ export function SearchCombobox<T>({
   const listboxId = `${inputId}-options`;
   const optionIdPrefix = `${inputId}-option`;
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [menuStyle, setMenuStyle] = useState<CSSProperties>();
   const activeOptionRef = useRef<HTMLButtonElement | null>(null);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
   const activeOptionIndex =
     isOpen && !loadingLabel && options.length > 0
       ? activeIndex < 0
@@ -64,7 +67,60 @@ export function SearchCombobox<T>({
     activeOptionRef.current?.scrollIntoView({ block: "nearest" });
   }, [activeOptionIndex]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const updateMenuPosition = () => {
+      const inputRect = wrapRef.current?.getBoundingClientRect();
+      if (!inputRect) return;
+
+      setMenuStyle({
+        position: "fixed",
+        top: menuAbove ? "auto" : inputRect.bottom + 6,
+        bottom: menuAbove ? window.innerHeight - inputRect.top + 6 : "auto",
+        left: inputRect.left,
+        right: "auto",
+        width: inputRect.width,
+        maxHeight: Math.max(
+          120,
+          menuAbove ? inputRect.top - 18 : window.innerHeight - inputRect.bottom - 18,
+        ),
+        zIndex: 1000,
+      });
+    };
+
+    window.addEventListener("resize", updateMenuPosition);
+    window.addEventListener("scroll", updateMenuPosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updateMenuPosition);
+      window.removeEventListener("scroll", updateMenuPosition, true);
+    };
+  }, [menuAbove]);
+
+  function updateMenuPosition() {
+    if (typeof window === "undefined") return;
+    const inputRect = wrapRef.current?.getBoundingClientRect();
+    if (!inputRect) return;
+
+    setMenuStyle({
+      position: "fixed",
+      top: menuAbove ? "auto" : inputRect.bottom + 6,
+      bottom: menuAbove ? window.innerHeight - inputRect.top + 6 : "auto",
+      left: inputRect.left,
+      right: "auto",
+      width: inputRect.width,
+      maxHeight: Math.max(
+        120,
+        menuAbove ? inputRect.top - 18 : window.innerHeight - inputRect.bottom - 18,
+      ),
+      zIndex: 1000,
+    });
+  }
+
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    updateMenuPosition();
+
     if (event.key === "ArrowDown") {
       if (!isOpen || options.length === 0) return;
       event.preventDefault();
@@ -94,17 +150,48 @@ export function SearchCombobox<T>({
     }
   }
 
-  const menuClassName = [
-    forms.autocompleteMenu,
-    menuAbove ? forms.autocompleteMenuAbove : "",
-  ]
-    .filter(Boolean)
-    .join(" ");
+  const menuClassName = forms.autocompleteMenu;
   const activeOptionId =
     activeOptionIndex >= 0 ? `${optionIdPrefix}-${activeOptionIndex}` : undefined;
+  const menu = isOpen ? (
+    <div
+      id={listboxId}
+      className={menuClassName}
+      role="listbox"
+      aria-label={menuLabel}
+      style={menuStyle}
+    >
+      {loadingLabel ? (
+        <div className={forms.autocompleteOption}>{loadingLabel}</div>
+      ) : options.length > 0 ? (
+        options.map((option, optionIndex) => (
+          <button
+            key={getOptionKey(option, optionIndex)}
+            id={`${optionIdPrefix}-${optionIndex}`}
+            ref={optionIndex === activeOptionIndex ? activeOptionRef : null}
+            type="button"
+            role="option"
+            aria-selected={optionIndex === activeOptionIndex}
+            className={[
+              forms.autocompleteOption,
+              optionIndex === activeOptionIndex ? forms.autocompleteOptionActive : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            onMouseEnter={() => setActiveIndex(optionIndex)}
+            onClick={() => onSelect(option)}
+          >
+            {getOptionLabel(option)}
+          </button>
+        ))
+      ) : noMatchesLabel ? (
+        <div className={forms.autocompleteOption}>{noMatchesLabel}</div>
+      ) : null}
+    </div>
+  ) : null;
 
   return (
-    <div className={forms.autocompleteWrap} style={wrapStyle}>
+    <div ref={wrapRef} className={forms.autocompleteWrap} style={wrapStyle}>
       <input
         id={inputId}
         type="search"
@@ -119,38 +206,12 @@ export function SearchCombobox<T>({
         aria-controls={listboxId}
         aria-activedescendant={activeOptionId}
         onKeyDown={handleKeyDown}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) => {
+          updateMenuPosition();
+          onChange(event.target.value);
+        }}
       />
-      {isOpen ? (
-        <div id={listboxId} className={menuClassName} role="listbox" aria-label={menuLabel}>
-          {loadingLabel ? (
-            <div className={forms.autocompleteOption}>{loadingLabel}</div>
-          ) : options.length > 0 ? (
-            options.map((option, optionIndex) => (
-              <button
-                key={getOptionKey(option, optionIndex)}
-                id={`${optionIdPrefix}-${optionIndex}`}
-                ref={optionIndex === activeOptionIndex ? activeOptionRef : null}
-                type="button"
-                role="option"
-                aria-selected={optionIndex === activeOptionIndex}
-                className={[
-                  forms.autocompleteOption,
-                  optionIndex === activeOptionIndex ? forms.autocompleteOptionActive : "",
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-                onMouseEnter={() => setActiveIndex(optionIndex)}
-                onClick={() => onSelect(option)}
-              >
-                {getOptionLabel(option)}
-              </button>
-            ))
-          ) : noMatchesLabel ? (
-            <div className={forms.autocompleteOption}>{noMatchesLabel}</div>
-          ) : null}
-        </div>
-      ) : null}
+      {menu && typeof document !== "undefined" ? createPortal(menu, document.body) : null}
     </div>
   );
 }

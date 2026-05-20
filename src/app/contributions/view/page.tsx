@@ -748,7 +748,7 @@ export default function ViewContributionsPage() {
                   gap: "8px 12px",
                 }}
               >
-                {(["view", "grandTotal", "totalPerDonor", "dailyEntry", "taxReceipts"] as Mode[]).map((value) => {
+                {(["view", "dailyEntry", "grandTotal", "totalPerDonor", "taxReceipts"] as Mode[]).map((value) => {
                   const label =
                     value === "view"
                       ? "View Contributions"
@@ -847,6 +847,8 @@ export default function ViewContributionsPage() {
                       </div>
                     </>
                   ) : null}
+                </div>
+                <div className={forms.col}>
                   <div className={forms.row}>
                     <label className={forms.label} htmlFor="contrib-filter-country">
                       Country
@@ -873,8 +875,6 @@ export default function ViewContributionsPage() {
                       </select>
                     </div>
                   </div>
-                </div>
-                <div className={forms.col}>
                   {showFundFilters ? (
                     <div className={forms.row}>
                       <label className={forms.label} htmlFor="contrib-filter-fund-type">
@@ -962,11 +962,11 @@ export default function ViewContributionsPage() {
                   {reportDownloading
                     ? "Generating..."
                     : mode === "grandTotal"
-                      ? "Download Grand Total"
+                      ? "Download Grand Total Report"
                       : mode === "totalPerDonor"
-                        ? "Download Total per Donor"
+                        ? "Download Total per Donor Report"
                         : mode === "dailyEntry"
-                          ? "Download Daily Entry"
+                          ? "Download Daily Entry Report"
                           : "Download Tax Receipts"}
                 </button>
               )}

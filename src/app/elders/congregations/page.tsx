@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient, getAuthHeaders } from "@/lib/supabase/client";
 import { BackLink } from "@/components/BackLink";
+import { ScrollableTable } from "@/components/ScrollableTable";
 import forms from "@/styles/forms.module.css";
 import type { RoleName, RoleRow } from "@/types/roles";
 import { normalizeRoleRow } from "@/types/roles";
@@ -407,19 +408,7 @@ export default function CongregationsPage() {
 
       {sortedRows.length > 0 ? (
         <>
-          <p
-            style={{
-              marginTop: 18,
-              marginBottom: 8,
-              fontStyle: "italic",
-              fontSize: 13,
-              color: "#6b7280",
-            }}
-            className={forms.mobileOnly}
-          >
-            Tip: scroll horizontally to see all columns →
-          </p>
-          <div className={forms.tableWrap} style={{ marginTop: 18 }}>
+          <ScrollableTable style={{ marginTop: 18 }}>
           <table className={forms.table}>
             <thead>
               <tr>
@@ -516,7 +505,7 @@ export default function CongregationsPage() {
               ))}
             </tbody>
           </table>
-          </div>
+          </ScrollableTable>
         </>
       ) : (
         <p>No congregations found.</p>

@@ -560,6 +560,14 @@
   background: #fff;
 }
 
+.tableScrollTip {
+  margin-top: 16px;
+  margin-bottom: 8px;
+  font-style: italic;
+  font-size: 13px;
+  color: #6b7280;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient, getAuthHeaders } from "@/lib/supabase/client";
 import { fetchCountryAndUSStateLookups } from "@/lib/lookups";
 import { BackLink } from "@/components/BackLink";
+import { ScrollableTable } from "@/components/ScrollableTable";
 import forms from "@/styles/forms.module.css";
 import type { RoleName, RoleRow } from "@/types/roles";
 import { normalizeRoleRow } from "@/types/roles";
@@ -897,19 +898,7 @@ export default function EldersAreasPage() {
 
       {sortedRows.length > 0 ? (
         <div style={{ marginTop: 12 }}>
-          <p
-            style={{
-              marginTop: 0,
-              marginBottom: 6,
-              fontStyle: "italic",
-              fontSize: 13,
-              color: "#6b7280",
-            }}
-            className={forms.mobileOnly}
-          >
-            Tip: scroll horizontally to see all columns →
-          </p>
-          <div className={forms.tableWrap}>
+          <ScrollableTable>
           <table className={forms.table}>
             <thead>
               <tr>
@@ -965,7 +954,7 @@ export default function EldersAreasPage() {
               ))}
             </tbody>
           </table>
-          </div>
+          </ScrollableTable>
         </div>
       ) : (
         <p>No elder area assignments found.</p>

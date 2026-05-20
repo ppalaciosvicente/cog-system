@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { getAuthHeaders } from "@/lib/supabase/client";
 import { BackLink } from "@/components/BackLink";
+import { ScrollableTable } from "@/components/ScrollableTable";
 import forms from "@/styles/forms.module.css";
 
 type DetailRow = {
@@ -114,19 +115,7 @@ export default function FotAreaContactsPage() {
       {!loading && !error ? (
         rows.length ? (
           <>
-            <p
-              style={{
-                marginTop: 16,
-                marginBottom: 8,
-                fontStyle: "italic",
-                fontSize: 13,
-                color: "#6b7280",
-              }}
-              className={forms.mobileOnly}
-            >
-              Tip: scroll horizontally to see all columns →
-            </p>
-            <div className={forms.tableWrap} style={{ marginTop: 12 }}>
+            <ScrollableTable style={{ marginTop: 12 }}>
             <table className={forms.table}>
               <thead>
                 <tr>
@@ -177,7 +166,7 @@ export default function FotAreaContactsPage() {
                 ))}
               </tbody>
             </table>
-            </div>
+            </ScrollableTable>
           </>
         ) : (
           <p>No registrations found for members in your area.</p>

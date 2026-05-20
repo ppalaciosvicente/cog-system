@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { getAuthHeaders } from "@/lib/supabase/client";
 import { BackLink } from "@/components/BackLink";
+import { ScrollableTable } from "@/components/ScrollableTable";
 import forms from "@/styles/forms.module.css";
 
 type DetailRow = {
@@ -182,19 +183,7 @@ function FotRegistrationDetailsInner() {
       {!loading && !error ? (
         rows.length ? (
           <>
-            <p
-              style={{
-                marginTop: 16,
-                marginBottom: 8,
-                fontStyle: "italic",
-                fontSize: 13,
-                color: "#6b7280",
-              }}
-              className={forms.mobileOnly}
-            >
-              Tip: scroll horizontally to see all columns →
-            </p>
-            <div className={forms.tableWrap} style={{ marginTop: 12 }}>
+            <ScrollableTable style={{ marginTop: 12 }}>
             <table className={forms.table}>
               <thead>
                 <tr>
@@ -260,7 +249,7 @@ function FotRegistrationDetailsInner() {
                 ))}
               </tbody>
             </table>
-            </div>
+            </ScrollableTable>
           </>
         ) : (
           <p>No registrations found for this location.</p>

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ContributionPage } from "@/components/contributions/ContributionPage";
+import { ScrollableTable } from "@/components/ScrollableTable";
 import { getAuthHeaders } from "@/lib/supabase/client";
 import forms from "@/styles/forms.module.css";
 
@@ -187,20 +188,8 @@ export default function ContributionsAccessPage() {
               </Link>
             </div>
 
-            <p
-              style={{
-                margin: "0 0 8px",
-                fontStyle: "italic",
-                fontSize: 13,
-                color: "#6b7280",
-              }}
-              className={forms.mobileOnly}
-            >
-              Tip: scroll horizontally to see all columns →
-            </p>
-
             {rows.length ? (
-              <div className={forms.tableWrap}>
+              <ScrollableTable>
                 <table className={forms.table}>
                   <thead>
                     <tr>
@@ -257,7 +246,7 @@ export default function ContributionsAccessPage() {
                     })}
                   </tbody>
                 </table>
-              </div>
+              </ScrollableTable>
             ) : (
               <p>No active accounts found.</p>
             )}

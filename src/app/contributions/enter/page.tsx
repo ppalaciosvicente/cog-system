@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ContributionPage } from "@/components/contributions/ContributionPage";
+import { ScrollableTable } from "@/components/ScrollableTable";
 import {
   type ContributionDraftInput,
   CONTRIBUTION_FUND_TYPE_NAMES,
@@ -708,18 +709,7 @@ export default function EnterContributionsPage() {
             {memberError ? <p className={forms.error}>{memberError}</p> : null}
             {saveError ? <p className={forms.error}>{saveError}</p> : null}
 
-            <p
-              style={{
-                marginTop: 16,
-                marginBottom: 8,
-                fontStyle: "italic",
-                fontSize: 13,
-                color: "#6b7280",
-              }}
-            >
-              Tip: scroll horizontally to see all columns →
-            </p>
-            <div className={forms.tableWrap} style={{ marginTop: 12 }}>
+            <ScrollableTable style={{ marginTop: 12 }}>
               <table className={forms.table}>
                 <thead>
                   <tr>
@@ -883,7 +873,7 @@ export default function EnterContributionsPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </ScrollableTable>
           </section>
 
           <section className={forms.sectionCard} style={{ marginTop: 16 }}>
@@ -918,19 +908,7 @@ export default function EnterContributionsPage() {
             ) : null}
             {!loadingDailyEntries && dailyEntryRows.length > 0 ? (
               <>
-                <p
-                  style={{
-                    marginTop: 16,
-                    marginBottom: 8,
-                    fontStyle: "italic",
-                    fontSize: 13,
-                    color: "#6b7280",
-                  }}
-                  className={forms.mobileOnly}
-                >
-                  Tip: scroll horizontally to see all columns →
-                </p>
-                <div className={forms.tableWrap} style={{ marginTop: 12 }}>
+                <ScrollableTable style={{ marginTop: 12 }}>
                   <table className={forms.table}>
                     <thead>
                       <tr>
@@ -981,7 +959,7 @@ export default function EnterContributionsPage() {
                       ))}
                     </tbody>
                   </table>
-                </div>
+                </ScrollableTable>
                 <div style={{ marginTop: 12, fontWeight: 700 }}>
                   {dailyEntryTotals.length <= 1
                     ? `Grand Total: ${dailyEntryTotals[0]?.formattedAmount ?? "$0.00"}`

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient, getAuthHeaders } from "@/lib/supabase/client";
 import { BackLink } from "@/components/BackLink";
+import { ScrollableTable } from "@/components/ScrollableTable";
 import forms from "@/styles/forms.module.css";
 import type { RoleName, RoleRow } from "@/types/roles";
 import { normalizeRoleRow } from "@/types/roles";
@@ -282,18 +283,7 @@ export default function EldersListPage() {
 
       {rows.length > 0 ? (
         <>
-          <p
-            style={{
-              marginTop: 24,
-              fontStyle: "italic",
-              fontSize: 13,
-              color: "#6b7280",
-            }}
-            className={forms.mobileOnly}
-          >
-            Tip: scroll horizontally to see all columns →
-          </p>
-          <div className={forms.tableWrap} style={{ marginTop: 12 }}>
+          <ScrollableTable style={{ marginTop: 12 }}>
           <table className={forms.table}>
             <thead>
               <tr>
@@ -338,7 +328,7 @@ export default function EldersListPage() {
               ))}
             </tbody>
           </table>
-          </div>
+          </ScrollableTable>
         </>
       ) : (
         <p>No elders found.</p>

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ContributionPage } from "@/components/contributions/ContributionPage";
+import { ScrollableTable } from "@/components/ScrollableTable";
 import {
   type ContributionDraftInput,
   type ContributionRecord,
@@ -1048,19 +1049,7 @@ export default function ViewContributionsPage() {
                 </div>
               </div>
               {exportError ? <p className={forms.error}>{exportError}</p> : null}
-              <p
-                style={{
-                  marginTop: 4,
-                  marginBottom: 8,
-                  fontStyle: "italic",
-                  fontSize: 13,
-                  color: "#6b7280",
-                }}
-                className={forms.mobileOnly}
-              >
-                Tip: scroll horizontally to see all columns →
-              </p>
-              <div className={forms.tableWrap}>
+              <ScrollableTable>
                 <table className={forms.table}>
                   <thead>
                     <tr>
@@ -1159,7 +1148,7 @@ export default function ViewContributionsPage() {
                     )}
                   </tbody>
                 </table>
-              </div>
+              </ScrollableTable>
             </section>
           ) : null}
 

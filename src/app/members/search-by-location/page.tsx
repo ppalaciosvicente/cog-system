@@ -7,6 +7,7 @@ import { createClient, getAuthHeaders } from "@/lib/supabase/client";
 import { fetchCountryAndUSStateLookups } from "@/lib/lookups";
 import { buildHouseholdOptions } from "@/lib/households";
 import { BackLink } from "@/components/BackLink";
+import { ScrollableTable } from "@/components/ScrollableTable";
 import forms from "@/styles/forms.module.css";
 import type { RoleName, RoleRow } from "@/types/roles";
 import { normalizeRoleRow } from "@/types/roles";
@@ -503,11 +504,8 @@ export default function MembersSearchByLocationPage() {
 
       {groupedRows.length > 0 && (
         <div style={{ marginTop: 12 }}>
-          <div style={{ fontStyle: "italic", fontSize: 13, marginBottom: 6 }}>
-            Tip: scroll horizontally to see all columns →
-          </div>
           <div style={{ position: "relative" }}>
-            <div className={forms.tableWrap}>
+            <ScrollableTable>
               <table className={forms.table}>
                 <thead>
                   <tr>
@@ -582,7 +580,7 @@ export default function MembersSearchByLocationPage() {
                   })}
                 </tbody>
               </table>
-            </div>
+            </ScrollableTable>
             <div
               aria-hidden
               style={{

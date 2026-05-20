@@ -17,6 +17,7 @@ type HouseholdOption = {
   label: string;
   memberIds: number[];
   defaultCurrencyCode: string;
+  countryCode?: string;
 };
 
 type CurrencyOption = {
@@ -88,6 +89,7 @@ function todayDateString() {
 
 const DEFAULT_CONTRIBUTION_TYPE = "Tithe/Offering";
 const DEFAULT_ENTRY_ROW_COUNT = 10;
+const DEFAULT_US_FUND_TYPE = "Check";
 
 export default function EnterContributionsPage() {
   const rowIdCounterRef = useRef(0);
@@ -354,6 +356,7 @@ export default function EnterContributionsPage() {
   }
 
   function handleSelectDonor(rowId: number, option: HouseholdOption) {
+    const isUsDonor = option.countryCode?.trim().toUpperCase() === "US";
     setRows((current) =>
       current.map((row) =>
         row.id === rowId
@@ -362,6 +365,7 @@ export default function EnterContributionsPage() {
               memberId: String(option.value),
               memberQuery: option.label,
               currencyCode: option.defaultCurrencyCode || row.currencyCode || "USD",
+              fundType: isUsDonor ? DEFAULT_US_FUND_TYPE : row.fundType,
             }
           : row,
       ),

@@ -22,6 +22,7 @@ type CountryCurrencyRow = {
 
 type DonorHouseholdOption = ReturnType<typeof buildHouseholdOptions<DonorMemberRow>>[number] & {
   defaultCurrencyCode: string;
+  countryCode: string;
 };
 
 type CachedDonorOptions = {
@@ -82,6 +83,7 @@ async function buildHouseholdsWithCurrency(
 
   return households.map((household) => ({
     ...household,
+    countryCode: representativeCountryById.get(household.value) ?? "",
     defaultCurrencyCode:
       currencyByCountry.get(representativeCountryById.get(household.value) ?? "") ?? "USD",
   }));

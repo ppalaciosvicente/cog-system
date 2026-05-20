@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ContributionPage } from "@/components/contributions/ContributionPage";
+import { ScrollableTable } from "@/components/ScrollableTable";
 import {
   type ContributionDraftInput,
   type ContributionRecord,
@@ -1143,7 +1144,7 @@ export default function ContributionDonorsPage() {
                     ) : null}
                   </div>
                 ) : null}
-                <div className={forms.tableWrap}>
+                <ScrollableTable>
                   <table className={forms.table}>
                     <thead>
                       <tr>
@@ -1207,7 +1208,7 @@ export default function ContributionDonorsPage() {
                       )}
                     </tbody>
                   </table>
-                </div>
+                </ScrollableTable>
               </section>
 
               {editDraft ? (

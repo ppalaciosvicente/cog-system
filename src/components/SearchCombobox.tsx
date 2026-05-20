@@ -23,6 +23,7 @@ type SearchComboboxProps<T> = {
   noMatchesLabel?: string;
   wrapStyle?: CSSProperties;
   onChange: (value: string) => void;
+  onOpenRequest?: () => void;
   onSelect: (option: T) => void;
   onEscape?: () => void;
   getOptionKey: (option: T, index: number) => string | number;
@@ -41,6 +42,7 @@ export function SearchCombobox<T>({
   noMatchesLabel,
   wrapStyle,
   onChange,
+  onOpenRequest,
   onSelect,
   onEscape,
   getOptionKey,
@@ -114,15 +116,25 @@ export function SearchCombobox<T>({
     updateMenuPosition();
 
     if (event.key === "ArrowDown") {
-      if (!isOpen || options.length === 0) return;
+      if (options.length === 0) return;
       event.preventDefault();
+      if (!isOpen) {
+        setActiveIndex(0);
+        onOpenRequest?.();
+        return;
+      }
       setActiveIndex((activeOptionIndex + 1) % options.length);
       return;
     }
 
     if (event.key === "ArrowUp") {
-      if (!isOpen || options.length === 0) return;
+      if (options.length === 0) return;
       event.preventDefault();
+      if (!isOpen) {
+        setActiveIndex(options.length - 1);
+        onOpenRequest?.();
+        return;
+      }
       setActiveIndex(activeOptionIndex <= 0 ? options.length - 1 : activeOptionIndex - 1);
       return;
     }

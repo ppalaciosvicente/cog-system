@@ -120,6 +120,7 @@ export default function EnterContributionsPage() {
   const [currencyOptions, setCurrencyOptions] = useState<CurrencyOption[]>(DEFAULT_CURRENCY_OPTIONS);
   const [searchResultsByRowId, setSearchResultsByRowId] = useState<Record<number, HouseholdOption[]>>({});
   const [searchLoadingByRowId, setSearchLoadingByRowId] = useState<Record<number, boolean>>({});
+  const [openSearchRowId, setOpenSearchRowId] = useState<number | null>(null);
   const [memberWarning, setMemberWarning] = useState<string | null>(null);
   const [memberError, setMemberError] = useState<string | null>(null);
   const [rows, setRows] = useState<DraftRow[]>(() =>
@@ -212,6 +213,7 @@ export default function EnterContributionsPage() {
         Object.entries(current).filter(([rowId]) => activeRowIds.has(Number(rowId))),
       ),
     );
+    setOpenSearchRowId((current) => (current != null && activeRowIds.has(current) ? current : null));
   }, [rows]);
 
   function isCheckFundType(value: string) {
@@ -288,6 +290,7 @@ export default function EnterContributionsPage() {
 
     setSearchResultsByRowId((current) => ({ ...current, [rowId]: [] }));
     setSearchLoadingByRowId((current) => ({ ...current, [rowId]: false }));
+    setOpenSearchRowId((current) => (current === rowId ? null : current));
   }
 
   function handleMemberQueryChange(rowId: number, value: string) {
@@ -359,6 +362,8 @@ export default function EnterContributionsPage() {
 
   function handleSelectDonor(rowId: number, option: HouseholdOption) {
     const isUsDonor = option.countryCode?.trim().toUpperCase() === "US";
+    const carriedSearchResults = searchResultsByRowId[rowId] ?? [];
+    let nextPrefilledRowId: number | null = null;
     setRows((current) => {
       const selectedIndex = current.findIndex((row) => row.id === rowId);
       if (selectedIndex === -1) return current;
@@ -377,12 +382,19 @@ export default function EnterContributionsPage() {
           !row.memberId &&
           !row.memberQuery.trim()
         ) {
+          nextPrefilledRowId = row.id;
           return applyDonor(row);
         }
         return row;
       });
     });
     clearRowSearch(rowId);
+    if (nextPrefilledRowId != null && carriedSearchResults.length > 0) {
+      setSearchResultsByRowId((current) => ({
+        ...current,
+        [nextPrefilledRowId]: carriedSearchResults,
+      }));
+    }
   }
 
   function addRow() {
@@ -754,6 +766,7 @@ export default function EnterContributionsPage() {
                             options={searchResults}
                             isOpen={
                               searchLoadingByRowId[row.id] ||
+                              openSearchRowId === row.id ||
                               (!row.memberId && row.memberQuery.trim().length >= 2)
                             }
                             menuLabel="Matching donors"
@@ -762,6 +775,7 @@ export default function EnterContributionsPage() {
                             }
                             noMatchesLabel="No matching donors found."
                             onChange={(value) => handleMemberQueryChange(row.id, value)}
+                            onOpenRequest={() => setOpenSearchRowId(row.id)}
                             onSelect={(household) => handleSelectDonor(row.id, household)}
                             onEscape={() => clearRowSearch(row.id)}
                             getOptionKey={(household) => household.value}

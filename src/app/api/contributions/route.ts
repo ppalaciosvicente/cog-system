@@ -217,6 +217,8 @@ export async function GET(request: NextRequest) {
 
   const startDate = String(request.nextUrl.searchParams.get("startDate") ?? "").trim();
   const endDate = String(request.nextUrl.searchParams.get("endDate") ?? "").trim();
+  const startDateEntered = String(request.nextUrl.searchParams.get("startDateEntered") ?? "").trim();
+  const endDateEntered = String(request.nextUrl.searchParams.get("endDateEntered") ?? "").trim();
   const memberIdParam = String(request.nextUrl.searchParams.get("memberId") ?? "").trim();
   const fundTypeParam = String(request.nextUrl.searchParams.get("fundType") ?? "").trim();
   const contributionTypeParam = String(
@@ -227,6 +229,18 @@ export async function GET(request: NextRequest) {
   if (!isValidDateOnly(startDate) || !isValidDateOnly(endDate)) {
     return NextResponse.json(
       { error: "Start date and end date are required." },
+      { status: 400 },
+    );
+  }
+  if (startDateEntered && !isValidDateOnly(startDateEntered)) {
+    return NextResponse.json({ error: "Start date entered must be a valid date." }, { status: 400 });
+  }
+  if (endDateEntered && !isValidDateOnly(endDateEntered)) {
+    return NextResponse.json({ error: "End date entered must be a valid date." }, { status: 400 });
+  }
+  if (startDateEntered && endDateEntered && startDateEntered > endDateEntered) {
+    return NextResponse.json(
+      { error: "Start date entered cannot be later than end date entered." },
       { status: 400 },
     );
   }
@@ -299,6 +313,12 @@ export async function GET(request: NextRequest) {
     const contributionTypeId = contributionTypeIdByName.get(normalizeName(contributionTypeParam));
     if (!contributionTypeId) return NextResponse.json({ rows: [] as ContributionRecord[] });
     contributionQuery = contributionQuery.eq("contributiontypeid", contributionTypeId);
+  }
+  if (startDateEntered) {
+    contributionQuery = contributionQuery.gte("dateentered", startOfUtcDay(startDateEntered));
+  }
+  if (endDateEntered) {
+    contributionQuery = contributionQuery.lt("dateentered", startOfNextUtcDay(endDateEntered));
   }
 
   const { data: contributionRows, error: contributionErr } = await contributionQuery;

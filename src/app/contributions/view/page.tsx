@@ -45,7 +45,7 @@ type EditDraft = {
   comments: string;
 };
 
-type Mode = "view" | "grandTotal" | "totalPerDonor" | "taxReceipts";
+type Mode = "view" | "grandTotal" | "totalPerDonor" | "dailyEntry" | "taxReceipts";
 type SortKey = "memberName" | "contributionType" | "dateDeposited" | "dateEntered";
 type SortDirection = "asc" | "desc";
 
@@ -105,6 +105,9 @@ function sortIndicator(active: boolean, direction: SortDirection) {
 export default function ViewContributionsPage() {
   const [startDate, setStartDate] = useState(dateDaysAgoString(30));
   const [endDate, setEndDate] = useState(todayDateString());
+  const [startDateEntered, setStartDateEntered] = useState("");
+  const [endDateEntered, setEndDateEntered] = useState("");
+  const [dailyEntryDate, setDailyEntryDate] = useState(todayDateString());
   const [fundType, setFundType] = useState("");
   const [contributionType, setContributionType] = useState("");
   const [countryCode, setCountryCode] = useState("");
@@ -209,6 +212,8 @@ export default function ViewContributionsPage() {
     fundType?: string;
     contributionType?: string;
     countryCode?: string;
+    startDateEntered?: string;
+    endDateEntered?: string;
   }) {
     setLoading(true);
     setError(null);
@@ -222,6 +227,8 @@ export default function ViewContributionsPage() {
       const activeFundType = filters?.fundType ?? fundType;
       const activeContributionType = filters?.contributionType ?? contributionType;
       const activeCountryCode = filters?.countryCode ?? countryCode;
+      const activeStartDateEntered = filters?.startDateEntered ?? startDateEntered;
+      const activeEndDateEntered = filters?.endDateEntered ?? endDateEntered;
       const params = new URLSearchParams({
         startDate: activeStartDate,
         endDate: activeEndDate,
@@ -229,6 +236,8 @@ export default function ViewContributionsPage() {
       if (activeFundType) params.set("fundType", activeFundType);
       if (activeContributionType) params.set("contributionType", activeContributionType);
       if (activeCountryCode) params.set("country", activeCountryCode);
+      if (activeStartDateEntered) params.set("startDateEntered", activeStartDateEntered);
+      if (activeEndDateEntered) params.set("endDateEntered", activeEndDateEntered);
 
       const response = await fetch(`/api/contributions?${params.toString()}`, {
         credentials: "include",
@@ -364,7 +373,9 @@ export default function ViewContributionsPage() {
         ? "Grand Total"
         : kind === "totalPerDonor"
           ? "Total per Donor"
-          : "Tax Receipts";
+          : kind === "dailyEntry"
+            ? "Daily Entry"
+            : "Tax Receipts";
     setReportDownloading(kind);
     setReportError(null);
     setReportMessage(null);
@@ -376,12 +387,17 @@ export default function ViewContributionsPage() {
 
     try {
       const headers = await getAuthHeaders();
-      const params = new URLSearchParams({ startDate, endDate });
-      if (countryCode) params.append("country", countryCode);
-      if (kind === "taxReceipts") params.append("deductibleOnly", "true");
-      if (kind !== "taxReceipts" && fundType) params.append("fundType", fundType);
-      if (kind !== "taxReceipts" && contributionType) {
-        params.append("contributionType", contributionType);
+      const params =
+        kind === "dailyEntry"
+          ? new URLSearchParams({ dateEntered: dailyEntryDate })
+          : new URLSearchParams({ startDate, endDate });
+      if (kind !== "dailyEntry") {
+        if (countryCode) params.append("country", countryCode);
+        if (kind === "taxReceipts") params.append("deductibleOnly", "true");
+        if (kind !== "taxReceipts" && fundType) params.append("fundType", fundType);
+        if (kind !== "taxReceipts" && contributionType) {
+          params.append("contributionType", contributionType);
+        }
       }
 
       const endpoint =
@@ -389,7 +405,9 @@ export default function ViewContributionsPage() {
           ? "/api/contributions/reports/grand-total"
           : kind === "totalPerDonor"
             ? "/api/contributions/reports/total-per-donor"
-            : "/api/contributions/reports/quarterly";
+            : kind === "dailyEntry"
+              ? "/api/contributions/reports/daily-entry"
+              : "/api/contributions/reports/quarterly";
 
       const response = await fetch(`${endpoint}?${params.toString()}`, {
         credentials: "include",
@@ -409,7 +427,9 @@ export default function ViewContributionsPage() {
       link.href = url;
       link.download =
         filenameMatch?.[1] ??
-        `${friendlyName.toLowerCase().replace(/ /g, "-")}-${startDate || "all"}-to-${endDate || "all"}.pdf`;
+        kind === "dailyEntry"
+          ? `daily-entry-report-${dailyEntryDate}.pdf`
+          : `${friendlyName.toLowerCase().replace(/ /g, "-")}-${startDate || "all"}-to-${endDate || "all"}.pdf`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -700,8 +720,10 @@ export default function ViewContributionsPage() {
 
   const hasRows = useMemo(() => rows.length > 0, [rows.length]);
   const isViewMode = mode === "view";
-  const showFundFilters = mode !== "taxReceipts";
-  const showContributionTypeFilter = mode !== "taxReceipts";
+  const isDailyEntry = mode === "dailyEntry";
+  const showFundFilters = mode !== "taxReceipts" && !isDailyEntry;
+  const showContributionTypeFilter = mode !== "taxReceipts" && !isDailyEntry;
+  const showStandardFilters = !isDailyEntry;
   const isTaxReceipts = mode === "taxReceipts";
   const requireCountry = mode === "taxReceipts";
   const selectedTaxReceiptCount = taxReceiptRecipients.filter(
@@ -726,7 +748,7 @@ export default function ViewContributionsPage() {
                   gap: "8px 12px",
                 }}
               >
-                {(["view", "grandTotal", "totalPerDonor", "taxReceipts"] as Mode[]).map((value) => {
+                {(["view", "grandTotal", "totalPerDonor", "dailyEntry", "taxReceipts"] as Mode[]).map((value) => {
                   const label =
                     value === "view"
                       ? "View Contributions"
@@ -734,7 +756,9 @@ export default function ViewContributionsPage() {
                         ? "Grand Total Report"
                         : value === "totalPerDonor"
                           ? "Total per Donor Report"
-                          : "Tax Receipts";
+                          : value === "dailyEntry"
+                            ? "Daily Entry Report"
+                            : "Tax Receipts";
                   return (
                     <label key={value} className={forms.checkControl} style={{ alignItems: "flex-start" }}>
                       <input
@@ -760,110 +784,163 @@ export default function ViewContributionsPage() {
               </div>
             </div>
             <div style={{ marginTop: 28 }} />
-            <div className={forms.formGrid}>
-              <div className={forms.col}>
-                <div className={forms.row}>
-                  <label className={forms.label} htmlFor="contrib-start-date">
-                    Start Date Deposited
-                  </label>
-                  <div className={forms.control}>
-                    <input
-                      id="contrib-start-date"
-                      type="date"
-                      className={forms.field}
-                      value={startDate}
-                      onChange={(event) => setStartDate(event.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className={forms.row}>
-                  <label className={forms.label} htmlFor="contrib-end-date">
-                    End Date Deposited
-                  </label>
-                  <div className={forms.control}>
-                    <input
-                      id="contrib-end-date"
-                      type="date"
-                      className={forms.field}
-                      value={endDate}
-                      onChange={(event) => setEndDate(event.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className={forms.row}>
-                  <label className={forms.label} htmlFor="contrib-filter-country">
-                    Country
-                  </label>
-                  <div className={forms.control}>
-                    <select
-                      id="contrib-filter-country"
-                      className={forms.field}
-                      value={countryCode}
-                      onChange={(event) => setCountryCode(event.target.value)}
-                    >
-                      <option value="">Any country</option>
-                      {(isTaxReceipts
-                        ? countryOptions.filter((code) => ["US", "CA", "NL"].includes(code))
-                        : countryOptions
-                      ).map((code) => {
-                        const name = countryNameByCode[code] ?? code;
-                        return (
-                          <option key={code} value={code}>
-                            {name}
-                          </option>
-                        );
-                      })}
-                    </select>
-                  </div>
-                </div>
-              </div>
-              <div className={forms.col}>
-                {showFundFilters ? (
+            {showStandardFilters ? (
+              <div className={forms.formGrid}>
+                <div className={forms.col}>
                   <div className={forms.row}>
-                    <label className={forms.label} htmlFor="contrib-filter-fund-type">
-                      Fund Type
+                    <label className={forms.label} htmlFor="contrib-start-date">
+                      Start Date Deposited
+                    </label>
+                    <div className={forms.control}>
+                      <input
+                        id="contrib-start-date"
+                        type="date"
+                        className={forms.field}
+                        value={startDate}
+                        onChange={(event) => setStartDate(event.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className={forms.row}>
+                    <label className={forms.label} htmlFor="contrib-end-date">
+                      End Date Deposited
+                    </label>
+                    <div className={forms.control}>
+                      <input
+                        id="contrib-end-date"
+                        type="date"
+                        className={forms.field}
+                        value={endDate}
+                        onChange={(event) => setEndDate(event.target.value)}
+                      />
+                    </div>
+                  </div>
+                  {isViewMode ? (
+                    <>
+                      <div className={forms.row}>
+                        <label className={forms.label} htmlFor="contrib-start-date-entered">
+                          Start Date Entered
+                        </label>
+                        <div className={forms.control}>
+                          <input
+                            id="contrib-start-date-entered"
+                            type="date"
+                            className={forms.field}
+                            value={startDateEntered}
+                            onChange={(event) => setStartDateEntered(event.target.value)}
+                          />
+                        </div>
+                      </div>
+                      <div className={forms.row}>
+                        <label className={forms.label} htmlFor="contrib-end-date-entered">
+                          End Date Entered
+                        </label>
+                        <div className={forms.control}>
+                          <input
+                            id="contrib-end-date-entered"
+                            type="date"
+                            className={forms.field}
+                            value={endDateEntered}
+                            onChange={(event) => setEndDateEntered(event.target.value)}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  ) : null}
+                  <div className={forms.row}>
+                    <label className={forms.label} htmlFor="contrib-filter-country">
+                      Country
                     </label>
                     <div className={forms.control}>
                       <select
-                        id="contrib-filter-fund-type"
+                        id="contrib-filter-country"
                         className={forms.field}
-                        value={fundType}
-                        onChange={(event) => setFundType(event.target.value)}
+                        value={countryCode}
+                        onChange={(event) => setCountryCode(event.target.value)}
                       >
-                        <option value="">Any fund type</option>
-                        {fundTypeOptions.map((name) => (
-                          <option key={name} value={name}>
-                            {name}
-                          </option>
-                        ))}
+                        <option value="">Any country</option>
+                        {(isTaxReceipts
+                          ? countryOptions.filter((code) => ["US", "CA", "NL"].includes(code))
+                          : countryOptions
+                        ).map((code) => {
+                          const name = countryNameByCode[code] ?? code;
+                          return (
+                            <option key={code} value={code}>
+                              {name}
+                            </option>
+                          );
+                        })}
                       </select>
                     </div>
                   </div>
-                ) : null}
-                {showContributionTypeFilter ? (
+                </div>
+                <div className={forms.col}>
+                  {showFundFilters ? (
+                    <div className={forms.row}>
+                      <label className={forms.label} htmlFor="contrib-filter-fund-type">
+                        Fund Type
+                      </label>
+                      <div className={forms.control}>
+                        <select
+                          id="contrib-filter-fund-type"
+                          className={forms.field}
+                          value={fundType}
+                          onChange={(event) => setFundType(event.target.value)}
+                        >
+                          <option value="">Any fund type</option>
+                          {fundTypeOptions.map((name) => (
+                            <option key={name} value={name}>
+                              {name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  ) : null}
+                  {showContributionTypeFilter ? (
+                    <div className={forms.row}>
+                      <label className={forms.label} htmlFor="contrib-filter-type">
+                        Contribution Type
+                      </label>
+                      <div className={forms.control}>
+                        <select
+                          id="contrib-filter-type"
+                          className={forms.field}
+                          value={contributionType}
+                          onChange={(event) => setContributionType(event.target.value)}
+                        >
+                          <option value="">Any type</option>
+                          {contributionTypeOptions.map((name) => (
+                            <option key={name} value={name}>
+                              {name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            ) : (
+              <div className={forms.formGrid}>
+                <div className={forms.col}>
                   <div className={forms.row}>
-                    <label className={forms.label} htmlFor="contrib-filter-type">
-                      Contribution Type
+                    <label className={forms.label} htmlFor="daily-entry-date">
+                      Date
                     </label>
                     <div className={forms.control}>
-                      <select
-                        id="contrib-filter-type"
+                      <input
+                        id="daily-entry-date"
+                        type="date"
                         className={forms.field}
-                        value={contributionType}
-                        onChange={(event) => setContributionType(event.target.value)}
-                      >
-                        <option value="">Any type</option>
-                        {contributionTypeOptions.map((name) => (
-                          <option key={name} value={name}>
-                            {name}
-                          </option>
-                        ))}
-                      </select>
+                        value={dailyEntryDate}
+                        onChange={(event) => setDailyEntryDate(event.target.value)}
+                      />
                     </div>
                   </div>
-                ) : null}
+                </div>
               </div>
-            </div>
+            )}
             <div className={forms.actions} style={{ marginTop: 16 }}>
               {isViewMode ? (
                 <button type="button" className={forms.button} onClick={() => void loadContributions()}>
@@ -888,7 +965,9 @@ export default function ViewContributionsPage() {
                       ? "Download Grand Total"
                       : mode === "totalPerDonor"
                         ? "Download Total per Donor"
-                        : "Download Tax Receipts"}
+                        : mode === "dailyEntry"
+                          ? "Download Daily Entry"
+                          : "Download Tax Receipts"}
                 </button>
               )}
             </div>

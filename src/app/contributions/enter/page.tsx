@@ -917,7 +917,9 @@ export default function EnterContributionsPage() {
                       <td className={forms.td} style={{ minWidth: 160 }}>
                         <input
                           className={forms.field}
-                          type="date"
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="yyyy-mm-dd"
                           data-entry-row-id={row.id}
                           data-entry-field="dateDeposited"
                           value={row.dateDeposited}
@@ -932,7 +934,9 @@ export default function EnterContributionsPage() {
                       <td className={forms.td} style={{ minWidth: 160 }}>
                         <input
                           className={forms.field}
-                          type="date"
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="yyyy-mm-dd"
                           data-entry-row-id={row.id}
                           data-entry-field="dateEntered"
                           value={row.dateEntered}

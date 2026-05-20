@@ -1,7 +1,8 @@
 "use client";
 
-import { type KeyboardEvent, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ContributionPage } from "@/components/contributions/ContributionPage";
+import { SearchCombobox } from "@/components/SearchCombobox";
 import { ScrollableTable } from "@/components/ScrollableTable";
 import {
   type ContributionDraftInput,
@@ -119,7 +120,6 @@ export default function EnterContributionsPage() {
   const [currencyOptions, setCurrencyOptions] = useState<CurrencyOption[]>(DEFAULT_CURRENCY_OPTIONS);
   const [searchResultsByRowId, setSearchResultsByRowId] = useState<Record<number, HouseholdOption[]>>({});
   const [searchLoadingByRowId, setSearchLoadingByRowId] = useState<Record<number, boolean>>({});
-  const [activeSearchIndexByRowId, setActiveSearchIndexByRowId] = useState<Record<number, number>>({});
   const [memberWarning, setMemberWarning] = useState<string | null>(null);
   const [memberError, setMemberError] = useState<string | null>(null);
   const [rows, setRows] = useState<DraftRow[]>(() =>
@@ -212,21 +212,7 @@ export default function EnterContributionsPage() {
         Object.entries(current).filter(([rowId]) => activeRowIds.has(Number(rowId))),
       ),
     );
-    setActiveSearchIndexByRowId((current) =>
-      Object.fromEntries(
-        Object.entries(current).filter(([rowId]) => activeRowIds.has(Number(rowId))),
-      ),
-    );
   }, [rows]);
-
-  useEffect(() => {
-    Object.entries(activeSearchIndexByRowId).forEach(([rowId, optionIndex]) => {
-      if (optionIndex < 0) return;
-      document
-        .getElementById(`contribution-donor-option-${rowId}-${optionIndex}`)
-        ?.scrollIntoView({ block: "nearest" });
-    });
-  }, [activeSearchIndexByRowId]);
 
   function isCheckFundType(value: string) {
     return value.trim().toLowerCase() === "check";
@@ -302,7 +288,6 @@ export default function EnterContributionsPage() {
 
     setSearchResultsByRowId((current) => ({ ...current, [rowId]: [] }));
     setSearchLoadingByRowId((current) => ({ ...current, [rowId]: false }));
-    setActiveSearchIndexByRowId((current) => ({ ...current, [rowId]: -1 }));
   }
 
   function handleMemberQueryChange(rowId: number, value: string) {
@@ -320,7 +305,6 @@ export default function EnterContributionsPage() {
     );
 
     clearRowSearch(rowId);
-    setActiveSearchIndexByRowId((current) => ({ ...current, [rowId]: -1 }));
     setMemberError(null);
 
     const query = value.trim();
@@ -357,10 +341,6 @@ export default function EnterContributionsPage() {
 
         const households = payload.households ?? [];
         setSearchResultsByRowId((current) => ({ ...current, [rowId]: households }));
-        setActiveSearchIndexByRowId((current) => ({
-          ...current,
-          [rowId]: households.length > 0 ? 0 : -1,
-        }));
         setMemberWarning(payload.warning ?? null);
       } catch (error) {
         if (controller.signal.aborted) return;
@@ -393,44 +373,6 @@ export default function EnterContributionsPage() {
       ),
     );
     clearRowSearch(rowId);
-  }
-
-  function handleMemberSearchKeyDown(rowId: number, event: KeyboardEvent<HTMLInputElement>) {
-    const results = searchResultsByRowId[rowId] ?? [];
-    const activeIndex = activeSearchIndexByRowId[rowId] ?? -1;
-
-    if (event.key === "ArrowDown") {
-      if (!results.length) return;
-      event.preventDefault();
-      setActiveSearchIndexByRowId((current) => ({
-        ...current,
-        [rowId]: activeIndex < 0 ? 0 : (activeIndex + 1) % results.length,
-      }));
-      return;
-    }
-
-    if (event.key === "ArrowUp") {
-      if (!results.length) return;
-      event.preventDefault();
-      setActiveSearchIndexByRowId((current) => ({
-        ...current,
-        [rowId]: activeIndex <= 0 ? results.length - 1 : activeIndex - 1,
-      }));
-      return;
-    }
-
-    if (event.key === "Enter") {
-      if (!results.length || activeIndex < 0) return;
-      event.preventDefault();
-      handleSelectDonor(rowId, results[activeIndex]);
-      return;
-    }
-
-    if (event.key === "Escape") {
-      if (!results.length && !searchLoadingByRowId[rowId]) return;
-      event.preventDefault();
-      clearRowSearch(rowId);
-    }
   }
 
   function addRow() {
@@ -791,94 +733,31 @@ export default function EnterContributionsPage() {
                 </thead>
                 <tbody>
                   {rows.map((row, rowIndex) => {
-                    const autocompleteMenuClassName = [
-                      forms.autocompleteMenu,
-                      rowIndex >= Math.floor(rows.length / 2) ? forms.autocompleteMenuAbove : "",
-                    ]
-                      .filter(Boolean)
-                      .join(" ");
                     const searchResults = searchResultsByRowId[row.id] ?? [];
-                    const activeSearchIndex = activeSearchIndexByRowId[row.id] ?? -1;
-                    const activeOptionId =
-                      activeSearchIndex >= 0
-                        ? `contribution-donor-option-${row.id}-${activeSearchIndex}`
-                        : undefined;
 
                     return (
                     <tr key={row.id}>
                       <td className={forms.td} style={{ minWidth: 240 }}>
-                        <div className={forms.autocompleteWrap}>
-                          <input
-                            className={forms.field}
-                            type="search"
-                            autoComplete="off"
+                        <SearchCombobox
                             value={row.memberQuery}
                             placeholder="Type last name or first name"
-                            role="combobox"
-                            aria-autocomplete="list"
-                            aria-expanded={
+                            options={searchResults}
+                            isOpen={
                               searchLoadingByRowId[row.id] ||
                               (!row.memberId && row.memberQuery.trim().length >= 2)
                             }
-                            aria-controls={`contribution-donor-options-${row.id}`}
-                            aria-activedescendant={activeOptionId}
-                            onKeyDown={(event) => handleMemberSearchKeyDown(row.id, event)}
-                            onChange={(event) =>
-                              handleMemberQueryChange(row.id, event.target.value)
+                            menuAbove={rowIndex >= Math.floor(rows.length / 2)}
+                            menuLabel="Matching donors"
+                            loadingLabel={
+                              searchLoadingByRowId[row.id] ? "Searching donors..." : undefined
                             }
+                            noMatchesLabel="No matching donors found."
+                            onChange={(value) => handleMemberQueryChange(row.id, value)}
+                            onSelect={(household) => handleSelectDonor(row.id, household)}
+                            onEscape={() => clearRowSearch(row.id)}
+                            getOptionKey={(household) => household.value}
+                            getOptionLabel={(household) => household.label}
                           />
-                          {searchLoadingByRowId[row.id] ? (
-                            <div
-                              id={`contribution-donor-options-${row.id}`}
-                              className={autocompleteMenuClassName}
-                              role="listbox"
-                              aria-label="Matching donors"
-                            >
-                              <div className={forms.autocompleteOption}>Searching donors...</div>
-                            </div>
-                          ) : null}
-                          {!searchLoadingByRowId[row.id] &&
-                          !row.memberId &&
-                          row.memberQuery.trim().length >= 2 ? (
-                            <div
-                              id={`contribution-donor-options-${row.id}`}
-                              className={autocompleteMenuClassName}
-                              role="listbox"
-                              aria-label="Matching donors"
-                            >
-                              {searchResults.length > 0 ? (
-                                searchResults.map((household, optionIndex) => (
-                                  <button
-                                    key={household.value}
-                                    id={`contribution-donor-option-${row.id}-${optionIndex}`}
-                                    type="button"
-                                    role="option"
-                                    aria-selected={optionIndex === activeSearchIndex}
-                                    className={[
-                                      forms.autocompleteOption,
-                                      optionIndex === activeSearchIndex
-                                        ? forms.autocompleteOptionActive
-                                        : "",
-                                    ]
-                                      .filter(Boolean)
-                                      .join(" ")}
-                                    onMouseEnter={() =>
-                                      setActiveSearchIndexByRowId((current) => ({
-                                        ...current,
-                                        [row.id]: optionIndex,
-                                      }))
-                                    }
-                                    onClick={() => handleSelectDonor(row.id, household)}
-                                  >
-                                    {household.label}
-                                  </button>
-                                ))
-                              ) : (
-                                <div className={forms.autocompleteOption}>No matching donors found.</div>
-                              )}
-                            </div>
-                          ) : null}
-                        </div>
                       </td>
                       <td className={forms.td} style={{ minWidth: 110 }}>
                         <input

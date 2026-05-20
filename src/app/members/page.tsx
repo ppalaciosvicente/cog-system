@@ -6,6 +6,7 @@ import { createClient, getAuthHeaders } from "@/lib/supabase/client";
 import { fetchCountryAndUSStateLookups } from "@/lib/lookups";
 import { CountryStatePicker } from "@/components/CountryStatePicker";
 import { BackLink } from "@/components/BackLink";
+import { SearchCombobox } from "@/components/SearchCombobox";
 
 // ✅ Put this file at: src/styles/forms.module.css (or adjust the import to wherever you place it)
 import forms from "@/styles/forms.module.css";
@@ -1064,48 +1065,35 @@ export default function MembersPage() {
             Select Contact:
           </label>
 
-          <div
-            className={forms.autocompleteWrap}
-            style={{
-              minWidth: 240,
-              maxWidth: 420,
-              width: "100%",
-            }}
-          >
-            <input
+          <SearchCombobox
               id="memberSelect"
-              type="search"
-              autoComplete="off"
-              className={forms.field}
               placeholder="Type at least 2 letters to search contacts"
               value={memberSearch}
-              onChange={(e) => setMemberSearch(e.target.value)}
+              options={searchResults}
+              isOpen={memberSearch.trim().length >= 2 && searchResults.length > 0}
+              menuLabel="Matching contacts"
+              wrapStyle={{
+                minWidth: 240,
+                maxWidth: 420,
+                width: "100%",
+              }}
+              onChange={setMemberSearch}
+              onSelect={(option) => {
+                setSelectedId(option.value);
+                setSelectedLabel(option.label);
+                setMemberSearch(option.label);
+                setSearchResults([]);
+                setSkipMemberSearch(true);
+              }}
+              onEscape={() => setSearchResults([])}
+              getOptionKey={(option) => option.value}
+              getOptionLabel={(option) => option.label}
             />
-            {memberSearch.trim().length >= 2 ? (
-              searchResults.length ? (
-                <div className={forms.autocompleteMenu} role="listbox" aria-label="Matching contacts">
-                  {searchResults.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      className={forms.autocompleteOption}
-                      onClick={() => {
-                        setSelectedId(option.value);
-                        setSelectedLabel(option.label);
-                        setMemberSearch(option.label);
-                        setSearchResults([]);
-                        setSkipMemberSearch(true);
-                      }}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              ) : memberSearch.trim() !== selectedLabel.trim() ? (
-                <p style={{ margin: 4, color: "#6b7280" }}>No matches.</p>
-              ) : null
-            ) : null}
-          </div>
+          {memberSearch.trim().length >= 2 &&
+          searchResults.length === 0 &&
+          memberSearch.trim() !== selectedLabel.trim() ? (
+            <p style={{ margin: 4, color: "#6b7280" }}>No matches.</p>
+          ) : null}
           {selectedHouseholdMembers.length > 1 && (
             <>
               <label htmlFor="householdRecordSelect" className={forms.topLabel}>

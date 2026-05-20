@@ -6,6 +6,7 @@ import { createClient, getAuthHeaders } from "@/lib/supabase/client";
 import { fetchCountryAndUSStateLookups } from "@/lib/lookups";
 import { BackLink } from "@/components/BackLink";
 import { CountryStatePicker } from "@/components/CountryStatePicker";
+import { SearchCombobox } from "@/components/SearchCombobox";
 import forms from "@/styles/forms.module.css";
 import type { RoleName, RoleRow } from "@/types/roles";
 import { normalizeRoleRow } from "@/types/roles";
@@ -496,46 +497,33 @@ export default function EldersAddPage() {
               alignItems: "center",
             }}
           >
-            <div
-              className={forms.autocompleteWrap}
-              style={{ minWidth: 260, flex: "1 1 260px", maxWidth: 420 }}
-            >
-            <input
+            <SearchCombobox
               id="memberSelect"
-              type="search"
-              autoComplete="off"
-              className={forms.field}
               placeholder="Type at least 2 letters to search"
               value={memberSearch}
-              onChange={(e) => setMemberSearch(e.target.value)}
+              options={memberSearchResults}
+              isOpen={memberSearch.trim().length >= 2 && memberSearchResults.length > 0}
+              menuLabel="Matching members"
+              wrapStyle={{ minWidth: 260, flex: "1 1 260px", maxWidth: 420 }}
+              onChange={setMemberSearch}
+              onSelect={(m) => {
+                setSelectedId(m.id);
+                const label = displayName(m);
+                setSelectedLabel(label);
+                setMemberSearch(label);
+                setMemberSearchResults([]);
+                setSkipMemberSearch(true);
+                setBrowseAll(false);
+              }}
+              onEscape={() => setMemberSearchResults([])}
+              getOptionKey={(m) => `member-opt-${m.id}`}
+              getOptionLabel={displayName}
             />
-            {memberSearch.trim().length >= 2 ? (
-              memberSearchResults.length ? (
-                <div className={forms.autocompleteMenu} role="listbox" aria-label="Matching members">
-                  {memberSearchResults.map((m) => (
-                    <button
-                      key={`member-opt-${m.id}`}
-                      type="button"
-                      className={forms.autocompleteOption}
-                      onClick={() => {
-                        setSelectedId(m.id);
-                        const label = displayName(m);
-                        setSelectedLabel(label);
-                        setMemberSearch(label);
-                        setMemberSearchResults([]);
-                        setSkipMemberSearch(true);
-                        setBrowseAll(false);
-                      }}
-                    >
-                      {displayName(m)}
-                    </button>
-                  ))}
-                </div>
-              ) : memberSearch.trim() !== selectedLabel.trim() ? (
-                <p style={{ margin: 4, color: "#6b7280" }}>No matches.</p>
-              ) : null
+            {memberSearch.trim().length >= 2 &&
+            memberSearchResults.length === 0 &&
+            memberSearch.trim() !== selectedLabel.trim() ? (
+              <p style={{ margin: 4, color: "#6b7280" }}>No matches.</p>
             ) : null}
-            </div>
             <div style={{ display: "flex", alignItems: "stretch" }}>
               <button
                 type="button"

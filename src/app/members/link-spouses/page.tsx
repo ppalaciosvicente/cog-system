@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { BackLink } from "@/components/BackLink";
+import { SearchCombobox } from "@/components/SearchCombobox";
 import { fetchCountryAndUSStateLookups } from "@/lib/lookups";
 import { createClient, getAuthHeaders } from "@/lib/supabase/client";
 import forms from "@/styles/forms.module.css";
@@ -578,45 +579,31 @@ export default function LinkSpousesPage() {
       <div className={`${forms.sectionCard} ${styles.noCardMobile}`}>
         <div className={styles.selectRow}>
           <Row label="Member 1">
-            <div className={forms.autocompleteWrap} style={{ width: "100%", maxWidth: 520 }}>
-              <input
-                type="search"
-                autoComplete="off"
-                className={forms.field}
+            <SearchCombobox
                 placeholder="Type at least 2 letters to search"
                 value={memberASearch}
                 disabled={saving}
-                onChange={(e) => setMemberASearch(e.target.value)}
+                options={memberASearchResults}
+                isOpen={memberASearch.trim().length >= 2 && memberASearchResults.length > 0}
+                menuLabel="Matching members"
+                wrapStyle={{ width: "100%", maxWidth: 520 }}
+                onChange={setMemberASearch}
+                onSelect={(option) => {
+                  setMemberAId(option.value);
+                  setSelectedALabel(option.label);
+                  setMemberASearch(option.label);
+                  setMemberASearchResults([]);
+                  setSkipMemberASearch(true);
+                }}
+                onEscape={() => setMemberASearchResults([])}
+                getOptionKey={(option) => `member-a-${option.value}`}
+                getOptionLabel={(option) => option.label}
               />
-              {memberASearch.trim().length >= 2 ? (
-                memberASearchResults.length ? (
-                  <div
-                    className={forms.autocompleteMenu}
-                    role="listbox"
-                    aria-label="Matching members"
-                  >
-                    {memberASearchResults.map((option) => (
-                      <button
-                        key={`member-a-${option.value}`}
-                        type="button"
-                        className={forms.autocompleteOption}
-                        onClick={() => {
-                          setMemberAId(option.value);
-                          setSelectedALabel(option.label);
-                          setMemberASearch(option.label);
-                          setMemberASearchResults([]);
-                          setSkipMemberASearch(true);
-                        }}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                ) : memberASearch.trim() !== selectedALabel.trim() ? (
-                  <p style={{ margin: 4, color: "#6b7280" }}>No matches.</p>
-                ) : null
-              ) : null}
-            </div>
+            {memberASearch.trim().length >= 2 &&
+            memberASearchResults.length === 0 &&
+            memberASearch.trim() !== selectedALabel.trim() ? (
+              <p style={{ margin: 4, color: "#6b7280" }}>No matches.</p>
+            ) : null}
             <button
               type="button"
               className={forms.button}
@@ -664,45 +651,31 @@ export default function LinkSpousesPage() {
           </Row>
 
           <Row label="Member 2">
-            <div className={forms.autocompleteWrap} style={{ width: "100%", maxWidth: 520 }}>
-              <input
-                type="search"
-                autoComplete="off"
-                className={forms.field}
+            <SearchCombobox
                 placeholder="Type at least 2 letters to search"
                 value={memberBSearch}
                 disabled={saving}
-                onChange={(e) => setMemberBSearch(e.target.value)}
+                options={memberBSearchResults}
+                isOpen={memberBSearch.trim().length >= 2 && memberBSearchResults.length > 0}
+                menuLabel="Matching members"
+                wrapStyle={{ width: "100%", maxWidth: 520 }}
+                onChange={setMemberBSearch}
+                onSelect={(option) => {
+                  setMemberBId(option.value);
+                  setSelectedBLabel(option.label);
+                  setMemberBSearch(option.label);
+                  setMemberBSearchResults([]);
+                  setSkipMemberBSearch(true);
+                }}
+                onEscape={() => setMemberBSearchResults([])}
+                getOptionKey={(option) => `member-b-${option.value}`}
+                getOptionLabel={(option) => option.label}
               />
-              {memberBSearch.trim().length >= 2 ? (
-                memberBSearchResults.length ? (
-                  <div
-                    className={forms.autocompleteMenu}
-                    role="listbox"
-                    aria-label="Matching members"
-                  >
-                    {memberBSearchResults.map((option) => (
-                      <button
-                        key={`member-b-${option.value}`}
-                        type="button"
-                        className={forms.autocompleteOption}
-                        onClick={() => {
-                          setMemberBId(option.value);
-                          setSelectedBLabel(option.label);
-                          setMemberBSearch(option.label);
-                          setMemberBSearchResults([]);
-                          setSkipMemberBSearch(true);
-                        }}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                ) : memberBSearch.trim() !== selectedBLabel.trim() ? (
-                  <p style={{ margin: 4, color: "#6b7280" }}>No matches.</p>
-                ) : null
-              ) : null}
-            </div>
+            {memberBSearch.trim().length >= 2 &&
+            memberBSearchResults.length === 0 &&
+            memberBSearch.trim() !== selectedBLabel.trim() ? (
+              <p style={{ margin: 4, color: "#6b7280" }}>No matches.</p>
+            ) : null}
             <button
               type="button"
               className={forms.button}

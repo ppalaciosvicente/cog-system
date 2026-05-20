@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ContributionPage } from "@/components/contributions/ContributionPage";
+import { SearchCombobox } from "@/components/SearchCombobox";
 import { getAuthHeaders } from "@/lib/supabase/client";
 import forms from "@/styles/forms.module.css";
 
@@ -246,48 +247,29 @@ function ContributionAccessEditInner() {
           <div style={{ display: "grid", gap: 12, maxWidth: 640 }}>
             <div style={{ display: "grid", gap: 8 }}>
               <label className={forms.label}>Select member</label>
-              <div className={forms.autocompleteWrap}>
-                <input
-                  type="text"
-                  autoComplete="off"
-                  className={forms.field}
+              <SearchCombobox
                   placeholder="Type at least 2 letters to search members"
                   value={memberSearch}
-                  onChange={(e) => setMemberSearch(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && searchResults[0]) {
-                      e.preventDefault();
-                      const first = searchResults[0];
-                      handleSelectMember(first.id, first.name);
-                    }
-                  }}
-                  style={{ minWidth: 260 }}
                   disabled={prefilledFromQuery}
+                  options={searchResults}
+                  isOpen={memberSearch.trim().length >= 2 && (searchLoading || searchResults.length > 0)}
+                  menuLabel="Matching members"
+                  loadingLabel={searchLoading ? "Searching members..." : undefined}
+                  wrapStyle={{ minWidth: 260 }}
+                  onChange={setMemberSearch}
+                  onSelect={(member) => handleSelectMember(member.id, member.name)}
+                  onEscape={() => setSearchResults([])}
+                  getOptionKey={(member) => member.id}
+                  getOptionLabel={(member) => member.name}
                 />
-                {memberSearch.trim().length >= 2 && searchLoading ? (
-                  <p style={{ margin: 0, color: "#6b7280" }}>Searching members...</p>
-                ) : null}
-              {memberSearch.trim().length >= 2 ? (
-                searchResults.length ? (
-                  <div className={forms.autocompleteMenu} role="listbox" aria-label="Matching members">
-                    {searchResults.map((member) => (
-                      <button
-                        key={member.id}
-                        type="button"
-                        className={forms.autocompleteOption}
-                        onClick={() => handleSelectMember(member.id, member.name)}
-                      >
-                        {member.name}
-                      </button>
-                    ))}
-                  </div>
-                ) : row && memberSearch.trim() === row.memberName ? null : (
-                  <p style={{ margin: 0, color: "#6b7280" }}>No matches. Try another name.</p>
-                )
-              ) : (
+              {memberSearch.trim().length >= 2 &&
+              !searchLoading &&
+              searchResults.length === 0 &&
+              (!row || memberSearch.trim() !== row.memberName) ? (
+                <p style={{ margin: 0, color: "#6b7280" }}>No matches. Try another name.</p>
+              ) : memberSearch.trim().length < 2 ? (
                 <p style={{ margin: 0, color: "#6b7280" }}>Type at least 2 letters to search for a member.</p>
-              )}
-              </div>
+              ) : null}
               <div>
                 <strong>Editing:</strong>{" "}
                 {row ? row.memberName : <span style={{ color: "#6b7280" }}>No member selected</span>}

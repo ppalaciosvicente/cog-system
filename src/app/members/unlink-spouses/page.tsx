@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { BackLink } from "@/components/BackLink";
+import { SearchCombobox } from "@/components/SearchCombobox";
 import { fetchCountryAndUSStateLookups } from "@/lib/lookups";
 import { createClient, getAuthHeaders } from "@/lib/supabase/client";
 import forms from "@/styles/forms.module.css";
@@ -543,45 +544,31 @@ export default function UnlinkSpousesPage() {
 
       <div className={`${forms.sectionCard} ${styles.noCardMobile}`}>
         <Row label="Household">
-          <div className={forms.autocompleteWrap} style={{ width: "100%", maxWidth: 520 }}>
-            <input
-              type="search"
-              autoComplete="off"
-              className={forms.field}
+          <SearchCombobox
               placeholder="Type at least 2 letters to search households"
               value={householdSearch}
               disabled={saving}
-              onChange={(e) => setHouseholdSearch(e.target.value)}
+              options={householdSearchResults}
+              isOpen={householdSearch.trim().length >= 2 && householdSearchResults.length > 0}
+              menuLabel="Matching households"
+              wrapStyle={{ width: "100%", maxWidth: 520 }}
+              onChange={setHouseholdSearch}
+              onSelect={(option) => {
+                setSelectedHouseholdId(option.householdId);
+                setSelectedHouseholdLabel(option.label);
+                setHouseholdSearch(option.label);
+                setHouseholdSearchResults([]);
+                setSkipHouseholdSearch(true);
+              }}
+              onEscape={() => setHouseholdSearchResults([])}
+              getOptionKey={(option) => `household-${option.householdId}-${option.memberAId}`}
+              getOptionLabel={(option) => option.label}
             />
-            {householdSearch.trim().length >= 2 ? (
-              householdSearchResults.length ? (
-                <div
-                  className={forms.autocompleteMenu}
-                  role="listbox"
-                  aria-label="Matching households"
-                >
-                  {householdSearchResults.map((option) => (
-                    <button
-                      key={`household-${option.householdId}-${option.memberAId}`}
-                      type="button"
-                      className={forms.autocompleteOption}
-                      onClick={() => {
-                        setSelectedHouseholdId(option.householdId);
-                        setSelectedHouseholdLabel(option.label);
-                        setHouseholdSearch(option.label);
-                        setHouseholdSearchResults([]);
-                        setSkipHouseholdSearch(true);
-                      }}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              ) : householdSearch.trim() !== selectedHouseholdLabel.trim() ? (
-                <p style={{ margin: 4, color: "#6b7280" }}>No matches.</p>
-              ) : null
-              ) : null}
-          </div>
+          {householdSearch.trim().length >= 2 &&
+          householdSearchResults.length === 0 &&
+          householdSearch.trim() !== selectedHouseholdLabel.trim() ? (
+            <p style={{ margin: 4, color: "#6b7280" }}>No matches.</p>
+          ) : null}
           <button
             type="button"
             className={forms.button}

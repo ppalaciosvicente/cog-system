@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ContributionPage } from "@/components/contributions/ContributionPage";
+import { SearchCombobox } from "@/components/SearchCombobox";
 import { ScrollableTable } from "@/components/ScrollableTable";
 import {
   type ContributionDraftInput,
@@ -774,16 +775,15 @@ export default function ContributionDonorsPage() {
                 Donor
               </label>
               <div className={forms.control}>
-                <div className={forms.autocompleteWrap}>
-                  <input
+                <SearchCombobox
                     id="contrib-donor-member"
-                    className={forms.field}
-                    type="search"
-                    autoComplete="off"
                     value={donorQuery}
                     placeholder="Type last name or first name"
-                    onChange={(event) => {
-                      setDonorQuery(event.target.value);
+                    options={searchResults}
+                    isOpen={!loadingOptions && !selectedId && searchResults.length > 0}
+                    menuLabel="Matching donors"
+                    onChange={(value) => {
+                      setDonorQuery(value);
                       setSelectedId("");
                       setDetail(null);
                       setEditDraft(null);
@@ -794,22 +794,11 @@ export default function ContributionDonorsPage() {
                       setTaxReceiptSendResult(null);
                       setBrowseAll(false);
                     }}
+                    onSelect={handleSelectDonor}
+                    onEscape={() => setSearchResults([])}
+                    getOptionKey={(household) => household.value}
+                    getOptionLabel={(household) => household.label}
                   />
-                  {!loadingOptions && !selectedId && searchResults.length > 0 ? (
-                    <div className={forms.autocompleteMenu} role="listbox" aria-label="Matching donors">
-                      {searchResults.map((household) => (
-                        <button
-                          key={household.value}
-                          type="button"
-                          className={forms.autocompleteOption}
-                          onClick={() => handleSelectDonor(household)}
-                        >
-                          {household.label}
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
               </div>
             </div>
             {donorQuery.trim().length < 2 ? (

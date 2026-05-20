@@ -280,6 +280,10 @@
   background: #eef2ff;
 }
 
+.autocompleteOptionActive {
+  background: #eef2ff;
+}
+
 .mobileOnly {
   display: block;
 }

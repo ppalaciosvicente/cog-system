@@ -86,6 +86,7 @@ function todayDateString() {
 }
 
 const DEFAULT_CONTRIBUTION_TYPE = "Tithe/Offering";
+const DEFAULT_ENTRY_ROW_COUNT = 10;
 
 export default function EnterContributionsPage() {
   const rowIdCounterRef = useRef(0);
@@ -117,7 +118,9 @@ export default function EnterContributionsPage() {
   const [searchLoadingByRowId, setSearchLoadingByRowId] = useState<Record<number, boolean>>({});
   const [memberWarning, setMemberWarning] = useState<string | null>(null);
   const [memberError, setMemberError] = useState<string | null>(null);
-  const [rows, setRows] = useState<DraftRow[]>([EMPTY_ROW(), EMPTY_ROW(), EMPTY_ROW()]);
+  const [rows, setRows] = useState<DraftRow[]>(() =>
+    Array.from({ length: DEFAULT_ENTRY_ROW_COUNT }, EMPTY_ROW),
+  );
   const [lastDateDeposited, setLastDateDeposited] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);

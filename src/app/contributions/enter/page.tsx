@@ -359,19 +359,29 @@ export default function EnterContributionsPage() {
 
   function handleSelectDonor(rowId: number, option: HouseholdOption) {
     const isUsDonor = option.countryCode?.trim().toUpperCase() === "US";
-    setRows((current) =>
-      current.map((row) =>
-        row.id === rowId
-          ? {
-              ...row,
-              memberId: String(option.value),
-              memberQuery: option.label,
-              currencyCode: option.defaultCurrencyCode || row.currencyCode || "USD",
-              fundType: isUsDonor ? DEFAULT_US_FUND_TYPE : row.fundType,
-            }
-          : row,
-      ),
-    );
+    setRows((current) => {
+      const selectedIndex = current.findIndex((row) => row.id === rowId);
+      if (selectedIndex === -1) return current;
+
+      const applyDonor = (row: DraftRow) => ({
+        ...row,
+        memberId: String(option.value),
+        memberQuery: option.label,
+        currencyCode: option.defaultCurrencyCode || row.currencyCode || "USD",
+        fundType: isUsDonor ? DEFAULT_US_FUND_TYPE : row.fundType,
+      });
+      return current.map((row, index) => {
+        if (row.id === rowId) return applyDonor(row);
+        if (
+          index === selectedIndex + 1 &&
+          !row.memberId &&
+          !row.memberQuery.trim()
+        ) {
+          return applyDonor(row);
+        }
+        return row;
+      });
+    });
     clearRowSearch(rowId);
   }
 

@@ -363,7 +363,7 @@ export default function EnterContributionsPage() {
   function handleSelectDonor(rowId: number, option: HouseholdOption) {
     const isUsDonor = option.countryCode?.trim().toUpperCase() === "US";
     const carriedSearchResults = searchResultsByRowId[rowId] ?? [];
-    let nextPrefilledRowId: number | null = null;
+    const nextPrefilledRow: { id: number | null } = { id: null };
     setRows((current) => {
       const selectedIndex = current.findIndex((row) => row.id === rowId);
       if (selectedIndex === -1) return current;
@@ -382,13 +382,14 @@ export default function EnterContributionsPage() {
           !row.memberId &&
           !row.memberQuery.trim()
         ) {
-          nextPrefilledRowId = row.id;
+          nextPrefilledRow.id = row.id;
           return applyDonor(row);
         }
         return row;
       });
     });
     clearRowSearch(rowId);
+    const nextPrefilledRowId = nextPrefilledRow.id;
     if (nextPrefilledRowId != null && carriedSearchResults.length > 0) {
       setSearchResultsByRowId((current) => ({
         ...current,

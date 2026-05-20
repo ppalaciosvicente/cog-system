@@ -350,6 +350,16 @@ export async function GET(request: NextRequest) {
     })
     .filter((row): row is ContributionRecord => Boolean(row));
 
+  rows.sort((a, b) => {
+    const dateComparison = b.dateDeposited.localeCompare(a.dateDeposited);
+    if (dateComparison !== 0) return dateComparison;
+
+    const memberComparison = a.memberName.localeCompare(b.memberName);
+    if (memberComparison !== 0) return memberComparison;
+
+    return b.id - a.id;
+  });
+
   return NextResponse.json({ rows });
 }
 

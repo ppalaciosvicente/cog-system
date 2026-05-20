@@ -451,7 +451,7 @@ export default function ViewContributionsPage() {
 
   function downloadPdf() {
     setExportError(null);
-    if (!rows.length) {
+    if (!sortedRows.length) {
       setExportError("No results to download.");
       return;
     }
@@ -491,7 +491,7 @@ export default function ViewContributionsPage() {
     lines.push({ text: "Date Ent.", bold: true, size: 11, x: 525, y: headerY });
 
     let y = headerY - 16;
-    for (const row of rows) {
+    for (const row of sortedRows) {
       const memberLines = wrapLine(row.memberName, 16);
       memberLines.forEach((text, index) => {
         lines.push({ text, size: 10, x: 30, y: y - index * 11 });
@@ -519,7 +519,7 @@ export default function ViewContributionsPage() {
       if (y < 80) break;
     }
 
-    const totalsByCurrency = rows.reduce<Record<string, number>>((acc, row) => {
+    const totalsByCurrency = sortedRows.reduce<Record<string, number>>((acc, row) => {
       const current = acc[row.currencyCode] ?? 0;
       acc[row.currencyCode] = current + row.amount;
       return acc;
@@ -711,6 +711,11 @@ export default function ViewContributionsPage() {
 
       if (comparison !== 0) {
         return sortDirection === "asc" ? comparison : -comparison;
+      }
+
+      if (sortKey === "dateDeposited") {
+        const memberComparison = a.memberName.localeCompare(b.memberName);
+        if (memberComparison !== 0) return memberComparison;
       }
 
       return b.id - a.id;

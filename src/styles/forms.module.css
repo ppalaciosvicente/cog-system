@@ -259,6 +259,11 @@
     0 2px 8px rgba(15, 23, 42, 0.08);
 }
 
+.autocompleteMenuAbove {
+  top: auto;
+  bottom: calc(100% + 6px);
+}
+
 .autocompleteOption {
   width: 100%;
   padding: 9px 10px;

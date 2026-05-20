@@ -730,7 +730,15 @@ export default function EnterContributionsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((row) => (
+                  {rows.map((row, rowIndex) => {
+                    const autocompleteMenuClassName = [
+                      forms.autocompleteMenu,
+                      rowIndex >= Math.floor(rows.length / 2) ? forms.autocompleteMenuAbove : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ");
+
+                    return (
                     <tr key={row.id}>
                       <td className={forms.td} style={{ minWidth: 240 }}>
                         <div className={forms.autocompleteWrap}>
@@ -745,7 +753,7 @@ export default function EnterContributionsPage() {
                             }
                           />
                           {searchLoadingByRowId[row.id] ? (
-                            <div className={forms.autocompleteMenu}>
+                            <div className={autocompleteMenuClassName}>
                               <div className={forms.autocompleteOption}>Searching donors...</div>
                             </div>
                           ) : null}
@@ -753,7 +761,7 @@ export default function EnterContributionsPage() {
                           !row.memberId &&
                           row.memberQuery.trim().length >= 2 ? (
                             <div
-                              className={forms.autocompleteMenu}
+                              className={autocompleteMenuClassName}
                               role="listbox"
                               aria-label="Matching donors"
                             >
@@ -874,7 +882,8 @@ export default function EnterContributionsPage() {
                         </button>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </ScrollableTable>

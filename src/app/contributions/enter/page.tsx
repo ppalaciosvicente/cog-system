@@ -465,24 +465,7 @@ export default function EnterContributionsPage() {
   }
 
   function buildPayloadRows(): ContributionDraftInput[] {
-    const nonEmptyRows = rows.filter((row) => {
-      const contributionType = row.contributionType.trim();
-      const hasCoreValues = [
-        row.memberQuery,
-        row.memberId,
-        row.amount,
-        row.fundType,
-        row.checkNo,
-        row.comments,
-        row.currencyCode,
-      ].some((value) => String(value ?? "").trim() !== "");
-
-      const hasNonDefaultType = contributionType !== "" && contributionType !== DEFAULT_CONTRIBUTION_TYPE;
-      const hasNonDefaultDateEntered =
-        row.dateEntered.trim() !== "" && row.dateEntered !== todayDateString();
-
-      return hasCoreValues || hasNonDefaultType || hasNonDefaultDateEntered;
-    });
+    const nonEmptyRows = rows.filter((row) => row.memberId.trim() !== "");
 
     if (!nonEmptyRows.length) {
       throw new Error("Enter at least one contribution row before saving.");
@@ -562,7 +545,7 @@ export default function EnterContributionsPage() {
         throw new Error(payload.error ?? "Failed to save contributions.");
       }
 
-      setRows([EMPTY_ROW(), EMPTY_ROW(), EMPTY_ROW()]);
+      setRows(Array.from({ length: DEFAULT_ENTRY_ROW_COUNT }, EMPTY_ROW));
       setSaveSuccess(
         `${payload.inserted ?? payloadRows.length} contribution${(payload.inserted ?? payloadRows.length) === 1 ? "" : "s"} saved.`,
       );

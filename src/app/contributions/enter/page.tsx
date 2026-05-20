@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { ContributionPage } from "@/components/contributions/ContributionPage";
 import { SearchCombobox } from "@/components/SearchCombobox";
 import { ScrollableTable } from "@/components/ScrollableTable";
@@ -92,6 +92,13 @@ function todayDateString() {
 const DEFAULT_CONTRIBUTION_TYPE = "Tithe/Offering";
 const DEFAULT_ENTRY_ROW_COUNT = 10;
 const DEFAULT_US_FUND_TYPE = "Check";
+const ENTRY_KEYBOARD_FIELDS = [
+  "contributionType",
+  "dateDeposited",
+  "dateEntered",
+  "comments",
+] as const;
+type EntryKeyboardField = (typeof ENTRY_KEYBOARD_FIELDS)[number];
 
 export default function EnterContributionsPage() {
   const rowIdCounterRef = useRef(0);
@@ -462,6 +469,31 @@ export default function EnterContributionsPage() {
   function removeRow(rowId: number) {
     clearRowSearch(rowId);
     setRows((current) => (current.length === 1 ? current : current.filter((row) => row.id !== rowId)));
+  }
+
+  function focusEntryField(rowId: number, field: EntryKeyboardField) {
+    const selector = `[data-entry-row-id="${rowId}"][data-entry-field="${field}"]`;
+    const element = document.querySelector<HTMLElement>(selector);
+    element?.focus();
+  }
+
+  function handleDateFieldKeyDown(
+    event: KeyboardEvent<HTMLInputElement>,
+    rowId: number,
+    field: Extract<EntryKeyboardField, "dateDeposited" | "dateEntered">,
+  ) {
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+    if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+
+    const currentIndex = ENTRY_KEYBOARD_FIELDS.indexOf(field);
+    const nextField =
+      event.key === "ArrowRight"
+        ? ENTRY_KEYBOARD_FIELDS[currentIndex + 1]
+        : ENTRY_KEYBOARD_FIELDS[currentIndex - 1];
+    if (!nextField) return;
+
+    event.preventDefault();
+    focusEntryField(rowId, nextField);
   }
 
   function buildPayloadRows(): ContributionDraftInput[] {
@@ -867,6 +899,8 @@ export default function EnterContributionsPage() {
                       <td className={forms.td} style={{ minWidth: 180 }}>
                         <select
                           className={forms.field}
+                          data-entry-row-id={row.id}
+                          data-entry-field="contributionType"
                           value={row.contributionType}
                           onChange={(event) =>
                             updateRow(row.id, "contributionType", event.target.value)
@@ -884,7 +918,12 @@ export default function EnterContributionsPage() {
                         <input
                           className={forms.field}
                           type="date"
+                          data-entry-row-id={row.id}
+                          data-entry-field="dateDeposited"
                           value={row.dateDeposited}
+                          onKeyDown={(event) =>
+                            handleDateFieldKeyDown(event, row.id, "dateDeposited")
+                          }
                           onChange={(event) =>
                             updateRow(row.id, "dateDeposited", event.target.value)
                           }
@@ -894,7 +933,12 @@ export default function EnterContributionsPage() {
                         <input
                           className={forms.field}
                           type="date"
+                          data-entry-row-id={row.id}
+                          data-entry-field="dateEntered"
                           value={row.dateEntered}
+                          onKeyDown={(event) =>
+                            handleDateFieldKeyDown(event, row.id, "dateEntered")
+                          }
                           onChange={(event) =>
                             updateRow(row.id, "dateEntered", event.target.value)
                           }
@@ -903,6 +947,8 @@ export default function EnterContributionsPage() {
                       <td className={forms.td} style={{ minWidth: 220 }}>
                         <input
                           className={forms.field}
+                          data-entry-row-id={row.id}
+                          data-entry-field="comments"
                           value={row.comments}
                           onChange={(event) => updateRow(row.id, "comments", event.target.value)}
                         />

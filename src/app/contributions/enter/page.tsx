@@ -143,6 +143,8 @@ export default function EnterContributionsPage() {
   const [editSaving, setEditSaving] = useState(false);
   const searchTimeoutsRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
   const searchControllersRef = useRef<Map<number, AbortController>>(new Map());
+  const prefilledSearchRequestCounterRef = useRef(0);
+  const prefilledSearchRequestsRef = useRef<Map<number, number>>(new Map());
   const dailyEntryRequestIdRef = useRef(0);
 
   useEffect(() => {
@@ -174,11 +176,16 @@ export default function EnterContributionsPage() {
   }, []);
 
   useEffect(() => {
+    const searchTimeouts = searchTimeoutsRef.current;
+    const searchControllers = searchControllersRef.current;
+    const prefilledSearchRequests = prefilledSearchRequestsRef.current;
+
     return () => {
-      searchTimeoutsRef.current.forEach((timeoutId) => clearTimeout(timeoutId));
-      searchControllersRef.current.forEach((controller) => controller.abort());
-      searchTimeoutsRef.current.clear();
-      searchControllersRef.current.clear();
+      searchTimeouts.forEach((timeoutId) => clearTimeout(timeoutId));
+      searchControllers.forEach((controller) => controller.abort());
+      searchTimeouts.clear();
+      searchControllers.clear();
+      prefilledSearchRequests.clear();
     };
   }, []);
 
@@ -200,6 +207,11 @@ export default function EnterContributionsPage() {
       if (!activeRowIds.has(rowId)) {
         controller.abort();
         searchControllersRef.current.delete(rowId);
+      }
+    });
+    prefilledSearchRequestsRef.current.forEach((_, rowId) => {
+      if (!activeRowIds.has(rowId)) {
+        prefilledSearchRequestsRef.current.delete(rowId);
       }
     });
 
@@ -290,6 +302,7 @@ export default function EnterContributionsPage() {
 
     setSearchResultsByRowId((current) => ({ ...current, [rowId]: [] }));
     setSearchLoadingByRowId((current) => ({ ...current, [rowId]: false }));
+    prefilledSearchRequestsRef.current.delete(rowId);
     setOpenSearchRowId((current) => (current === rowId ? null : current));
   }
 
@@ -360,9 +373,50 @@ export default function EnterContributionsPage() {
     searchTimeoutsRef.current.set(rowId, timeoutId);
   }
 
+  async function loadPrefilledDonorWindow(rowId: number, memberId: number) {
+    const requestId = prefilledSearchRequestCounterRef.current + 1;
+    prefilledSearchRequestCounterRef.current = requestId;
+    prefilledSearchRequestsRef.current.set(rowId, requestId);
+
+    try {
+      const headers = await getAuthHeaders();
+      const params = new URLSearchParams({
+        windowFrom: String(memberId),
+        limit: "6",
+      });
+      const response = await fetch(`/api/contributions/donor-options?${params.toString()}`, {
+        credentials: "include",
+        headers,
+      });
+      const payload = (await response.json()) as {
+        households?: HouseholdOption[];
+        warning?: string | null;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Failed to load donors.");
+      }
+      if (prefilledSearchRequestsRef.current.get(rowId) !== requestId) return;
+
+      setSearchResultsByRowId((current) => ({
+        ...current,
+        [rowId]: payload.households ?? [],
+      }));
+      setMemberWarning(payload.warning ?? null);
+    } catch (error) {
+      if (prefilledSearchRequestsRef.current.get(rowId) !== requestId) return;
+      setSearchResultsByRowId((current) => ({ ...current, [rowId]: [] }));
+      setMemberError(error instanceof Error ? error.message : "Failed to load donors.");
+    } finally {
+      if (prefilledSearchRequestsRef.current.get(rowId) === requestId) {
+        prefilledSearchRequestsRef.current.delete(rowId);
+      }
+    }
+  }
+
   function handleSelectDonor(rowId: number, option: HouseholdOption) {
     const isUsDonor = option.countryCode?.trim().toUpperCase() === "US";
-    const carriedSearchResults = searchResultsByRowId[rowId] ?? [];
     const nextPrefilledRow: { id: number | null } = { id: null };
     setRows((current) => {
       const selectedIndex = current.findIndex((row) => row.id === rowId);
@@ -390,11 +444,8 @@ export default function EnterContributionsPage() {
     });
     clearRowSearch(rowId);
     const nextPrefilledRowId = nextPrefilledRow.id;
-    if (nextPrefilledRowId != null && carriedSearchResults.length > 0) {
-      setSearchResultsByRowId((current) => ({
-        ...current,
-        [nextPrefilledRowId]: carriedSearchResults,
-      }));
+    if (nextPrefilledRowId != null) {
+      void loadPrefilledDonorWindow(nextPrefilledRowId, option.value);
     }
   }
 

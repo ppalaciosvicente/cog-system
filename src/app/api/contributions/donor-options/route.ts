@@ -49,6 +49,19 @@ function cacheKey(access: Extract<Awaited<ReturnType<typeof getContributionAcces
   });
 }
 
+function sliceHouseholdWindow(
+  households: DonorHouseholdOption[],
+  windowFromMemberId: number,
+  limit: number,
+) {
+  const startIndex = households.findIndex(
+    (household) =>
+      household.value === windowFromMemberId || household.memberIds.includes(windowFromMemberId),
+  );
+  const start = startIndex >= 0 ? startIndex : 0;
+  return households.slice(start, start + limit);
+}
+
 async function buildHouseholdsWithCurrency(
   supabase: ReturnType<typeof createServiceRoleClient>,
   members: DonorMemberRow[],
@@ -98,6 +111,7 @@ export async function GET(request: NextRequest) {
   const searchTerm = request.nextUrl.searchParams.get("q")?.trim() ?? "";
   const limit = Math.min(Number(request.nextUrl.searchParams.get("limit") ?? "25") || 25, 50);
   const matchMode = request.nextUrl.searchParams.get("match") ?? "";
+  const windowFromMemberId = Number(request.nextUrl.searchParams.get("windowFrom") ?? "");
 
   if (searchTerm.length >= 2) {
     const supabase = createServiceRoleClient();
@@ -220,7 +234,12 @@ export async function GET(request: NextRequest) {
   const key = cacheKey(access);
   const cached = donorOptionsCache.get(key);
   if (cached && cached.expiresAt > Date.now()) {
-    return NextResponse.json({ households: cached.households, warning: access.scopeWarning });
+    return NextResponse.json({
+      households: windowFromMemberId > 0
+        ? sliceHouseholdWindow(cached.households, windowFromMemberId, limit)
+        : cached.households,
+      warning: access.scopeWarning,
+    });
   }
 
   const supabase = createServiceRoleClient();
@@ -276,7 +295,9 @@ export async function GET(request: NextRequest) {
   });
 
   return NextResponse.json({
-    households,
+    households: windowFromMemberId > 0
+      ? sliceHouseholdWindow(households, windowFromMemberId, limit)
+      : households,
     warning: access.scopeWarning,
   });
 }

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient, getAuthHeaders } from "@/lib/supabase/client";
 import { fetchCountryAndUSStateLookups } from "@/lib/lookups";
+import { personNameStartsWithSearch } from "@/lib/member-search";
 import { BackLink } from "@/components/BackLink";
 import { CountryStatePicker } from "@/components/CountryStatePicker";
 import { SearchCombobox } from "@/components/SearchCombobox";
@@ -236,7 +237,7 @@ export default function EldersAddPage() {
       return;
     }
     const results = sortedOptions
-      .filter((m) => displayName(m).toLowerCase().includes(term))
+      .filter((m) => personNameStartsWithSearch(m.fname, m.lname, term))
       .slice(0, 50);
     setMemberSearchResults(results);
   }, [memberSearch, selectedLabel, skipMemberSearch, sortedOptions]);

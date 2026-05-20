@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { ContributionPage } from "@/components/contributions/ContributionPage";
 import { SearchCombobox } from "@/components/SearchCombobox";
 import { getAuthHeaders } from "@/lib/supabase/client";
+import { displayNameStartsWithSearch } from "@/lib/member-search";
 import forms from "@/styles/forms.module.css";
 
 export const dynamic = "force-dynamic";
@@ -150,7 +151,7 @@ function ContributionAccessEditInner() {
       seen.add(m.id);
       return true;
     });
-    setSearchResults(unique.filter((m) => m.name.toLowerCase().includes(searchTerm)).slice(0, 50));
+    setSearchResults(unique.filter((m) => displayNameStartsWithSearch(m.name, searchTerm)).slice(0, 50));
     setSearchLoading(false);
   }, [memberSearch, eligibleMembers, accessRows]);
 

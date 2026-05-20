@@ -97,6 +97,7 @@ export async function GET(request: NextRequest) {
 
   const searchTerm = request.nextUrl.searchParams.get("q")?.trim() ?? "";
   const limit = Math.min(Number(request.nextUrl.searchParams.get("limit") ?? "25") || 25, 50);
+  const matchMode = request.nextUrl.searchParams.get("match") ?? "";
 
   if (searchTerm.length >= 2) {
     const supabase = createServiceRoleClient();
@@ -131,9 +132,13 @@ export async function GET(request: NextRequest) {
       searchQuery = searchQuery.in("countrycode", access.allowedCountryCodes);
     }
 
-    searchTokens.forEach((token) => {
+    const activeSearchTokens = matchMode === "lastNamePrefix" ? searchTokens.slice(0, 1) : searchTokens;
+    activeSearchTokens.forEach((token) => {
       const escapedToken = token.replace(/[%_]/g, "\\$&");
-      searchQuery = searchQuery.or(`fname.ilike.%${escapedToken}%,lname.ilike.%${escapedToken}%`);
+      searchQuery =
+        matchMode === "lastNamePrefix"
+          ? searchQuery.ilike("lname", `${escapedToken}%`)
+          : searchQuery.or(`fname.ilike.${escapedToken}%,lname.ilike.${escapedToken}%`);
     });
 
     const { data: matchedRows, error: matchedErr } = await searchQuery;

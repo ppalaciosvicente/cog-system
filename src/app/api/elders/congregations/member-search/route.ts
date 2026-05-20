@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
 
   nameTokens.forEach((token) => {
     const escaped = escapeIlike(token);
-    query = query.or(`fname.ilike.%${escaped}%,lname.ilike.%${escaped}%`);
+    query = query.or(`fname.ilike.${escaped}%,lname.ilike.${escaped}%`);
   });
 
   const { data, error } = await query;

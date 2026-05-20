@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient, getAuthHeaders } from "@/lib/supabase/client";
 import { fetchCountryAndUSStateLookups } from "@/lib/lookups";
+import { personNameStartsWithSearch } from "@/lib/member-search";
 import { CountryStatePicker } from "@/components/CountryStatePicker";
 import { BackLink } from "@/components/BackLink";
 import { SearchCombobox } from "@/components/SearchCombobox";
@@ -28,7 +29,7 @@ type HouseholdOption = {
   value: number;
   label: string;
   memberIds: number[];
-  searchText: string;
+  searchMembers: Array<{ fname: string | null; lname: string | null }>;
 };
 
 type LinkedHouseholdOption = {
@@ -269,7 +270,7 @@ export default function MembersPage() {
         value: representative.id,
         label,
         memberIds: rows.map((m) => m.id),
-        searchText: `${label} ${names.join(" ")}`.toLowerCase(),
+        searchMembers: rows.map((m) => ({ fname: m.fname, lname: m.lname })),
       });
     });
 
@@ -301,7 +302,11 @@ export default function MembersPage() {
       return;
     }
     const results = householdOptions
-      .filter((option) => option.searchText.includes(term))
+      .filter((option) =>
+        option.searchMembers.some((member) =>
+          personNameStartsWithSearch(member.fname, member.lname, term),
+        ),
+      )
       .slice(0, 50);
     setSearchResults(results);
   }, [householdOptions, memberSearch, skipMemberSearch]);

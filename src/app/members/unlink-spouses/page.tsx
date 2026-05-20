@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { BackLink } from "@/components/BackLink";
 import { SearchCombobox } from "@/components/SearchCombobox";
 import { fetchCountryAndUSStateLookups } from "@/lib/lookups";
+import { personNameStartsWithSearch } from "@/lib/member-search";
 import { createClient, getAuthHeaders } from "@/lib/supabase/client";
 import forms from "@/styles/forms.module.css";
 import type { RoleName, RoleRow } from "@/types/roles";
@@ -373,10 +374,17 @@ export default function UnlinkSpousesPage() {
       return;
     }
     const results = householdOptions
-      .filter((opt) => opt.label.toLowerCase().includes(term))
+      .filter((opt) => {
+        const memberA = rowsById.get(opt.memberAId);
+        const memberB = rowsById.get(opt.memberBId);
+        return (
+          personNameStartsWithSearch(memberA?.fname, memberA?.lname, term) ||
+          personNameStartsWithSearch(memberB?.fname, memberB?.lname, term)
+        );
+      })
       .slice(0, 50);
     setHouseholdSearchResults(results);
-  }, [householdOptions, householdSearch, selectedHouseholdLabel, skipHouseholdSearch]);
+  }, [householdOptions, householdSearch, rowsById, selectedHouseholdLabel, skipHouseholdSearch]);
 
   useEffect(() => {
     if (selectedHouseholdId == null) return;

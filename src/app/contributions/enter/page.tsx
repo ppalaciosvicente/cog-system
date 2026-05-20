@@ -325,7 +325,7 @@ export default function EnterContributionsPage() {
       try {
         const headers = await getAuthHeaders();
         const response = await fetch(
-          `/api/contributions/donor-options?q=${encodeURIComponent(query)}&limit=25`,
+          `/api/contributions/donor-options?q=${encodeURIComponent(query)}&limit=25&match=lastNamePrefix`,
           {
             credentials: "include",
             headers,

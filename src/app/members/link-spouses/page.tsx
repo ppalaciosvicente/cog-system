@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { BackLink } from "@/components/BackLink";
 import { SearchCombobox } from "@/components/SearchCombobox";
 import { fetchCountryAndUSStateLookups } from "@/lib/lookups";
+import { personNameStartsWithSearch } from "@/lib/member-search";
 import { createClient, getAuthHeaders } from "@/lib/supabase/client";
 import forms from "@/styles/forms.module.css";
 import type { RoleName, RoleRow } from "@/types/roles";
@@ -315,7 +316,7 @@ export default function LinkSpousesPage() {
     }
     const results = memberOptions
       .filter((m) => m.id !== memberBId)
-      .filter((m) => displayName(m).toLowerCase().includes(term))
+      .filter((m) => personNameStartsWithSearch(m.fname, m.lname, term))
       .slice(0, 50)
       .map((m) => ({ value: m.id, label: displayName(m) }));
     setMemberASearchResults(results);
@@ -338,7 +339,7 @@ export default function LinkSpousesPage() {
     }
     const results = memberOptions
       .filter((m) => m.id !== memberAId)
-      .filter((m) => displayName(m).toLowerCase().includes(term))
+      .filter((m) => personNameStartsWithSearch(m.fname, m.lname, term))
       .slice(0, 50)
       .map((m) => ({ value: m.id, label: displayName(m) }));
     setMemberBSearchResults(results);

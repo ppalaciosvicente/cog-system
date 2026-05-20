@@ -18,7 +18,6 @@ type SearchComboboxProps<T> = {
   disabled?: boolean;
   options: T[];
   isOpen: boolean;
-  menuAbove?: boolean;
   menuLabel: string;
   loadingLabel?: string;
   noMatchesLabel?: string;
@@ -37,7 +36,6 @@ export function SearchCombobox<T>({
   disabled,
   options,
   isOpen,
-  menuAbove = false,
   menuLabel,
   loadingLabel,
   noMatchesLabel,
@@ -76,15 +74,12 @@ export function SearchCombobox<T>({
 
       setMenuStyle({
         position: "fixed",
-        top: menuAbove ? "auto" : inputRect.bottom + 6,
-        bottom: menuAbove ? window.innerHeight - inputRect.top + 6 : "auto",
+        top: inputRect.bottom + 6,
+        bottom: "auto",
         left: inputRect.left,
         right: "auto",
         width: inputRect.width,
-        maxHeight: Math.max(
-          120,
-          menuAbove ? inputRect.top - 18 : window.innerHeight - inputRect.bottom - 18,
-        ),
+        maxHeight: Math.max(120, window.innerHeight - inputRect.bottom - 18),
         zIndex: 1000,
       });
     };
@@ -96,7 +91,7 @@ export function SearchCombobox<T>({
       window.removeEventListener("resize", updateMenuPosition);
       window.removeEventListener("scroll", updateMenuPosition, true);
     };
-  }, [menuAbove]);
+  }, []);
 
   function updateMenuPosition() {
     if (typeof window === "undefined") return;
@@ -105,15 +100,12 @@ export function SearchCombobox<T>({
 
     setMenuStyle({
       position: "fixed",
-      top: menuAbove ? "auto" : inputRect.bottom + 6,
-      bottom: menuAbove ? window.innerHeight - inputRect.top + 6 : "auto",
+      top: inputRect.bottom + 6,
+      bottom: "auto",
       left: inputRect.left,
       right: "auto",
       width: inputRect.width,
-      maxHeight: Math.max(
-        120,
-        menuAbove ? inputRect.top - 18 : window.innerHeight - inputRect.bottom - 18,
-      ),
+      maxHeight: Math.max(120, window.innerHeight - inputRect.bottom - 18),
       zIndex: 1000,
     });
   }

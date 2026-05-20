@@ -732,7 +732,7 @@ export default function EnterContributionsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((row, rowIndex) => {
+                  {rows.map((row) => {
                     const searchResults = searchResultsByRowId[row.id] ?? [];
 
                     return (
@@ -746,7 +746,6 @@ export default function EnterContributionsPage() {
                               searchLoadingByRowId[row.id] ||
                               (!row.memberId && row.memberQuery.trim().length >= 2)
                             }
-                            menuAbove={rowIndex >= Math.floor(rows.length / 2)}
                             menuLabel="Matching donors"
                             loadingLabel={
                               searchLoadingByRowId[row.id] ? "Searching donors..." : undefined

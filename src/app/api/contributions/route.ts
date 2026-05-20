@@ -93,6 +93,16 @@ function todayDateString() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function startOfUtcDay(value: string) {
+  return `${value}T00:00:00.000Z`;
+}
+
+function startOfNextUtcDay(value: string) {
+  const date = new Date(`${value}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + 1);
+  return date.toISOString();
+}
+
 function cleanText(value: string | null | undefined) {
   const text = String(value ?? "").trim();
   return text ? text : null;
@@ -518,10 +528,34 @@ export async function POST(request: NextRequest) {
   }
 
   const now = new Date().toISOString();
+  const dateEnteredValues = Array.from(
+    new Set(rows.map((row) => row.dateEntered ?? todayDateString())),
+  );
+  const nextBatchNumberByDate = new Map<string, number>();
+
+  for (const dateEntered of dateEnteredValues) {
+    const { data: batchRows, error: batchErr } = await supabase
+      .from("contribcontribution")
+      .select("batchnumber")
+      .eq("contributorid", access.memberId)
+      .gte("dateentered", startOfUtcDay(dateEntered))
+      .lt("dateentered", startOfNextUtcDay(dateEntered))
+      .order("batchnumber", { ascending: false })
+      .limit(1);
+
+    if (batchErr) {
+      return NextResponse.json({ error: batchErr.message }, { status: 500 });
+    }
+
+    const currentMax = Number(batchRows?.[0]?.batchnumber ?? 0);
+    nextBatchNumberByDate.set(dateEntered, (Number.isFinite(currentMax) ? currentMax : 0) + 1);
+  }
+
   const insertRows = rows.map((row) => ({
     memberid: row.memberId,
     datedeposited: row.dateDeposited,
     dateentered: row.dateEntered ?? todayDateString(),
+    batchnumber: nextBatchNumberByDate.get(row.dateEntered ?? todayDateString()) ?? 1,
     amount: Number(row.amount.toFixed(2)),
     comments: cleanText(row.comments),
     checkno: cleanText(row.checkNo),

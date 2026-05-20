@@ -38,6 +38,7 @@ type DailyEntryRow = {
   checkNo: string;
   dateDeposited: string;
   dateEntered: string;
+  batchNumber: number;
   comments: string;
   formattedAmount: string;
 };
@@ -977,6 +978,7 @@ export default function EnterContributionsPage() {
                     <thead>
                       <tr>
                         <th className={forms.th}>Donor</th>
+                        <th className={forms.th}>Batch #</th>
                         <th className={forms.th}>Amount</th>
                         <th className={forms.th}>Fund Type</th>
                         <th className={forms.th}>Currency</th>
@@ -992,6 +994,7 @@ export default function EnterContributionsPage() {
                       {dailyEntryRows.map((row) => (
                         <tr key={row.id}>
                           <td className={forms.td}>{row.donorLabel}</td>
+                          <td className={forms.td}>{row.batchNumber}</td>
                           <td className={forms.td}>{row.formattedAmount}</td>
                           <td className={forms.td}>{row.fundType}</td>
                           <td className={forms.td}>{row.currencyCode}</td>

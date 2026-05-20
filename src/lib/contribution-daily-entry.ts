@@ -5,6 +5,7 @@ type ContributionBaseRow = {
   memberid: number;
   amount: number | string;
   currencycode: string | null;
+  batchnumber: number | null;
 };
 
 type MemberRow = {
@@ -20,10 +21,18 @@ type MemberRow = {
 };
 
 export type DailyEntrySummaryRow = {
+  batchNumber: number;
   donorLabel: string;
   totalAmount: number;
   currencyCode: string;
   locationLabel: string;
+};
+
+export type DailyEntrySummaryBatch = {
+  batchNumber: number;
+  rows: DailyEntrySummaryRow[];
+  totalsByCurrency: Array<{ currencyCode: string; totalAmount: number }>;
+  contributionCount: number;
 };
 
 function normalizeCode(value: string | null | undefined) {
@@ -100,10 +109,11 @@ export async function getDailyEntrySummary(
 ) {
   const { data: contributionRows, error: contributionErr } = await supabase
     .from("contribcontribution")
-    .select("memberid,amount,currencycode")
+    .select("memberid,amount,currencycode,batchnumber")
     .eq("contributorid", contributorId)
     .gte("dateentered", startOfUtcDay(dateEntered))
     .lt("dateentered", startOfNextUtcDay(dateEntered))
+    .order("batchnumber", { ascending: true })
     .order("id", { ascending: true });
 
   if (contributionErr) {
@@ -116,6 +126,7 @@ export async function getDailyEntrySummary(
       dateEntered,
       rows: [] as DailyEntrySummaryRow[],
       totalsByCurrency: [] as Array<{ currencyCode: string; totalAmount: number }>,
+      batches: [] as DailyEntrySummaryBatch[],
       contributionCount: 0,
     };
   }
@@ -159,8 +170,10 @@ export async function getDailyEntrySummary(
 
   const summaryByKey = new Map<string, DailyEntrySummaryRow>();
   const totalsByCurrency = new Map<string, number>();
+  const batchContributionCount = new Map<number, number>();
 
   baseRows.forEach((row) => {
+    const batchNumber = row.batchnumber ?? 1;
     const household = householdByMemberId.get(row.memberid);
     const donorLabel = formatHouseholdLabel(household?.label) || `#${row.memberid}`;
     const representative = household
@@ -168,7 +181,7 @@ export async function getDailyEntrySummary(
       : members.find((member) => member.id === row.memberid);
     const locationLabel = formatLocation(representative);
     const currencyCode = normalizeCode(row.currencycode) || "USD";
-    const key = `${donorLabel}__${locationLabel}__${currencyCode}`;
+    const key = `${batchNumber}__${donorLabel}__${locationLabel}__${currencyCode}`;
     const amount = Number(row.amount);
     const existing = summaryByKey.get(key);
 
@@ -176,6 +189,7 @@ export async function getDailyEntrySummary(
       existing.totalAmount += amount;
     } else {
       summaryByKey.set(key, {
+        batchNumber,
         donorLabel,
         totalAmount: amount,
         currencyCode,
@@ -184,14 +198,45 @@ export async function getDailyEntrySummary(
     }
 
     totalsByCurrency.set(currencyCode, (totalsByCurrency.get(currencyCode) ?? 0) + amount);
+    batchContributionCount.set(batchNumber, (batchContributionCount.get(batchNumber) ?? 0) + 1);
   });
+
+  const rows = [...summaryByKey.values()].sort(
+    (a, b) => a.batchNumber - b.batchNumber || a.donorLabel.localeCompare(b.donorLabel),
+  );
+  const batchRows = new Map<number, DailyEntrySummaryRow[]>();
+  rows.forEach((row) => {
+    const existing = batchRows.get(row.batchNumber) ?? [];
+    existing.push(row);
+    batchRows.set(row.batchNumber, existing);
+  });
+  const batches = [...batchRows.entries()]
+    .map(([batchNumber, batchRowsForNumber]) => {
+      const batchTotalsByCurrency = new Map<string, number>();
+      batchRowsForNumber.forEach((row) => {
+        batchTotalsByCurrency.set(
+          row.currencyCode,
+          (batchTotalsByCurrency.get(row.currencyCode) ?? 0) + row.totalAmount,
+        );
+      });
+      return {
+        batchNumber,
+        rows: batchRowsForNumber,
+        totalsByCurrency: [...batchTotalsByCurrency.entries()]
+          .map(([currencyCode, totalAmount]) => ({ currencyCode, totalAmount }))
+          .sort((a, b) => a.currencyCode.localeCompare(b.currencyCode)),
+        contributionCount: batchContributionCount.get(batchNumber) ?? 0,
+      };
+    })
+    .sort((a, b) => a.batchNumber - b.batchNumber);
 
   return {
     dateEntered,
-    rows: [...summaryByKey.values()].sort((a, b) => a.donorLabel.localeCompare(b.donorLabel)),
+    rows,
     totalsByCurrency: [...totalsByCurrency.entries()]
       .map(([currencyCode, totalAmount]) => ({ currencyCode, totalAmount }))
       .sort((a, b) => a.currencyCode.localeCompare(b.currencyCode)),
+    batches,
     contributionCount: baseRows.length,
   };
 }

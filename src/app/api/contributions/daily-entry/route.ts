@@ -19,6 +19,7 @@ type ContributionRow = {
   checkno: string | null;
   datedeposited: string;
   dateentered: string;
+  batchnumber: number | null;
   comments: string | null;
 };
 
@@ -86,11 +87,12 @@ export async function GET(request: NextRequest) {
     const { data: contributionRows, error: contributionErr } = await supabase
       .from("contribcontribution")
       .select(
-        "id,memberid,amount,fundtypeid,contributiontypeid,currencycode,checkno,datedeposited,dateentered,comments",
+        "id,memberid,amount,fundtypeid,contributiontypeid,currencycode,checkno,datedeposited,dateentered,batchnumber,comments",
       )
       .eq("contributorid", access.memberId)
       .gte("dateentered", startOfUtcDay(dateEntered))
       .lt("dateentered", startOfNextUtcDay(dateEntered))
+      .order("batchnumber", { ascending: false })
       .order("id", { ascending: false });
 
     if (contributionErr) {
@@ -179,6 +181,7 @@ export async function GET(request: NextRequest) {
         checkNo: row.checkno ?? "",
         dateDeposited: row.datedeposited,
         dateEntered: row.dateentered,
+        batchNumber: row.batchnumber ?? 1,
         comments: row.comments ?? "",
       };
     });

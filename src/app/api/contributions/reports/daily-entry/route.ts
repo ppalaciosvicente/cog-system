@@ -17,15 +17,19 @@ function isValidDateOnly(value: string) {
 
 function buildDailyEntryPdf({
   dateEntered,
-  rows,
+  batches,
   totalsByCurrency,
 }: {
   dateEntered: string;
-  rows: Array<{
-    donorLabel: string;
-    totalAmount: number;
-    currencyCode: string;
-    locationLabel: string;
+  batches: Array<{
+    batchNumber: number;
+    rows: Array<{
+      donorLabel: string;
+      totalAmount: number;
+      currencyCode: string;
+      locationLabel: string;
+    }>;
+    totalsByCurrency: Array<{ currencyCode: string; totalAmount: number }>;
   }>;
   totalsByCurrency: Array<{ currencyCode: string; totalAmount: number }>;
 }) {
@@ -43,34 +47,59 @@ function buildDailyEntryPdf({
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
 
-    let pageNumber = 0;
     let rowY = 0;
 
-    function startPage() {
-      doc.addPage({ size: "LETTER", margin: 0 });
-      pageNumber += 1;
-      rowY = pageNumber === 1 ? 186 : 64;
+    function drawTotals(
+      label: string,
+      totals: Array<{ currencyCode: string; totalAmount: number }>,
+    ) {
+      doc.moveTo(72, rowY + 2).lineTo(540, rowY + 2).strokeColor("#c7d2fe").lineWidth(1).stroke();
+      rowY += 14;
+      doc.font("Helvetica-Bold").fontSize(11).text(`${label}:`, 72, rowY);
 
-      if (pageNumber === 1) {
-        doc.font("Times-BoldItalic").fontSize(22).text(
-          "Daily Entry Report - the Church of God - PKG",
-          0,
-          74,
-          { width: doc.page.width, align: "center" },
-        );
-        doc.font("Times-BoldItalic").fontSize(16).text(
-          "1-line Contribution Summary",
-          0,
-          108,
-          { width: doc.page.width, align: "center" },
-        );
-        doc.font("Times-Italic").fontSize(16).text(
-          `for ${formatShortDateLabel(dateEntered)}`,
-          0,
-          132,
-          { width: doc.page.width, align: "center" },
-        );
+      if (totals.length <= 1) {
+        const total = totals[0] ?? { currencyCode: "USD", totalAmount: 0 };
+        doc.text(formatCurrency(total.totalAmount, total.currencyCode), 280, rowY, {
+          width: 88,
+          align: "right",
+        });
+        rowY += 18;
+        return;
       }
+
+      totals.forEach((total, index) => {
+        doc.text(
+          `${total.currencyCode}: ${formatCurrency(total.totalAmount, total.currencyCode)}`,
+          280,
+          rowY + index * 14,
+          { width: 96, align: "right" },
+        );
+      });
+      rowY += totals.length * 14 + 4;
+    }
+
+    function startPage(batchNumber: number) {
+      doc.addPage({ size: "LETTER", margin: 0 });
+      rowY = 186;
+
+      doc.font("Times-BoldItalic").fontSize(22).text(
+        "Daily Entry Report - the Church of God - PKG",
+        0,
+        74,
+        { width: doc.page.width, align: "center" },
+      );
+      doc.font("Times-BoldItalic").fontSize(16).text(
+        "1-line Contribution Summary",
+        0,
+        108,
+        { width: doc.page.width, align: "center" },
+      );
+      doc.font("Times-Italic").fontSize(16).text(
+        `for ${formatShortDateLabel(dateEntered)} - Batch ${batchNumber}`,
+        0,
+        132,
+        { width: doc.page.width, align: "center" },
+      );
 
       doc.font("Helvetica-Bold").fontSize(11);
       doc.text("Donor", 72, rowY - 24);
@@ -79,42 +108,43 @@ function buildDailyEntryPdf({
       doc.moveTo(72, rowY - 6).lineTo(540, rowY - 6).strokeColor("#111827").lineWidth(1).stroke();
     }
 
-    startPage();
+    batches.forEach((batch) => {
+      startPage(batch.batchNumber);
 
-    rows.forEach((row) => {
-      if (rowY > 684) {
-        startPage();
-      }
+      batch.rows.forEach((row) => {
+        if (rowY > 684) {
+          startPage(batch.batchNumber);
+        }
 
-      doc.font("Helvetica").fontSize(10.5);
-      doc.text(row.donorLabel.toUpperCase(), 72, rowY, { width: 188 });
-      doc.text(formatCurrency(row.totalAmount, row.currencyCode), 280, rowY, {
-        width: 88,
-        align: "right",
+        doc.font("Helvetica").fontSize(10.5);
+        doc.text(row.donorLabel.toUpperCase(), 72, rowY, { width: 188 });
+        doc.text(formatCurrency(row.totalAmount, row.currencyCode), 280, rowY, {
+          width: 88,
+          align: "right",
+        });
+        doc.text(row.locationLabel, 380, rowY, { width: 140 });
+        rowY += 24;
       });
-      doc.text(row.locationLabel, 380, rowY, { width: 140 });
-      rowY += 24;
+
+      drawTotals(`Batch ${batch.batchNumber} Total`, batch.totalsByCurrency);
     });
 
-    doc.moveTo(72, rowY + 2).lineTo(540, rowY + 2).strokeColor("#c7d2fe").lineWidth(1).stroke();
-    rowY += 14;
-    doc.font("Helvetica-Bold").fontSize(11).text("Grand Total:", 72, rowY);
-
-    if (totalsByCurrency.length <= 1) {
-      const total = totalsByCurrency[0] ?? { currencyCode: "USD", totalAmount: 0 };
-      doc.text(formatCurrency(total.totalAmount, total.currencyCode), 280, rowY, {
-        width: 88,
-        align: "right",
-      });
-    } else {
-      totalsByCurrency.forEach((total, index) => {
-        doc.text(
-          `${total.currencyCode}: ${formatCurrency(total.totalAmount, total.currencyCode)}`,
-          280,
-          rowY + index * 14,
-          { width: 88, align: "right" },
-        );
-      });
+    if (batches.length > 1) {
+      doc.addPage({ size: "LETTER", margin: 0 });
+      rowY = 186;
+      doc.font("Times-BoldItalic").fontSize(22).text(
+        "Daily Entry Report - the Church of God - PKG",
+        0,
+        74,
+        { width: doc.page.width, align: "center" },
+      );
+      doc.font("Times-Italic").fontSize(16).text(
+        `Grand Total for ${formatShortDateLabel(dateEntered)}`,
+        0,
+        120,
+        { width: doc.page.width, align: "center" },
+      );
+      drawTotals("Grand Total", totalsByCurrency);
     }
 
     const footerDate = new Intl.DateTimeFormat("en-US", {

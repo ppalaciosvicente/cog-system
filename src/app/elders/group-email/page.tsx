@@ -489,7 +489,7 @@ export default function EldersGroupEmailPage() {
             </div>
 
             {isAdmin && (
-              <div className={forms.col} style={{ gap: 6 }}>
+              <div className={forms.col} style={{ gap: 6, marginTop: 10 }}>
                 <p className={forms.checkboxSectionLabel}>Admin shortcuts</p>
                 <div className={forms.checkboxShortcutGroup}>
                   <label className={forms.checkboxOption}>

@@ -95,6 +95,9 @@ export default function EldersGroupEmailPage() {
 
   const [areas, setAreas] = useState<AreaRow[]>([]);
   const [selectedAreaIds, setSelectedAreaIds] = useState<number[]>([]);
+  const [selectedAdminCountryCodes, setSelectedAdminCountryCodes] = useState<
+    string[]
+  >([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [includeAllMembers, setIncludeAllMembers] = useState(false);
   const [emailList, setEmailList] = useState("");
@@ -299,26 +302,6 @@ export default function EldersGroupEmailPage() {
     canadaStateNameByCode,
   ]);
 
-  const areaOptions = useMemo(() => {
-    const options = areasWithLabels.map((area) => ({
-      ...area,
-      isAllMembers: false,
-    }));
-    if (!isAdmin) return options;
-    return [
-      {
-        id: -1,
-        memberid: 0,
-        countrycode: null,
-        statecode: null,
-        congregationid: null,
-        label: "All members worldwide",
-        isAllMembers: true,
-      },
-      ...options,
-    ];
-  }, [areasWithLabels, isAdmin]);
-
   useEffect(() => {
     let cancelled = false;
 
@@ -328,7 +311,13 @@ export default function EldersGroupEmailPage() {
       setNoEmailList("");
       setCopyMsg(null);
 
-      if (!includeAllMembers && selectedAreaIds.length === 0) return;
+      if (
+        !includeAllMembers &&
+        selectedAreaIds.length === 0 &&
+        selectedAdminCountryCodes.length === 0
+      ) {
+        return;
+      }
 
       setEmailLoading(true);
       try {
@@ -344,8 +333,6 @@ export default function EldersGroupEmailPage() {
           const selectedAreas = areas.filter((a) =>
             selectedAreaIds.includes(a.id),
           );
-          if (selectedAreas.length === 0) return;
-
           const congregationIds = Array.from(
             new Set(
               selectedAreas
@@ -380,6 +367,11 @@ export default function EldersGroupEmailPage() {
             if (cc) filters.push(`countrycode.eq.${cc}`);
           });
 
+          selectedAdminCountryCodes.forEach((countryCode) => {
+            const cc = normalizeCode(countryCode);
+            if (cc) filters.push(`countrycode.eq.${cc}`);
+          });
+
           if (filters.length > 0) {
             query = query.or(filters.join(","));
           } else {
@@ -401,6 +393,7 @@ export default function EldersGroupEmailPage() {
             body: JSON.stringify({
               includeAllMembers,
               selectedAreaIds,
+              selectedCountryCodes: selectedAdminCountryCodes,
             }),
           });
           const payload = (await response.json().catch(() => ({}))) as {
@@ -438,7 +431,13 @@ export default function EldersGroupEmailPage() {
     return () => {
       cancelled = true;
     };
-  }, [areas, selectedAreaIds, supabase, includeAllMembers]);
+  }, [
+    areas,
+    selectedAreaIds,
+    selectedAdminCountryCodes,
+    supabase,
+    includeAllMembers,
+  ]);
 
   return (
     <main className={forms.page}>
@@ -468,6 +467,7 @@ export default function EldersGroupEmailPage() {
                 className={forms.button}
                 onClick={() => {
                   setIncludeAllMembers(false);
+                  setSelectedAdminCountryCodes([]);
                   setSelectedAreaIds(areasWithLabels.map((area) => area.id));
                 }}
                 disabled={areasWithLabels.length === 0 || includeAllMembers}
@@ -479,6 +479,7 @@ export default function EldersGroupEmailPage() {
                 className={forms.button}
                 onClick={() => {
                   setIncludeAllMembers(false);
+                  setSelectedAdminCountryCodes([]);
                   setSelectedAreaIds([]);
                 }}
                 disabled={areasWithLabels.length === 0 || includeAllMembers}
@@ -491,10 +492,65 @@ export default function EldersGroupEmailPage() {
               Or select specific areas below:
             </p>
             <div style={{ display: "grid", gap: 10 }}>
-              {areaOptions.map((area) => {
-                const checked = area.isAllMembers
-                  ? includeAllMembers
-                  : selectedAreaIds.includes(area.id);
+              {isAdmin && (
+                <>
+                  <label
+                    style={{ display: "flex", alignItems: "center", gap: 8 }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={includeAllMembers}
+                      onChange={(e) => {
+                        const nextChecked = e.target.checked;
+                        setIncludeAllMembers(nextChecked);
+                        if (nextChecked) {
+                          setSelectedAreaIds([]);
+                          setSelectedAdminCountryCodes([]);
+                        }
+                      }}
+                    />
+                    <span style={{ fontStyle: "italic", color: "#555" }}>
+                      All members worldwide
+                    </span>
+                  </label>
+                  {[
+                    ["US", "US"],
+                    ["Canada", "CA"],
+                  ].map(([label, countryCode]) => (
+                    <label
+                      key={countryCode}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedAdminCountryCodes.includes(
+                          countryCode,
+                        )}
+                        onChange={(e) => {
+                          const nextChecked = e.target.checked;
+                          setIncludeAllMembers(false);
+                          setSelectedAdminCountryCodes((prev) => {
+                            if (nextChecked) {
+                              return Array.from(
+                                new Set([...prev, countryCode]),
+                              );
+                            }
+                            return prev.filter((code) => code !== countryCode);
+                          });
+                        }}
+                        disabled={includeAllMembers}
+                      />
+                      <span>{label}</span>
+                    </label>
+                  ))}
+                </>
+              )}
+              {areasWithLabels.map((area) => {
+                const checked = selectedAreaIds.includes(area.id);
                 return (
                   <label
                     key={area.id}
@@ -505,34 +561,21 @@ export default function EldersGroupEmailPage() {
                       checked={checked}
                       onChange={(e) => {
                         const nextChecked = e.target.checked;
-                        if (area.isAllMembers) {
-                          setIncludeAllMembers(nextChecked);
-                          if (nextChecked) {
-                            setSelectedAreaIds([]);
-                          }
-                          return;
-                        }
                         setIncludeAllMembers(false);
                         setSelectedAreaIds((prev) => {
                           if (nextChecked) return [...prev, area.id];
                           return prev.filter((id) => id !== area.id);
                         });
                       }}
-                      disabled={includeAllMembers && !area.isAllMembers}
+                      disabled={includeAllMembers}
                     />
-                    <span
-                      style={
-                        area.isAllMembers
-                          ? { fontStyle: "italic", color: "#555" }
-                          : undefined
-                      }
-                    >
-                      {area.label}
-                    </span>
+                    <span>{area.label}</span>
                   </label>
                 );
               })}
-              {areaOptions.length === 0 && <span>No areas available.</span>}
+              {areasWithLabels.length === 0 && !isAdmin && (
+                <span>No areas available.</span>
+              )}
             </div>
           </div>
 

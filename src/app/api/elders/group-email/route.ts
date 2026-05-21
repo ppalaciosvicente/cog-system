@@ -14,6 +14,7 @@ type AreaRow = {
 type Payload = {
   includeAllMembers?: boolean;
   selectedAreaIds?: number[];
+  selectedCountryCodes?: string[];
 };
 
 function normalizeCode(code?: string | null) {
@@ -47,6 +48,15 @@ export async function POST(request: NextRequest) {
         .map((id) => Number(id))
         .filter((id) => Number.isFinite(id) && id > 0)
     : [];
+  const selectedCountryCodes = Array.isArray(payload.selectedCountryCodes)
+    ? Array.from(
+        new Set(
+          (payload.selectedCountryCodes as unknown[])
+            .map((code) => normalizeCode(String(code)))
+            .filter((code) => code === "US" || code === "CA"),
+        ),
+      )
+    : [];
 
   const canIncludeAllMembers = hasRole(roleCheck.roleNames, [
     "emc_admin",
@@ -57,6 +67,9 @@ export async function POST(request: NextRequest) {
     "super_user",
   ]);
   if (includeAllMembers && !canIncludeAllMembers) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  if (selectedCountryCodes.length > 0 && !canIncludeAllMembers) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -93,8 +106,10 @@ export async function POST(request: NextRequest) {
   if (selectedAreaIds.length > 0) {
     const selectedSet = new Set(selectedAreaIds);
     areas = areas.filter((row) => selectedSet.has(row.id));
+  } else if (selectedCountryCodes.length > 0) {
+    areas = [];
   }
-  if (!areas.length) {
+  if (!areas.length && selectedCountryCodes.length === 0) {
     return NextResponse.json({ members: [] });
   }
 
@@ -135,6 +150,10 @@ export async function POST(request: NextRequest) {
   countryAreas.forEach((area) => {
     const cc = normalizeCode(area.countrycode);
     if (cc) filters.push(`countrycode.eq.${cc}`);
+  });
+
+  selectedCountryCodes.forEach((cc) => {
+    filters.push(`countrycode.eq.${cc}`);
   });
 
   if (!filters.length) {

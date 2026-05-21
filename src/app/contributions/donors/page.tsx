@@ -652,7 +652,7 @@ export default function ContributionDonorsPage() {
     const lines: Parameters<typeof buildSimplePdf>[0] = [
       { text: "Contributions", size: 18, bold: true, x: 30, y: 760 },
       { text: `Donor: ${detail?.donorLabel ?? ""}`, size: 12, x: 30, y: 742 },
-      { text: `From ${startDate || "earliest"} to ${endDate || todayDateString()}`, size: 12, x: 30, y: 726 },
+      { text: `Date Deposited: ${startDate || "earliest"} to ${endDate || todayDateString()}`, size: 12, x: 30, y: 726 },
       { text: "Member", bold: true, size: 11, x: 30, y: 704 },
       { text: "Amount", bold: true, size: 11, x: 190, y: 704 },
       { text: "Fund", bold: true, size: 11, x: 255, y: 704 },
@@ -992,7 +992,7 @@ export default function ContributionDonorsPage() {
                   <div className={forms.actionsRow} style={{ alignItems: "flex-end", gap: 12, flexWrap: "wrap" }}>
                     <div className={forms.row} style={{ margin: 0, gridTemplateColumns: "100px 1fr" }}>
                       <label className={forms.label} htmlFor="donor-start-date">
-                        Start Date
+                        Start Date Deposited
                       </label>
                       <div className={forms.control}>
                         <input
@@ -1006,7 +1006,7 @@ export default function ContributionDonorsPage() {
                     </div>
                     <div className={forms.row} style={{ margin: 0, gridTemplateColumns: "100px 1fr" }}>
                       <label className={forms.label} htmlFor="donor-end-date">
-                        End Date
+                        End Date Deposited
                       </label>
                       <div className={forms.control}>
                         <input

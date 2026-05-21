@@ -426,12 +426,12 @@ export default function ViewContributionsPage() {
       const link = document.createElement("a");
       const contentDisposition = response.headers.get("Content-Disposition") ?? "";
       const filenameMatch = contentDisposition.match(/filename="([^"]+)"/);
-      link.href = url;
-      link.download =
-        filenameMatch?.[1] ??
+      const fallbackFilename =
         kind === "dailyEntry"
           ? `daily-entry-report-${dailyEntryDate}.pdf`
           : `${friendlyName.toLowerCase().replace(/ /g, "-")}-${startDate || "all"}-to-${endDate || "all"}.pdf`;
+      link.href = url;
+      link.download = filenameMatch?.[1] ?? fallbackFilename;
       document.body.appendChild(link);
       link.click();
       link.remove();

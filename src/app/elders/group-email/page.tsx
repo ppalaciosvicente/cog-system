@@ -488,9 +488,6 @@ export default function EldersGroupEmailPage() {
               </button>
             </div>
 
-            <p style={{ margin: 0, color: "#4b5563", fontSize: 13 }}>
-              Or select specific areas below:
-            </p>
             {isAdmin && (
               <div className={forms.col} style={{ gap: 6 }}>
                 <p className={forms.checkboxSectionLabel}>Admin shortcuts</p>

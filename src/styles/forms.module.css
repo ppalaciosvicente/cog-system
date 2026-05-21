@@ -171,8 +171,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 10px 18px;
-  padding: 8px 0 8px 12px;
-  border-left: 3px solid #bfdbfe;
+  padding: 4px 0 8px;
 }
 
 .checkboxOption {

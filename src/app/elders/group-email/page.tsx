@@ -491,9 +491,10 @@ export default function EldersGroupEmailPage() {
             <p style={{ margin: 0, color: "#4b5563", fontSize: 13 }}>
               Or select specific areas below:
             </p>
-            <div className={forms.checkboxGrid}>
-              {isAdmin && (
-                <>
+            {isAdmin && (
+              <div className={forms.col} style={{ gap: 6 }}>
+                <p className={forms.checkboxSectionLabel}>Admin shortcuts</p>
+                <div className={forms.checkboxShortcutGroup}>
                   <label className={forms.checkboxOption}>
                     <input
                       type="checkbox"
@@ -507,7 +508,9 @@ export default function EldersGroupEmailPage() {
                         }
                       }}
                     />
-                    <span className={forms.checkboxOptionSpecial}>All members worldwide</span>
+                    <span className={forms.checkboxOptionSpecial}>
+                      All members worldwide
+                    </span>
                   </label>
                   {[
                     ["US", "US"],
@@ -536,32 +539,39 @@ export default function EldersGroupEmailPage() {
                       <span className={forms.checkboxOptionSpecial}>{label}</span>
                     </label>
                   ))}
-                </>
+                </div>
+              </div>
+            )}
+            <div className={forms.col} style={{ gap: 6 }}>
+              {isAdmin && areasWithLabels.length > 0 && (
+                <p className={forms.checkboxSectionLabel}>Assigned areas</p>
               )}
-              {areasWithLabels.map((area) => {
-                const checked = selectedAreaIds.includes(area.id);
-                return (
-                  <label key={area.id} className={forms.checkboxOption}>
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={(e) => {
-                        const nextChecked = e.target.checked;
-                        setIncludeAllMembers(false);
-                        setSelectedAreaIds((prev) => {
-                          if (nextChecked) return [...prev, area.id];
-                          return prev.filter((id) => id !== area.id);
-                        });
-                      }}
-                      disabled={includeAllMembers}
-                    />
-                    <span>{area.label}</span>
-                  </label>
-                );
-              })}
-              {areasWithLabels.length === 0 && !isAdmin && (
-                <span>No areas available.</span>
-              )}
+              <div className={forms.checkboxGrid}>
+                {areasWithLabels.map((area) => {
+                  const checked = selectedAreaIds.includes(area.id);
+                  return (
+                    <label key={area.id} className={forms.checkboxOption}>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(e) => {
+                          const nextChecked = e.target.checked;
+                          setIncludeAllMembers(false);
+                          setSelectedAreaIds((prev) => {
+                            if (nextChecked) return [...prev, area.id];
+                            return prev.filter((id) => id !== area.id);
+                          });
+                        }}
+                        disabled={includeAllMembers}
+                      />
+                      <span>{area.label}</span>
+                    </label>
+                  );
+                })}
+                {areasWithLabels.length === 0 && !isAdmin && (
+                  <span>No areas available.</span>
+                )}
+              </div>
             </div>
           </div>
 

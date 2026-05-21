@@ -160,6 +160,21 @@
   gap: 10px;
 }
 
+.checkboxSectionLabel {
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.checkboxShortcutGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  padding: 8px 0 8px 12px;
+  border-left: 3px solid #bfdbfe;
+}
+
 .checkboxOption {
   display: flex;
   align-items: center;

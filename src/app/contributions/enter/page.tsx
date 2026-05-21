@@ -517,6 +517,21 @@ export default function EnterContributionsPage() {
     });
   }
 
+  function hasUnsavedEntryRows() {
+    return rows.some((row) =>
+      [
+        row.memberQuery,
+        row.memberId,
+        row.amount,
+        row.fundType,
+        row.currencyCode,
+        row.checkNo,
+        row.dateDeposited,
+        row.comments,
+      ].some((value) => String(value ?? "").trim() !== ""),
+    );
+  }
+
   async function handleSave() {
     setSaveError(null);
     setSaveSuccess(null);
@@ -609,6 +624,13 @@ export default function EnterContributionsPage() {
   }
 
   async function downloadDailyEntryReport() {
+    if (hasUnsavedEntryRows()) {
+      const confirmed = window.confirm(
+        "There are still unsaved contributions in the entry table. Save them before downloading the Daily Entry Report, otherwise they will not appear in the report.\n\nDownload the report anyway?",
+      );
+      if (!confirmed) return;
+    }
+
     setDownloadingDailyReport(true);
     setDailyEntryError(null);
 

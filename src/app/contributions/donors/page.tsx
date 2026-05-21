@@ -87,6 +87,7 @@ type EditDraft = {
   checkNo: string;
   contributionType: string;
   dateDeposited: string;
+  dateEntered: string;
   comments: string;
 };
 
@@ -145,6 +146,7 @@ function toEditDraft(row: ContributionRecord): EditDraft {
     checkNo: row.checkNo ?? "",
     contributionType: row.contributionType,
     dateDeposited: row.dateDeposited,
+    dateEntered: formatDate(row.dateEntered),
     comments: row.comments ?? "",
   };
 }
@@ -363,6 +365,9 @@ export default function ContributionDonorsPage() {
     if (!draft.dateDeposited.trim()) {
       throw new Error("Select the date deposited.");
     }
+    if (!draft.dateEntered.trim()) {
+      throw new Error("Select the date entered.");
+    }
 
     return {
       memberId,
@@ -372,6 +377,7 @@ export default function ContributionDonorsPage() {
       checkNo: draft.checkNo.trim() || null,
       contributionType: draft.contributionType.trim(),
       dateDeposited: draft.dateDeposited.trim(),
+      dateEntered: draft.dateEntered.trim(),
       comments: draft.comments.trim() || null,
     };
   }
@@ -1327,6 +1333,20 @@ export default function ContributionDonorsPage() {
                             className={forms.field}
                             value={editDraft.dateDeposited}
                             onChange={(event) => updateEditField("dateDeposited", event.target.value)}
+                          />
+                        </div>
+                      </div>
+                      <div className={forms.row}>
+                        <label className={forms.label} htmlFor="donor-edit-date-entered">
+                          Date Entered
+                        </label>
+                        <div className={forms.control}>
+                          <input
+                            id="donor-edit-date-entered"
+                            type="date"
+                            className={forms.field}
+                            value={editDraft.dateEntered}
+                            onChange={(event) => updateEditField("dateEntered", event.target.value)}
                           />
                         </div>
                       </div>

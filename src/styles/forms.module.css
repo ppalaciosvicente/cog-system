@@ -178,8 +178,14 @@
 
 @media (min-width: 900px) {
   .checkboxGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    align-items: start;
+    display: block;
+    column-count: 4;
+    column-gap: 24px;
+  }
+
+  .checkboxOption {
+    break-inside: avoid;
+    margin-bottom: 10px;
   }
 }
 

@@ -491,12 +491,10 @@ export default function EldersGroupEmailPage() {
             <p style={{ margin: 0, color: "#4b5563", fontSize: 13 }}>
               Or select specific areas below:
             </p>
-            <div style={{ display: "grid", gap: 10 }}>
+            <div className={forms.checkboxGrid}>
               {isAdmin && (
                 <>
-                  <label
-                    style={{ display: "flex", alignItems: "center", gap: 8 }}
-                  >
+                  <label className={forms.checkboxOption}>
                     <input
                       type="checkbox"
                       checked={includeAllMembers}
@@ -509,22 +507,13 @@ export default function EldersGroupEmailPage() {
                         }
                       }}
                     />
-                    <span style={{ fontStyle: "italic", color: "#555" }}>
-                      All members worldwide
-                    </span>
+                    <span className={forms.checkboxOptionSpecial}>All members worldwide</span>
                   </label>
                   {[
                     ["US", "US"],
                     ["Canada", "CA"],
                   ].map(([label, countryCode]) => (
-                    <label
-                      key={countryCode}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
-                      }}
-                    >
+                    <label key={countryCode} className={forms.checkboxOption}>
                       <input
                         type="checkbox"
                         checked={selectedAdminCountryCodes.includes(
@@ -544,7 +533,7 @@ export default function EldersGroupEmailPage() {
                         }}
                         disabled={includeAllMembers}
                       />
-                      <span>{label}</span>
+                      <span className={forms.checkboxOptionSpecial}>{label}</span>
                     </label>
                   ))}
                 </>
@@ -552,10 +541,7 @@ export default function EldersGroupEmailPage() {
               {areasWithLabels.map((area) => {
                 const checked = selectedAreaIds.includes(area.id);
                 return (
-                  <label
-                    key={area.id}
-                    style={{ display: "flex", alignItems: "center", gap: 8 }}
-                  >
+                  <label key={area.id} className={forms.checkboxOption}>
                     <input
                       type="checkbox"
                       checked={checked}

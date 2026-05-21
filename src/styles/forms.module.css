@@ -155,6 +155,34 @@
   gap: 6px;
 }
 
+.checkboxGrid {
+  display: grid;
+  gap: 10px;
+}
+
+.checkboxOption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.checkboxOption span {
+  overflow-wrap: anywhere;
+}
+
+.checkboxOptionSpecial {
+  color: #555;
+  font-style: italic;
+}
+
+@media (min-width: 900px) {
+  .checkboxGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+
 /* Label + control rows */
 .row {
   display: grid;

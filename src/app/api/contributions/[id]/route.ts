@@ -30,6 +30,7 @@ type CountryCurrencyRow = {
 type ExistingContributionRow = {
   id: number;
   memberid: number;
+  dateentered: string;
 };
 
 function normalizeName(value: string | null | undefined) {
@@ -66,7 +67,7 @@ async function requireScopedExistingContribution(
   const supabase = createServiceRoleClient();
   const { data, error } = await supabase
     .from("contribcontribution")
-    .select("id,memberid")
+    .select("id,memberid,dateentered")
     .eq("id", contributionId)
     .single();
 
@@ -135,6 +136,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     }
     if (!isValidDateOnly(String(payload.dateDeposited ?? ""))) {
       return NextResponse.json({ error: "Date deposited must be valid." }, { status: 400 });
+    }
+    if (payload.dateEntered && !isValidDateOnly(String(payload.dateEntered))) {
+      return NextResponse.json({ error: "Date entered must be valid." }, { status: 400 });
     }
 
     const existing = await requireScopedExistingContribution(contributionId, access);
@@ -242,6 +246,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       .update({
         memberid: payload.memberId,
         datedeposited: payload.dateDeposited,
+        dateentered: payload.dateEntered ?? existing.contribution.dateentered,
         amount: Number(payload.amount.toFixed(2)),
         comments: cleanText(payload.comments),
         checkno: cleanText(payload.checkNo),

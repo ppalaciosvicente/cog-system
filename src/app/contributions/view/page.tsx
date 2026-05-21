@@ -42,6 +42,7 @@ type EditDraft = {
   checkNo: string;
   contributionType: string;
   dateDeposited: string;
+  dateEntered: string;
   comments: string;
 };
 
@@ -93,6 +94,7 @@ function toEditDraft(row: ContributionRecord): EditDraft {
     checkNo: row.checkNo ?? "",
     contributionType: row.contributionType,
     dateDeposited: row.dateDeposited,
+    dateEntered: row.dateEntered.slice(0, 10),
     comments: row.comments ?? "",
   };
 }
@@ -604,6 +606,9 @@ export default function ViewContributionsPage() {
     if (!draft.dateDeposited.trim()) {
       throw new Error("Select the date deposited.");
     }
+    if (!draft.dateEntered.trim()) {
+      throw new Error("Select the date entered.");
+    }
 
     return {
       memberId: parsedMemberId,
@@ -613,6 +618,7 @@ export default function ViewContributionsPage() {
       checkNo: draft.checkNo.trim() || null,
       contributionType: draft.contributionType.trim(),
       dateDeposited: draft.dateDeposited.trim(),
+      dateEntered: draft.dateEntered.trim(),
       comments: draft.comments.trim() || null,
     };
   }
@@ -1361,6 +1367,20 @@ export default function ViewContributionsPage() {
                         className={forms.field}
                         value={editDraft.dateDeposited}
                         onChange={(event) => updateEditField("dateDeposited", event.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className={forms.row}>
+                    <label className={forms.label} htmlFor="edit-contribution-date-entered">
+                      Date Entered
+                    </label>
+                    <div className={forms.control}>
+                      <input
+                        id="edit-contribution-date-entered"
+                        type="date"
+                        className={forms.field}
+                        value={editDraft.dateEntered}
+                        onChange={(event) => updateEditField("dateEntered", event.target.value)}
                       />
                     </div>
                   </div>

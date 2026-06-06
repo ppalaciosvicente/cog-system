@@ -423,7 +423,7 @@ export default function EnterContributionsPage() {
         row.checkNo,
         row.comments,
       ].some((value) => String(value ?? "").trim() !== ""),
-    ) || batchDateDeposited.trim() !== "";
+    );
   }
 
   async function handleSave() {
@@ -852,7 +852,7 @@ export default function EnterContributionsPage() {
                   dailyEntryRows.length === 0
                 }
               >
-                {downloadingDailyReport ? "Generating..." : "Daily Entry Report"}
+                {downloadingDailyReport ? "Generating..." : "Download Daily Entry Report"}
               </button>
             </div>
             <p style={{ marginTop: 12 }}>

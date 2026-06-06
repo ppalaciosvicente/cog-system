@@ -104,23 +104,31 @@ function formatHouseholdLabel(label: string | undefined) {
 
 export async function getDailyEntrySummary(
   supabase: ReturnType<typeof createServiceRoleClient>,
-  contributorId: number,
+  contributorId: number | null,
   dateEntered = todayDateString(),
+  options?: {
+    countryCode?: string | null;
+  },
 ) {
-  const { data: contributionRows, error: contributionErr } = await supabase
+  let contributionQuery = supabase
     .from("contribcontribution")
     .select("memberid,amount,currencycode,batchnumber")
-    .eq("contributorid", contributorId)
     .gte("dateentered", startOfUtcDay(dateEntered))
     .lt("dateentered", startOfNextUtcDay(dateEntered))
     .order("batchnumber", { ascending: true })
     .order("id", { ascending: true });
 
+  if (contributorId != null) {
+    contributionQuery = contributionQuery.eq("contributorid", contributorId);
+  }
+
+  const { data: contributionRows, error: contributionErr } = await contributionQuery;
+
   if (contributionErr) {
     throw new Error(contributionErr.message);
   }
 
-  const baseRows = (contributionRows ?? []) as ContributionBaseRow[];
+  let baseRows = (contributionRows ?? []) as ContributionBaseRow[];
   if (!baseRows.length) {
     return {
       dateEntered,
@@ -131,6 +139,7 @@ export async function getDailyEntrySummary(
     };
   }
 
+  const countryCodeFilter = normalizeCode(options?.countryCode);
   const memberIds = Array.from(new Set(baseRows.map((row) => row.memberid)));
   const { data: memberRows, error: memberErr } = await supabase
     .from("emcmember")
@@ -142,6 +151,23 @@ export async function getDailyEntrySummary(
   }
 
   const baseMembers = (memberRows ?? []) as MemberRow[];
+  if (countryCodeFilter) {
+    const memberIdsInCountry = new Set(
+      baseMembers
+        .filter((member) => normalizeCode(member.countrycode) === countryCodeFilter)
+        .map((member) => member.id),
+    );
+    baseRows = baseRows.filter((row) => memberIdsInCountry.has(row.memberid));
+    if (!baseRows.length) {
+      return {
+        dateEntered,
+        rows: [] as DailyEntrySummaryRow[],
+        totalsByCurrency: [] as Array<{ currencyCode: string; totalAmount: number }>,
+        batches: [] as DailyEntrySummaryBatch[],
+        contributionCount: 0,
+      };
+    }
+  }
   const spouseIds = Array.from(
     new Set(baseMembers.map((row) => row.spouseid).filter((id): id is number => id != null)),
   );

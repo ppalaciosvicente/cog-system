@@ -15,6 +15,12 @@ function isValidDateOnly(value: string) {
   return /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
+function normalizeCode(value: string | null | undefined) {
+  return String(value ?? "")
+    .trim()
+    .toUpperCase();
+}
+
 function buildDailyEntryPdf({
   dateEntered,
   batches,
@@ -180,25 +186,41 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: access.error }, { status: access.status });
   }
 
-  if (!access.memberId) {
-    return NextResponse.json(
-      { error: "No member record is linked to this contribution account." },
-      { status: 400 },
-    );
-  }
-
   try {
     const dateEnteredParam = String(request.nextUrl.searchParams.get("dateEntered") ?? "").trim();
     const dateEntered = isValidDateOnly(dateEnteredParam) ? dateEnteredParam : todayDateString();
+    const scopeParam = String(request.nextUrl.searchParams.get("scope") ?? "").trim();
+    const countryCode = normalizeCode(request.nextUrl.searchParams.get("country"));
+    const includeAllContributors = access.isAdmin && scopeParam === "all";
+
+    if (!includeAllContributors && !access.memberId) {
+      return NextResponse.json(
+        { error: "No member record is linked to this contribution account." },
+        { status: 400 },
+      );
+    }
+
+    if (!access.isAdmin && countryCode && !access.allowedCountryCodes.includes(countryCode)) {
+      return NextResponse.json(
+        { error: "Selected country is outside your scope." },
+        { status: 400 },
+      );
+    }
+
     const summary = await getDailyEntrySummary(
       createServiceRoleClient(),
-      access.memberId,
+      includeAllContributors ? null : access.memberId,
       dateEntered,
+      { countryCode: countryCode || null },
     );
 
     if (!summary.rows.length) {
       return NextResponse.json(
-        { error: "No contributions were entered by you today." },
+        {
+          error: includeAllContributors
+            ? "No contributions were entered on the selected date."
+            : "No contributions were entered by you on the selected date.",
+        },
         { status: 400 },
       );
     }

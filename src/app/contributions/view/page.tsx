@@ -49,6 +49,7 @@ type EditDraft = {
 type Mode = "view" | "grandTotal" | "totalPerDonor" | "dailyEntry" | "taxReceipts";
 type SortKey = "memberName" | "contributionType" | "dateDeposited" | "dateEntered";
 type SortDirection = "asc" | "desc";
+type DailyEntryScope = "all" | "mine";
 
 type TaxReceiptRecipientRow = {
   representativeId: number;
@@ -119,6 +120,7 @@ export default function ViewContributionsPage() {
   const [startDate, setStartDate] = useState(() => previousMonthDateRange().start);
   const [endDate, setEndDate] = useState(() => previousMonthDateRange().end);
   const [dailyEntryDate, setDailyEntryDate] = useState(todayDateString());
+  const [dailyEntryScope, setDailyEntryScope] = useState<DailyEntryScope>("all");
   const [fundType, setFundType] = useState("");
   const [contributionType, setContributionType] = useState("");
   const [countryCode, setCountryCode] = useState("");
@@ -375,7 +377,7 @@ export default function ViewContributionsPage() {
     }
   }
 
-  async function downloadReport(kind: Mode) {
+  async function downloadReport(kind: Mode, options?: { isAdmin?: boolean }) {
     const friendlyName =
       kind === "grandTotal"
         ? "Grand Total"
@@ -399,7 +401,14 @@ export default function ViewContributionsPage() {
         kind === "dailyEntry"
           ? new URLSearchParams({ dateEntered: dailyEntryDate })
           : new URLSearchParams({ startDate, endDate });
-      if (kind !== "dailyEntry") {
+      if (kind === "dailyEntry") {
+        if (options?.isAdmin) {
+          params.append("scope", dailyEntryScope);
+        }
+        if (countryCode) {
+          params.append("country", countryCode);
+        }
+      } else {
         if (countryCode) params.append("country", countryCode);
         if (kind === "taxReceipts") params.append("deductibleOnly", "true");
         if (kind !== "taxReceipts" && fundType) params.append("fundType", fundType);
@@ -786,10 +795,10 @@ export default function ViewContributionsPage() {
 
   const totalSummary = useMemo(() => {
     const totals = Object.entries(totalsByCurrency).sort(([a], [b]) => a.localeCompare(b));
-    if (!totals.length) return "Total: 0.00";
-    return `Total: ${totals
+    if (!totals.length) return "(Total: 0.00)";
+    return `(Total: ${totals
       .map(([code, amount]) => `${code} ${formatAmount(amount)}`)
-      .join(" | ")}`;
+      .join(" | ")})`;
   }, [totalsByCurrency]);
 
   const resultPageCount = Math.max(1, Math.ceil(sortedRows.length / resultPageSize));
@@ -824,7 +833,7 @@ export default function ViewContributionsPage() {
       title="View Contributions & Download Reports"
       description="Search saved contributions by date deposited and optional filters, or download contribution reports."
     >
-      {() => (
+      {(access) => (
         <>
           <section className={forms.sectionCard}>
             <div style={{ margin: "16px 0" }}>
@@ -1000,6 +1009,51 @@ export default function ViewContributionsPage() {
                     </div>
                   </div>
                 </div>
+                <div className={forms.col}>
+                  {access.isAdmin ? (
+                    <div className={forms.row}>
+                      <label className={forms.label} htmlFor="daily-entry-scope">
+                        Entries
+                      </label>
+                      <div className={forms.control}>
+                        <select
+                          id="daily-entry-scope"
+                          className={forms.field}
+                          value={dailyEntryScope}
+                          onChange={(event) =>
+                            setDailyEntryScope(event.target.value as DailyEntryScope)
+                          }
+                        >
+                          <option value="all">View all</option>
+                          <option value="mine">Only entered by me</option>
+                        </select>
+                      </div>
+                    </div>
+                  ) : null}
+                  <div className={forms.row}>
+                    <label className={forms.label} htmlFor="daily-entry-country">
+                      Country
+                    </label>
+                    <div className={forms.control}>
+                      <select
+                        id="daily-entry-country"
+                        className={forms.field}
+                        value={countryCode}
+                        onChange={(event) => setCountryCode(event.target.value)}
+                      >
+                        <option value="">Any country</option>
+                        {countryOptions.map((code) => {
+                          const name = countryNameByCode[code] ?? code;
+                          return (
+                            <option key={code} value={code}>
+                              {name}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
             <div className={forms.actions} style={{ marginTop: 16 }}>
@@ -1016,7 +1070,7 @@ export default function ViewContributionsPage() {
                       setReportError("Select a country for Tax Receipts.");
                       return;
                     }
-                    void downloadReport(mode);
+                    void downloadReport(mode, { isAdmin: access.isAdmin });
                   }}
                   disabled={reportDownloading !== null}
                 >

@@ -31,6 +31,7 @@ type ExistingContributionRow = {
   id: number;
   memberid: number;
   dateentered: string;
+  batchnumber: number | null;
 };
 
 function normalizeName(value: string | null | undefined) {
@@ -67,7 +68,7 @@ async function requireScopedExistingContribution(
   const supabase = createServiceRoleClient();
   const { data, error } = await supabase
     .from("contribcontribution")
-    .select("id,memberid,dateentered")
+    .select("id,memberid,dateentered,batchnumber")
     .eq("id", contributionId)
     .single();
 
@@ -139,6 +140,16 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     }
     if (payload.dateEntered && !isValidDateOnly(String(payload.dateEntered))) {
       return NextResponse.json({ error: "Date entered must be valid." }, { status: 400 });
+    }
+    const batchNumber =
+      payload.batchNumber === null || payload.batchNumber === undefined
+        ? null
+        : Number(payload.batchNumber);
+    if (batchNumber !== null && (!Number.isInteger(batchNumber) || batchNumber <= 0)) {
+      return NextResponse.json(
+        { error: "Batch number must be a positive whole number." },
+        { status: 400 },
+      );
     }
 
     const existing = await requireScopedExistingContribution(contributionId, access);
@@ -247,6 +258,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
         memberid: payload.memberId,
         datedeposited: payload.dateDeposited,
         dateentered: payload.dateEntered ?? existing.contribution.dateentered,
+        batchnumber: batchNumber ?? existing.contribution.batchnumber ?? 1,
         amount: Number(payload.amount.toFixed(2)),
         comments: cleanText(payload.comments),
         checkno: cleanText(payload.checkNo),

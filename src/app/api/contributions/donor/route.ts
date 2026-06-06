@@ -57,6 +57,7 @@ type ContributionBaseRow = {
   checkno: string | null;
   datedeposited: string;
   dateentered: string;
+  batchnumber: number | null;
   comments: string | null;
   fundtypeid: number;
   contributiontypeid: number;
@@ -190,7 +191,7 @@ export async function GET(request: NextRequest) {
   const { data: contributionRows, error: contributionErr } = await supabase
     .from("contribcontribution")
     .select(
-      "id,memberid,amount,checkno,datedeposited,dateentered,comments,fundtypeid,contributiontypeid,currencycode",
+      "id,memberid,amount,checkno,datedeposited,dateentered,batchnumber,comments,fundtypeid,contributiontypeid,currencycode",
     )
     .in("memberid", selectedHousehold.memberIds)
     .gte("datedeposited", startDate || "0001-01-01")
@@ -273,6 +274,7 @@ export async function GET(request: NextRequest) {
         taxDeductible: contributionTypeTaxById.get(row.contributiontypeid) ?? null,
         dateDeposited: row.datedeposited,
         dateEntered: row.dateentered,
+        batchNumber: row.batchnumber ?? null,
         comments: row.comments,
       } satisfies ContributionRecord;
 

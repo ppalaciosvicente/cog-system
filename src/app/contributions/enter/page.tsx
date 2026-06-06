@@ -60,6 +60,7 @@ type EditDraft = {
   checkNo: string;
   dateDeposited: string;
   dateEntered: string;
+  batchNumber: string;
   comments: string;
 };
 
@@ -600,6 +601,7 @@ export default function EnterContributionsPage() {
       checkNo: row.checkNo,
       dateDeposited: row.dateDeposited,
       dateEntered: row.dateEntered.slice(0, 10),
+      batchNumber: String(row.batchNumber),
       comments: row.comments,
     });
   }
@@ -610,16 +612,21 @@ export default function EnterContributionsPage() {
 
   function buildEditPayload(draft: EditDraft): ContributionDraftInput {
     const amount = Number(draft.amount);
+    const batchNumber = Number(draft.batchNumber);
     if (!Number.isFinite(amount) || amount <= 0) throw new Error("Enter an amount greater than zero.");
     if (!draft.fundType.trim()) throw new Error("Select a fund type.");
     if (!draft.currencyCode.trim()) throw new Error("Select a currency.");
     if (!draft.contributionType.trim()) throw new Error("Select a contribution type.");
     if (!draft.dateDeposited.trim()) throw new Error("Select the date deposited.");
     if (!draft.dateEntered.trim()) throw new Error("Select the date entered.");
+    if (!Number.isInteger(batchNumber) || batchNumber <= 0) {
+      throw new Error("Enter a valid batch number.");
+    }
 
     return {
       memberId: draft.memberId,
       amount,
+      batchNumber,
       fundType: draft.fundType.trim(),
       currencyCode: draft.currencyCode.trim().toUpperCase(),
       checkNo: draft.checkNo.trim() || null,
@@ -1058,6 +1065,22 @@ export default function EnterContributionsPage() {
                         type="date"
                         value={editDraft.dateEntered}
                         onChange={(event) => updateEditField("dateEntered", event.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className={forms.row}>
+                    <label className={forms.label} htmlFor="edit-batch-number">
+                      Batch Number
+                    </label>
+                    <div className={forms.control}>
+                      <input
+                        id="edit-batch-number"
+                        className={forms.field}
+                        type="number"
+                        min="1"
+                        step="1"
+                        value={editDraft.batchNumber}
+                        onChange={(event) => updateEditField("batchNumber", event.target.value)}
                       />
                     </div>
                   </div>

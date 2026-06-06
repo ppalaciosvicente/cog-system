@@ -30,6 +30,7 @@ export type ContributionDraftInput = {
   contributionType: string;
   dateDeposited: string;
   dateEntered?: string;
+  batchNumber?: number | null;
   comments?: string | null;
 };
 
@@ -46,6 +47,7 @@ export type ContributionRecord = {
   contributionType: string;
   dateDeposited: string;
   dateEntered: string;
+  batchNumber: number | null;
   comments: string | null;
 };
 

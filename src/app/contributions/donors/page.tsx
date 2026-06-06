@@ -88,6 +88,7 @@ type EditDraft = {
   contributionType: string;
   dateDeposited: string;
   dateEntered: string;
+  batchNumber: string;
   comments: string;
 };
 
@@ -147,6 +148,7 @@ function toEditDraft(row: ContributionRecord): EditDraft {
     contributionType: row.contributionType,
     dateDeposited: row.dateDeposited,
     dateEntered: formatDate(row.dateEntered),
+    batchNumber: String(row.batchNumber ?? 1),
     comments: row.comments ?? "",
   };
 }
@@ -346,6 +348,7 @@ export default function ContributionDonorsPage() {
   function buildEditPayload(draft: EditDraft): ContributionDraftInput {
     const memberId = Number(draft.memberId);
     const amount = Number(draft.amount);
+    const batchNumber = Number(draft.batchNumber);
 
     if (!Number.isInteger(memberId) || memberId <= 0) {
       throw new Error("Select a donor.");
@@ -368,10 +371,14 @@ export default function ContributionDonorsPage() {
     if (!draft.dateEntered.trim()) {
       throw new Error("Select the date entered.");
     }
+    if (!Number.isInteger(batchNumber) || batchNumber <= 0) {
+      throw new Error("Enter a valid batch number.");
+    }
 
     return {
       memberId,
       amount,
+      batchNumber,
       fundType: draft.fundType.trim(),
       currencyCode: draft.currencyCode.trim().toUpperCase(),
       checkNo: draft.checkNo.trim() || null,
@@ -1347,6 +1354,24 @@ export default function ContributionDonorsPage() {
                             className={forms.field}
                             value={editDraft.dateEntered}
                             onChange={(event) => updateEditField("dateEntered", event.target.value)}
+                          />
+                        </div>
+                      </div>
+                      <div className={forms.row}>
+                        <label className={forms.label} htmlFor="donor-edit-batch-number">
+                          Batch Number
+                        </label>
+                        <div className={forms.control}>
+                          <input
+                            id="donor-edit-batch-number"
+                            type="number"
+                            min="1"
+                            step="1"
+                            className={forms.field}
+                            value={editDraft.batchNumber}
+                            onChange={(event) =>
+                              updateEditField("batchNumber", event.target.value)
+                            }
                           />
                         </div>
                       </div>

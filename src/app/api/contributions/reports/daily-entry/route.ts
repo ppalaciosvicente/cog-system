@@ -55,6 +55,7 @@ function buildDailyEntryPdf({
     doc.on("error", reject);
 
     let rowY = 0;
+    const footerTopY = 742;
 
     function drawTotals(
       label: string,
@@ -83,6 +84,19 @@ function buildDailyEntryPdf({
         );
       });
       rowY += totals.length * 14 + 4;
+    }
+
+    function totalsBlockHeight(totals: Array<{ currencyCode: string; totalAmount: number }>) {
+      return 14 + (totals.length <= 1 ? 18 : totals.length * 14 + 4);
+    }
+
+    function drawGrandTotalTitle(y: number) {
+      doc.font("Times-Italic").fontSize(16).text(
+        `Grand Total for date entered: ${formatShortDateLabel(dateEntered)}`,
+        0,
+        y,
+        { width: doc.page.width, align: "center" },
+      );
     }
 
     function startPage(batch: { batchNumber: number; dateDeposited: string }) {
@@ -137,20 +151,22 @@ function buildDailyEntryPdf({
     });
 
     if (batches.length > 1) {
-      doc.addPage({ size: "LETTER", margin: 0 });
-      rowY = 186;
-      doc.font("Times-BoldItalic").fontSize(22).text(
-        "Daily Entry Report - the Church of God - PKG",
-        0,
-        74,
-        { width: doc.page.width, align: "center" },
-      );
-      doc.font("Times-Italic").fontSize(16).text(
-        `Grand Total for ${formatShortDateLabel(dateEntered)}`,
-        0,
-        120,
-        { width: doc.page.width, align: "center" },
-      );
+      const inlineGrandTotalHeight = 40 + totalsBlockHeight(totalsByCurrency);
+      if (rowY + inlineGrandTotalHeight <= footerTopY - 12) {
+        rowY += 22;
+        drawGrandTotalTitle(rowY);
+        rowY += 30;
+      } else {
+        doc.addPage({ size: "LETTER", margin: 0 });
+        rowY = 186;
+        doc.font("Times-BoldItalic").fontSize(22).text(
+          "Daily Entry Report - the Church of God - PKG",
+          0,
+          74,
+          { width: doc.page.width, align: "center" },
+        );
+        drawGrandTotalTitle(120);
+      }
       drawTotals("Grand Total", totalsByCurrency);
     }
 

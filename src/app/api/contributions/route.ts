@@ -70,6 +70,9 @@ type LookupCacheEntry = {
 
 const SCOPED_MEMBER_CACHE_TTL_MS = 30_000;
 const LOOKUP_CACHE_TTL_MS = 60_000;
+const PAGE_SIZE = 1000;
+const MAX_MEMBER_ROWS = 20000;
+const MAX_CONTRIBUTION_ROWS = 20000;
 const scopedMemberCache = new Map<string, ScopedMemberCacheEntry>();
 let lookupCache: LookupCacheEntry | null = null;
 
@@ -126,21 +129,31 @@ async function getScopedMembersCached(
     return cached;
   }
 
-  const donorStatusIds = await getContributionDonorStatusIds(supabase);
-  let memberQuery = supabase
-    .from("emcmember")
-    .select("id,fname,lname,countrycode,householdid,spouseid")
-    .in("statusid", donorStatusIds);
+  const memberRows: MemberScopeRow[] = [];
+  for (let from = 0; from < MAX_MEMBER_ROWS; from += PAGE_SIZE) {
+    let memberQuery = supabase
+      .from("emcmember")
+      .select("id,fname,lname,countrycode,householdid,spouseid")
+      .order("id", { ascending: true })
+      .range(from, from + PAGE_SIZE - 1);
 
-  if (!access.isAdmin) {
-    memberQuery = memberQuery.in("countrycode", access.allowedCountryCodes);
-  }
-  const { data: memberRows, error: memberErr } = await memberQuery.limit(2000);
-  if (memberErr) {
-    throw new Error(memberErr.message);
+    if (!access.isAdmin) {
+      memberQuery = memberQuery.in("countrycode", access.allowedCountryCodes);
+    }
+
+    const { data, error } = await memberQuery;
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const pageRows = (data ?? []) as MemberScopeRow[];
+    memberRows.push(...pageRows);
+    if (pageRows.length < PAGE_SIZE) {
+      break;
+    }
   }
 
-  const scopedMembers = (memberRows ?? []) as MemberScopeRow[];
+  const scopedMembers = memberRows;
   const households = buildHouseholdOptions(scopedMembers);
   const householdByRepresentativeId = new Map(
     households.map((household) => [household.value, household]),
@@ -291,42 +304,58 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ rows: [] as ContributionRecord[] });
   }
 
-  let contributionQuery = supabase
-    .from("contribcontribution")
-    .select(
-      "id,memberid,amount,checkno,datedeposited,dateentered,comments,fundtypeid,contributiontypeid,currencycode",
-    )
-    .in("memberid", scopedMemberIdsByCountry)
-    .gte("datedeposited", startDate)
-    .lte("datedeposited", endDate)
-    .order("datedeposited", { ascending: false })
-    .order("id", { ascending: false })
-    .limit(2000);
-
-  if (fundTypeParam) {
-    const fundTypeId = fundTypeIdByName.get(normalizeName(fundTypeParam));
-    if (!fundTypeId) return NextResponse.json({ rows: [] as ContributionRecord[] });
-    contributionQuery = contributionQuery.eq("fundtypeid", fundTypeId);
+  const fundTypeFilterId = fundTypeParam ? fundTypeIdByName.get(normalizeName(fundTypeParam)) : null;
+  if (fundTypeParam && !fundTypeFilterId) {
+    return NextResponse.json({ rows: [] as ContributionRecord[] });
   }
 
-  if (contributionTypeParam) {
-    const contributionTypeId = contributionTypeIdByName.get(normalizeName(contributionTypeParam));
-    if (!contributionTypeId) return NextResponse.json({ rows: [] as ContributionRecord[] });
-    contributionQuery = contributionQuery.eq("contributiontypeid", contributionTypeId);
-  }
-  if (startDateEntered) {
-    contributionQuery = contributionQuery.gte("dateentered", startOfUtcDay(startDateEntered));
-  }
-  if (endDateEntered) {
-    contributionQuery = contributionQuery.lt("dateentered", startOfNextUtcDay(endDateEntered));
+  const contributionTypeFilterId = contributionTypeParam
+    ? contributionTypeIdByName.get(normalizeName(contributionTypeParam))
+    : null;
+  if (contributionTypeParam && !contributionTypeFilterId) {
+    return NextResponse.json({ rows: [] as ContributionRecord[] });
   }
 
-  const { data: contributionRows, error: contributionErr } = await contributionQuery;
-  if (contributionErr) {
-    return NextResponse.json({ error: contributionErr.message }, { status: 500 });
+  const contributionRows: ContributionBaseRow[] = [];
+  for (let from = 0; from < MAX_CONTRIBUTION_ROWS; from += PAGE_SIZE) {
+    let contributionQuery = supabase
+      .from("contribcontribution")
+      .select(
+        "id,memberid,amount,checkno,datedeposited,dateentered,comments,fundtypeid,contributiontypeid,currencycode",
+      )
+      .in("memberid", scopedMemberIdsByCountry)
+      .gte("datedeposited", startDate)
+      .lte("datedeposited", endDate)
+      .order("datedeposited", { ascending: false })
+      .order("id", { ascending: false })
+      .range(from, from + PAGE_SIZE - 1);
+
+    if (fundTypeFilterId) {
+      contributionQuery = contributionQuery.eq("fundtypeid", fundTypeFilterId);
+    }
+    if (contributionTypeFilterId) {
+      contributionQuery = contributionQuery.eq("contributiontypeid", contributionTypeFilterId);
+    }
+    if (startDateEntered) {
+      contributionQuery = contributionQuery.gte("dateentered", startOfUtcDay(startDateEntered));
+    }
+    if (endDateEntered) {
+      contributionQuery = contributionQuery.lt("dateentered", startOfNextUtcDay(endDateEntered));
+    }
+
+    const { data, error } = await contributionQuery;
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    const pageRows = (data ?? []) as ContributionBaseRow[];
+    contributionRows.push(...pageRows);
+    if (pageRows.length < PAGE_SIZE) {
+      break;
+    }
   }
 
-  const rows: ContributionRecord[] = ((contributionRows ?? []) as ContributionBaseRow[])
+  const rows: ContributionRecord[] = contributionRows
     .map((row) => {
       const member = memberById.get(row.memberid);
       if (!member) return null;

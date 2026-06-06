@@ -147,6 +147,8 @@ export default function ViewContributionsPage() {
   const [sortKey, setSortKey] = useState<SortKey>("dateDeposited");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [exportError, setExportError] = useState<string | null>(null);
+  const [resultPage, setResultPage] = useState(1);
+  const [resultPageSize, setResultPageSize] = useState(100);
   const [mode, setMode] = useState<Mode>("view");
   const [taxReceiptRecipients, setTaxReceiptRecipients] = useState<TaxReceiptRecipientRow[]>([]);
   const [taxReceiptLoading, setTaxReceiptLoading] = useState(false);
@@ -258,6 +260,7 @@ export default function ViewContributionsPage() {
       }
 
       setRows(payload.rows ?? []);
+      setResultPage(1);
     } catch (loadError) {
       setError(
         loadError instanceof Error ? loadError.message : "Failed to load contributions.",
@@ -730,6 +733,7 @@ export default function ViewContributionsPage() {
   }
 
   function toggleSort(nextKey: SortKey) {
+    setResultPage(1);
     setSortKey((currentKey) => {
       if (currentKey === nextKey) {
         setSortDirection((currentDirection) =>
@@ -771,6 +775,36 @@ export default function ViewContributionsPage() {
     });
     return list;
   }, [rows, sortDirection, sortKey]);
+
+  const totalsByCurrency = useMemo(() => {
+    return sortedRows.reduce<Record<string, number>>((acc, row) => {
+      const current = acc[row.currencyCode] ?? 0;
+      acc[row.currencyCode] = current + row.amount;
+      return acc;
+    }, {});
+  }, [sortedRows]);
+
+  const totalSummary = useMemo(() => {
+    const totals = Object.entries(totalsByCurrency).sort(([a], [b]) => a.localeCompare(b));
+    if (!totals.length) return "Total: 0.00";
+    return `Total: ${totals
+      .map(([code, amount]) => `${code} ${formatAmount(amount)}`)
+      .join(" | ")}`;
+  }, [totalsByCurrency]);
+
+  const resultPageCount = Math.max(1, Math.ceil(sortedRows.length / resultPageSize));
+  const visibleResultRows = useMemo(() => {
+    const startIndex = (resultPage - 1) * resultPageSize;
+    return sortedRows.slice(startIndex, startIndex + resultPageSize);
+  }, [resultPage, resultPageSize, sortedRows]);
+  const resultStartNumber = sortedRows.length ? (resultPage - 1) * resultPageSize + 1 : 0;
+  const resultEndNumber = Math.min(resultPage * resultPageSize, sortedRows.length);
+
+  useEffect(() => {
+    if (resultPage > resultPageCount) {
+      setResultPage(resultPageCount);
+    }
+  }, [resultPage, resultPageCount]);
 
   const hasRows = useMemo(() => rows.length > 0, [rows.length]);
   const isViewMode = mode === "view";
@@ -1143,8 +1177,18 @@ export default function ViewContributionsPage() {
           {isViewMode && hasSearched ? (
             <section className={forms.sectionCard} style={{ marginTop: 16 }}>
               <div className={forms.actionsRow} style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <h2 style={{ margin: 0 }}>Results</h2>
-                <div className={forms.tableActions}>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 16, flexWrap: "wrap" }}>
+                  <h2 style={{ margin: 0 }}>Results</h2>
+                  {hasRows ? (
+                    <strong style={{ color: "#111827", fontSize: 15 }}>{totalSummary}</strong>
+                  ) : null}
+                </div>
+                <div className={forms.tableActions} style={{ flexWrap: "wrap" }}>
+                  {hasRows ? (
+                    <span style={{ color: "#4b5563", fontSize: 14 }}>
+                      Showing {resultStartNumber}-{resultEndNumber} of {sortedRows.length}
+                    </span>
+                  ) : null}
                   <button
                     type="button"
                     className={`${forms.button} ${forms.actionsRowPrimaryButton}`}
@@ -1214,7 +1258,7 @@ export default function ViewContributionsPage() {
                         </td>
                       </tr>
                     ) : (
-                      sortedRows.map((row) => (
+                      visibleResultRows.map((row) => (
                         <tr key={row.id}>
                           <td className={forms.td}>{row.memberName}</td>
                           <td className={forms.td}>
@@ -1255,6 +1299,64 @@ export default function ViewContributionsPage() {
                   </tbody>
                 </table>
               </ScrollableTable>
+              {hasRows ? (
+                <div
+                  className={forms.actionsRow}
+                  style={{
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginTop: 14,
+                  }}
+                >
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      color: "#374151",
+                      fontSize: 14,
+                    }}
+                  >
+                    Rows per page
+                    <select
+                      className={forms.field}
+                      value={resultPageSize}
+                      onChange={(event) => {
+                        setResultPageSize(Number(event.target.value));
+                        setResultPage(1);
+                      }}
+                      style={{ width: 96 }}
+                    >
+                      {[50, 100, 250, 500].map((size) => (
+                        <option key={size} value={size}>
+                          {size}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className={forms.tableActions}>
+                    <button
+                      type="button"
+                      onClick={() => setResultPage((current) => Math.max(1, current - 1))}
+                      disabled={resultPage <= 1}
+                    >
+                      Previous
+                    </button>
+                    <span style={{ color: "#374151", fontSize: 14 }}>
+                      Page {resultPage} of {resultPageCount}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setResultPage((current) => Math.min(resultPageCount, current + 1))
+                      }
+                      disabled={resultPage >= resultPageCount}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              ) : null}
             </section>
           ) : null}
 

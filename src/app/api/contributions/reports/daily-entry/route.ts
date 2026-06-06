@@ -29,6 +29,7 @@ function buildDailyEntryPdf({
   dateEntered: string;
   batches: Array<{
     batchNumber: number;
+    dateDeposited: string;
     rows: Array<{
       donorLabel: string;
       totalAmount: number;
@@ -84,7 +85,7 @@ function buildDailyEntryPdf({
       rowY += totals.length * 14 + 4;
     }
 
-    function startPage(batchNumber: number) {
+    function startPage(batch: { batchNumber: number; dateDeposited: string }) {
       doc.addPage({ size: "LETTER", margin: 0 });
       rowY = 186;
 
@@ -95,13 +96,13 @@ function buildDailyEntryPdf({
         { width: doc.page.width, align: "center" },
       );
       doc.font("Times-BoldItalic").fontSize(16).text(
-        "1-line Contribution Summary",
+        `1-line Contribution Summary (Date entered: ${formatShortDateLabel(dateEntered)})`,
         0,
         108,
         { width: doc.page.width, align: "center" },
       );
       doc.font("Times-Italic").fontSize(16).text(
-        `for ${formatShortDateLabel(dateEntered)} - Batch ${batchNumber}`,
+        `Date deposited: ${formatShortDateLabel(batch.dateDeposited)} - Batch ${batch.batchNumber}`,
         0,
         132,
         { width: doc.page.width, align: "center" },
@@ -115,11 +116,11 @@ function buildDailyEntryPdf({
     }
 
     batches.forEach((batch) => {
-      startPage(batch.batchNumber);
+      startPage(batch);
 
       batch.rows.forEach((row) => {
         if (rowY > 684) {
-          startPage(batch.batchNumber);
+          startPage(batch);
         }
 
         doc.font("Helvetica").fontSize(10.5);

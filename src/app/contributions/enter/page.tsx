@@ -81,7 +81,6 @@ type DraftRow = {
   currencyCode: string;
   checkNo: string;
   contributionType: string;
-  dateDeposited: string;
   comments: string;
 };
 
@@ -108,7 +107,6 @@ export default function EnterContributionsPage() {
     currencyCode: "",
     checkNo: "",
     contributionType: DEFAULT_CONTRIBUTION_TYPE,
-    dateDeposited: "",
     comments: "",
   });
   const [fundTypeOptions, setFundTypeOptions] = useState<string[]>([
@@ -126,7 +124,7 @@ export default function EnterContributionsPage() {
   const [rows, setRows] = useState<DraftRow[]>(() =>
     Array.from({ length: DEFAULT_ENTRY_ROW_COUNT }, EMPTY_ROW),
   );
-  const [lastDateDeposited, setLastDateDeposited] = useState("");
+  const [batchDateDeposited, setBatchDateDeposited] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
@@ -240,35 +238,6 @@ export default function EnterContributionsPage() {
   }
 
   function updateRow(rowId: number, field: keyof DraftRow, value: string) {
-    if (field === "dateDeposited") {
-      const nextDate = value;
-      setRows((current) => {
-        const targetIndex = current.findIndex((row) => row.id === rowId);
-        if (targetIndex === -1) return current;
-
-        const priorValue = current[targetIndex]?.dateDeposited ?? "";
-        const canPropagate = isValidDateInput(nextDate);
-
-        return current.map((row, index) => {
-          if (row.id === rowId) {
-            return { ...row, dateDeposited: nextDate };
-          }
-          if (
-            canPropagate &&
-            index > targetIndex &&
-            (!row.dateDeposited.trim() ||
-              row.dateDeposited === priorValue ||
-              row.dateDeposited === lastDateDeposited)
-          ) {
-            return { ...row, dateDeposited: nextDate };
-          }
-          return row;
-        });
-      });
-      if (isValidDateInput(nextDate)) setLastDateDeposited(nextDate);
-      return;
-    }
-
     setRows((current) =>
       current.map((row) => {
         if (row.id !== rowId) return row;
@@ -450,12 +419,7 @@ export default function EnterContributionsPage() {
   }
 
   function addRow() {
-    setRows((current) => {
-      const next = EMPTY_ROW();
-      const date = lastDateDeposited.trim();
-      if (isValidDateInput(date)) next.dateDeposited = date;
-      return [...current, next];
-    });
+    setRows((current) => [...current, EMPTY_ROW()]);
   }
 
   function removeRow(rowId: number) {
@@ -478,7 +442,7 @@ export default function EnterContributionsPage() {
       const currencyCode = row.currencyCode.trim().toUpperCase();
       const checkNo = isCheckFundType(fundType) ? row.checkNo.trim() || null : null;
       const contributionType = row.contributionType.trim();
-      const dateDeposited = row.dateDeposited.trim();
+      const dateDeposited = batchDateDeposited.trim();
       const dateEntered = todayDateString();
 
       if (!Number.isInteger(memberId) || memberId <= 0) {
@@ -496,8 +460,8 @@ export default function EnterContributionsPage() {
       if (!currencyCode) {
         throw new Error(`Row ${rowNumber}: select a currency.`);
       }
-      if (!dateDeposited) {
-        throw new Error(`Row ${rowNumber}: select the date deposited.`);
+      if (!dateDeposited || !isValidDateInput(dateDeposited)) {
+        throw new Error("Select the date deposited for this batch.");
       }
       if (!dateEntered) {
         throw new Error(`Row ${rowNumber}: select the date entered.`);
@@ -526,10 +490,9 @@ export default function EnterContributionsPage() {
         row.fundType,
         row.currencyCode,
         row.checkNo,
-        row.dateDeposited,
         row.comments,
       ].some((value) => String(value ?? "").trim() !== ""),
-    );
+    ) || batchDateDeposited.trim() !== "";
   }
 
   async function handleSave() {
@@ -777,6 +740,24 @@ export default function EnterContributionsPage() {
       {() => (
         <>
           <section className={forms.sectionCard}>
+            <div className={forms.formGrid} style={{ marginBottom: 14 }}>
+              <div className={forms.col}>
+                <div className={forms.row}>
+                  <label className={forms.label} htmlFor="batch-date-deposited">
+                    Date Deposited
+                  </label>
+                  <div className={forms.control}>
+                    <input
+                      id="batch-date-deposited"
+                      type="date"
+                      className={forms.field}
+                      value={batchDateDeposited}
+                      onChange={(event) => setBatchDateDeposited(event.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
             <div className={forms.actionsRow}>
               <button type="button" onClick={addRow}>
                 Add Row
@@ -807,7 +788,6 @@ export default function EnterContributionsPage() {
                     <th className={forms.th}>Currency</th>
                     <th className={forms.th}>Check No.</th>
                     <th className={forms.th}>Contribution Type</th>
-                    <th className={forms.th}>Date Deposited</th>
                     <th className={forms.th}>Comments</th>
                     <th className={forms.th}>Action</th>
                   </tr>
@@ -902,16 +882,6 @@ export default function EnterContributionsPage() {
                             </option>
                           ))}
                         </select>
-                      </td>
-                      <td className={forms.td} style={{ minWidth: 160 }}>
-                        <input
-                          className={forms.field}
-                          type="date"
-                          value={row.dateDeposited}
-                          onChange={(event) =>
-                            updateRow(row.id, "dateDeposited", event.target.value)
-                          }
-                        />
                       </td>
                       <td className={forms.td} style={{ minWidth: 220 }}>
                         <input

@@ -73,10 +73,21 @@ function todayDateString() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function dateDaysAgoString(days: number) {
-  const date = new Date();
-  date.setDate(date.getDate() - days);
-  return date.toISOString().slice(0, 10);
+function toDateInputString(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function previousMonthDateRange() {
+  const today = new Date();
+  const firstDay = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+  const lastDay = new Date(today.getFullYear(), today.getMonth(), 0);
+  return {
+    start: toDateInputString(firstDay),
+    end: toDateInputString(lastDay),
+  };
 }
 
 function formatAmount(value: number) {
@@ -105,10 +116,8 @@ function sortIndicator(active: boolean, direction: SortDirection) {
 }
 
 export default function ViewContributionsPage() {
-  const [startDate, setStartDate] = useState(dateDaysAgoString(30));
-  const [endDate, setEndDate] = useState(todayDateString());
-  const [startDateEntered, setStartDateEntered] = useState("");
-  const [endDateEntered, setEndDateEntered] = useState("");
+  const [startDate, setStartDate] = useState(() => previousMonthDateRange().start);
+  const [endDate, setEndDate] = useState(() => previousMonthDateRange().end);
   const [dailyEntryDate, setDailyEntryDate] = useState(todayDateString());
   const [fundType, setFundType] = useState("");
   const [contributionType, setContributionType] = useState("");
@@ -214,8 +223,6 @@ export default function ViewContributionsPage() {
     fundType?: string;
     contributionType?: string;
     countryCode?: string;
-    startDateEntered?: string;
-    endDateEntered?: string;
   }) {
     setLoading(true);
     setError(null);
@@ -229,8 +236,6 @@ export default function ViewContributionsPage() {
       const activeFundType = filters?.fundType ?? fundType;
       const activeContributionType = filters?.contributionType ?? contributionType;
       const activeCountryCode = filters?.countryCode ?? countryCode;
-      const activeStartDateEntered = filters?.startDateEntered ?? startDateEntered;
-      const activeEndDateEntered = filters?.endDateEntered ?? endDateEntered;
       const params = new URLSearchParams({
         startDate: activeStartDate,
         endDate: activeEndDate,
@@ -238,8 +243,6 @@ export default function ViewContributionsPage() {
       if (activeFundType) params.set("fundType", activeFundType);
       if (activeContributionType) params.set("contributionType", activeContributionType);
       if (activeCountryCode) params.set("country", activeCountryCode);
-      if (activeStartDateEntered) params.set("startDateEntered", activeStartDateEntered);
-      if (activeEndDateEntered) params.set("endDateEntered", activeEndDateEntered);
 
       const response = await fetch(`/api/contributions?${params.toString()}`, {
         credentials: "include",
@@ -472,53 +475,69 @@ export default function ViewContributionsPage() {
       filterParts.push(`Country: ${countryLabel}`);
     }
 
-    const filterLines = filterParts;
     const lines: Parameters<typeof buildSimplePdf>[0] = [];
-    let headerY = 760;
-    lines.push({ text: "Contributions", size: 18, bold: true, x: 30, y: headerY });
-    headerY -= 18;
-    lines.push({ text: `From ${startDate} to ${endDate}`, size: 12, x: 30, y: headerY });
-    headerY -= 16;
-    filterLines.forEach((text) => {
-      lines.push({ text, size: 11, x: 30, y: headerY });
-      headerY -= 14;
-    });
-    headerY -= 22; // larger gap before table
-    lines.push({ text: "Member", bold: true, size: 11, x: 30, y: headerY });
-    lines.push({ text: "Country", bold: true, size: 11, x: 155, y: headerY });
-    lines.push({ text: "Amount", bold: true, size: 11, x: 205, y: headerY });
-    lines.push({ text: "Fund", bold: true, size: 11, x: 270, y: headerY });
-    lines.push({ text: "Contrib. Type", bold: true, size: 11, x: 355, y: headerY });
-    lines.push({ text: "Date Dep.", bold: true, size: 11, x: 445, y: headerY });
-    lines.push({ text: "Date Ent.", bold: true, size: 11, x: 525, y: headerY });
+    let page = 1;
+    const footerY = 32;
+    const bottomY = 66;
+    const addHeader = (pageNumber: number) => {
+      let headerY = 760;
+      lines.push({ text: "Contributions", size: 18, bold: true, x: 30, y: headerY, page: pageNumber });
+      headerY -= 18;
+      lines.push({
+        text: `Date deposited: From ${startDate} to ${endDate}`,
+        size: 12,
+        x: 30,
+        y: headerY,
+        page: pageNumber,
+      });
+      headerY -= 16;
+      filterParts.forEach((text) => {
+        lines.push({ text, size: 11, x: 30, y: headerY, page: pageNumber });
+        headerY -= 14;
+      });
+      headerY -= 22; // larger gap before table
+      lines.push({ text: "Member", bold: true, size: 11, x: 30, y: headerY, page: pageNumber });
+      lines.push({ text: "Country", bold: true, size: 11, x: 155, y: headerY, page: pageNumber });
+      lines.push({ text: "Amount", bold: true, size: 11, x: 205, y: headerY, page: pageNumber });
+      lines.push({ text: "Fund", bold: true, size: 11, x: 270, y: headerY, page: pageNumber });
+      lines.push({ text: "Contrib. Type", bold: true, size: 11, x: 355, y: headerY, page: pageNumber });
+      lines.push({ text: "Date Dep.", bold: true, size: 11, x: 445, y: headerY, page: pageNumber });
+      lines.push({ text: "Date Ent.", bold: true, size: 11, x: 525, y: headerY, page: pageNumber });
+      return headerY - 16;
+    };
 
-    let y = headerY - 16;
+    let y = addHeader(page);
     for (const row of sortedRows) {
       const memberLines = wrapLine(row.memberName, 16);
-      memberLines.forEach((text, index) => {
-        lines.push({ text, size: 10, x: 30, y: y - index * 11 });
-      });
-
-      lines.push({ text: row.memberCountryCode ?? "", size: 10, x: 155, y });
-
-      const amountText = `${row.currencyCode} ${formatAmount(row.amount)}`;
-      lines.push({ text: amountText, size: 10, x: 205, y });
-
       const fundBase = row.fundType;
       const fundLines = row.checkNo
         ? [fundBase, `(#${row.checkNo})`]
         : wrapLine(fundBase, 14);
-      fundLines.forEach((text, index) => {
-        lines.push({ text, size: 10, x: 270, y: y - index * 11 });
+      const maxLines = Math.max(memberLines.length, fundLines.length, 1);
+      const rowHeight = maxLines * 11 + 1;
+      if (y - rowHeight < bottomY) {
+        page += 1;
+        y = addHeader(page);
+      }
+
+      memberLines.forEach((text, index) => {
+        lines.push({ text, size: 10, x: 30, y: y - index * 11, page });
       });
 
-      lines.push({ text: row.contributionType, size: 10, x: 355, y });
-      lines.push({ text: row.dateDeposited, size: 10, x: 445, y });
-      lines.push({ text: row.dateEntered.slice(0, 10), size: 10, x: 525, y });
+      lines.push({ text: row.memberCountryCode ?? "", size: 10, x: 155, y, page });
 
-      const maxLines = Math.max(memberLines.length, fundLines.length, 1);
-      y -= maxLines * 11 + 1;
-      if (y < 80) break;
+      const amountText = `${row.currencyCode} ${formatAmount(row.amount)}`;
+      lines.push({ text: amountText, size: 10, x: 205, y, page });
+
+      fundLines.forEach((text, index) => {
+        lines.push({ text, size: 10, x: 270, y: y - index * 11, page });
+      });
+
+      lines.push({ text: row.contributionType, size: 10, x: 355, y, page });
+      lines.push({ text: row.dateDeposited, size: 10, x: 445, y, page });
+      lines.push({ text: row.dateEntered.slice(0, 10), size: 10, x: 525, y, page });
+
+      y -= rowHeight;
     }
 
     const totalsByCurrency = sortedRows.reduce<Record<string, number>>((acc, row) => {
@@ -526,8 +545,13 @@ export default function ViewContributionsPage() {
       acc[row.currencyCode] = current + row.amount;
       return acc;
     }, {});
+    const totalLineCount = Math.max(1, Object.keys(totalsByCurrency).length);
+    if (y - 12 - (totalLineCount - 1) * 12 < bottomY) {
+      page += 1;
+      y = addHeader(page);
+    }
     const totalStartY = y - 12;
-    lines.push({ text: "Grand Total", size: 11, bold: true, x: 30, y: totalStartY });
+    lines.push({ text: "Grand Total", size: 11, bold: true, x: 30, y: totalStartY, page });
     Object.entries(totalsByCurrency).forEach(([code, amount], index) => {
       lines.push({
         text: `${code} ${formatAmount(amount)}`,
@@ -535,18 +559,37 @@ export default function ViewContributionsPage() {
         bold: true,
         x: 205,
         y: totalStartY - index * 12,
+        page,
       });
     });
 
-    const footerY = 32;
     const todayLong = new Intl.DateTimeFormat("en-US", {
       weekday: "long",
       month: "long",
       day: "numeric",
       year: "numeric",
     }).format(new Date());
-    lines.push({ text: todayLong, size: 10, x: 30, y: footerY, bold: false, italic: true });
-    lines.push({ text: "Page 1 of 1", size: 10, x: 520, y: footerY, align: "right", bold: false, italic: true });
+    for (let pageNumber = 1; pageNumber <= page; pageNumber += 1) {
+      lines.push({
+        text: todayLong,
+        size: 10,
+        x: 30,
+        y: footerY,
+        page: pageNumber,
+        bold: false,
+        italic: true,
+      });
+      lines.push({
+        text: `Page ${pageNumber} of ${page}`,
+        size: 10,
+        x: 520,
+        y: footerY,
+        page: pageNumber,
+        align: "right",
+        bold: false,
+        italic: true,
+      });
+    }
 
     const pdfBuffer = buildSimplePdf(lines);
     const blob = new Blob([pdfBuffer], { type: "application/pdf" });
@@ -783,6 +826,11 @@ export default function ViewContributionsPage() {
                           setTaxReceiptRecipients([]);
                           setTaxReceiptSendError(null);
                           setTaxReceiptSendResult(null);
+                          if (value !== "dailyEntry") {
+                            const range = previousMonthDateRange();
+                            setStartDate(range.start);
+                            setEndDate(range.end);
+                          }
                           if (value !== "view") {
                             setHasSearched(false);
                           }
@@ -826,38 +874,6 @@ export default function ViewContributionsPage() {
                       />
                     </div>
                   </div>
-                  {isViewMode ? (
-                    <>
-                      <div className={forms.row}>
-                        <label className={forms.label} htmlFor="contrib-start-date-entered">
-                          Start Date Entered
-                        </label>
-                        <div className={forms.control}>
-                          <input
-                            id="contrib-start-date-entered"
-                            type="date"
-                            className={forms.field}
-                            value={startDateEntered}
-                            onChange={(event) => setStartDateEntered(event.target.value)}
-                          />
-                        </div>
-                      </div>
-                      <div className={forms.row}>
-                        <label className={forms.label} htmlFor="contrib-end-date-entered">
-                          End Date Entered
-                        </label>
-                        <div className={forms.control}>
-                          <input
-                            id="contrib-end-date-entered"
-                            type="date"
-                            className={forms.field}
-                            value={endDateEntered}
-                            onChange={(event) => setEndDateEntered(event.target.value)}
-                          />
-                        </div>
-                      </div>
-                    </>
-                  ) : null}
                 </div>
                 <div className={forms.col}>
                   <div className={forms.row}>
@@ -937,7 +953,7 @@ export default function ViewContributionsPage() {
                 <div className={forms.col}>
                   <div className={forms.row}>
                     <label className={forms.label} htmlFor="daily-entry-date">
-                      Date
+                      Date Entered
                     </label>
                     <div className={forms.control}>
                       <input

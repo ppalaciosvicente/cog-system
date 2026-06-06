@@ -141,8 +141,6 @@ export default function EnterContributionsPage() {
   const [editSaving, setEditSaving] = useState(false);
   const searchTimeoutsRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
   const searchControllersRef = useRef<Map<number, AbortController>>(new Map());
-  const prefilledSearchRequestCounterRef = useRef(0);
-  const prefilledSearchRequestsRef = useRef<Map<number, number>>(new Map());
   const dailyEntryRequestIdRef = useRef(0);
 
   useEffect(() => {
@@ -176,14 +174,12 @@ export default function EnterContributionsPage() {
   useEffect(() => {
     const searchTimeouts = searchTimeoutsRef.current;
     const searchControllers = searchControllersRef.current;
-    const prefilledSearchRequests = prefilledSearchRequestsRef.current;
 
     return () => {
       searchTimeouts.forEach((timeoutId) => clearTimeout(timeoutId));
       searchControllers.forEach((controller) => controller.abort());
       searchTimeouts.clear();
       searchControllers.clear();
-      prefilledSearchRequests.clear();
     };
   }, []);
 
@@ -207,12 +203,6 @@ export default function EnterContributionsPage() {
         searchControllersRef.current.delete(rowId);
       }
     });
-    prefilledSearchRequestsRef.current.forEach((_, rowId) => {
-      if (!activeRowIds.has(rowId)) {
-        prefilledSearchRequestsRef.current.delete(rowId);
-      }
-    });
-
     setSearchResultsByRowId((current) =>
       Object.fromEntries(
         Object.entries(current).filter(([rowId]) => activeRowIds.has(Number(rowId))),
@@ -271,7 +261,6 @@ export default function EnterContributionsPage() {
 
     setSearchResultsByRowId((current) => ({ ...current, [rowId]: [] }));
     setSearchLoadingByRowId((current) => ({ ...current, [rowId]: false }));
-    prefilledSearchRequestsRef.current.delete(rowId);
     setOpenSearchRowId((current) => (current === rowId ? null : current));
   }
 
@@ -342,80 +331,22 @@ export default function EnterContributionsPage() {
     searchTimeoutsRef.current.set(rowId, timeoutId);
   }
 
-  async function loadPrefilledDonorWindow(rowId: number, memberId: number) {
-    const requestId = prefilledSearchRequestCounterRef.current + 1;
-    prefilledSearchRequestCounterRef.current = requestId;
-    prefilledSearchRequestsRef.current.set(rowId, requestId);
-
-    try {
-      const headers = await getAuthHeaders();
-      const params = new URLSearchParams({
-        windowFrom: String(memberId),
-        limit: "6",
-      });
-      const response = await fetch(`/api/contributions/donor-options?${params.toString()}`, {
-        credentials: "include",
-        headers,
-      });
-      const payload = (await response.json()) as {
-        households?: HouseholdOption[];
-        warning?: string | null;
-        error?: string;
-      };
-
-      if (!response.ok) {
-        throw new Error(payload.error ?? "Failed to load donors.");
-      }
-      if (prefilledSearchRequestsRef.current.get(rowId) !== requestId) return;
-
-      setSearchResultsByRowId((current) => ({
-        ...current,
-        [rowId]: payload.households ?? [],
-      }));
-      setMemberWarning(payload.warning ?? null);
-    } catch (error) {
-      if (prefilledSearchRequestsRef.current.get(rowId) !== requestId) return;
-      setSearchResultsByRowId((current) => ({ ...current, [rowId]: [] }));
-      setMemberError(error instanceof Error ? error.message : "Failed to load donors.");
-    } finally {
-      if (prefilledSearchRequestsRef.current.get(rowId) === requestId) {
-        prefilledSearchRequestsRef.current.delete(rowId);
-      }
-    }
-  }
-
   function handleSelectDonor(rowId: number, option: HouseholdOption) {
     const isUsDonor = option.countryCode?.trim().toUpperCase() === "US";
-    const nextPrefilledRow: { id: number | null } = { id: null };
-    setRows((current) => {
-      const selectedIndex = current.findIndex((row) => row.id === rowId);
-      if (selectedIndex === -1) return current;
-
-      const applyDonor = (row: DraftRow) => ({
-        ...row,
-        memberId: String(option.value),
-        memberQuery: option.label,
-        currencyCode: option.defaultCurrencyCode || row.currencyCode || "USD",
-        fundType: isUsDonor ? DEFAULT_US_FUND_TYPE : row.fundType,
-      });
-      return current.map((row, index) => {
-        if (row.id === rowId) return applyDonor(row);
-        if (
-          index === selectedIndex + 1 &&
-          !row.memberId &&
-          !row.memberQuery.trim()
-        ) {
-          nextPrefilledRow.id = row.id;
-          return applyDonor(row);
-        }
-        return row;
-      });
-    });
+    setRows((current) =>
+      current.map((row) =>
+        row.id === rowId
+          ? {
+              ...row,
+              memberId: String(option.value),
+              memberQuery: option.label,
+              currencyCode: option.defaultCurrencyCode || row.currencyCode || "USD",
+              fundType: isUsDonor ? DEFAULT_US_FUND_TYPE : row.fundType,
+            }
+          : row,
+      ),
+    );
     clearRowSearch(rowId);
-    const nextPrefilledRowId = nextPrefilledRow.id;
-    if (nextPrefilledRowId != null) {
-      void loadPrefilledDonorWindow(nextPrefilledRowId, option.value);
-    }
   }
 
   function addRow() {
@@ -758,20 +689,6 @@ export default function EnterContributionsPage() {
                 </div>
               </div>
             </div>
-            <div className={forms.actionsRow}>
-              <button type="button" onClick={addRow}>
-                Add Row
-              </button>
-              <button
-                type="button"
-                className={forms.actionsRowPrimaryButton}
-                onClick={handleSave}
-                disabled={saving}
-              >
-                {saving ? "Saving..." : "Save Contributions"}
-              </button>
-              {saveSuccess ? <span className={forms.actionsMsg}>{saveSuccess}</span> : null}
-            </div>
             {memberWarning ? (
               <p style={{ marginTop: 12, color: "#92400e" }}>{memberWarning}</p>
             ) : null}
@@ -784,9 +701,9 @@ export default function EnterContributionsPage() {
                   <tr>
                     <th className={forms.th}>Member</th>
                     <th className={forms.th}>Amount</th>
+                    <th className={forms.th}>Check No.</th>
                     <th className={forms.th}>Fund Type</th>
                     <th className={forms.th}>Currency</th>
-                    <th className={forms.th}>Check No.</th>
                     <th className={forms.th}>Contribution Type</th>
                     <th className={forms.th}>Comments</th>
                     <th className={forms.th}>Action</th>
@@ -831,6 +748,14 @@ export default function EnterContributionsPage() {
                           onChange={(event) => updateRow(row.id, "amount", event.target.value)}
                         />
                       </td>
+                      <td className={forms.td} style={{ minWidth: 120 }}>
+                        <input
+                          className={forms.field}
+                          value={row.checkNo}
+                          disabled={!isCheckFundType(row.fundType)}
+                          onChange={(event) => updateRow(row.id, "checkNo", event.target.value)}
+                        />
+                      </td>
                       <td className={forms.td} style={{ minWidth: 150 }}>
                         <select
                           className={forms.field}
@@ -858,14 +783,6 @@ export default function EnterContributionsPage() {
                             </option>
                           ))}
                         </select>
-                      </td>
-                      <td className={forms.td} style={{ minWidth: 120 }}>
-                        <input
-                          className={forms.field}
-                          value={row.checkNo}
-                          disabled={!isCheckFundType(row.fundType)}
-                          onChange={(event) => updateRow(row.id, "checkNo", event.target.value)}
-                        />
                       </td>
                       <td className={forms.td} style={{ minWidth: 180 }}>
                         <select
@@ -905,6 +822,20 @@ export default function EnterContributionsPage() {
                 </tbody>
               </table>
             </ScrollableTable>
+            <div className={forms.actionsRow} style={{ marginTop: 14 }}>
+              <button type="button" onClick={addRow}>
+                Add Row
+              </button>
+              <button
+                type="button"
+                className={forms.actionsRowPrimaryButton}
+                onClick={handleSave}
+                disabled={saving}
+              >
+                {saving ? "Saving..." : "Save Contributions"}
+              </button>
+              {saveSuccess ? <span className={forms.actionsMsg}>{saveSuccess}</span> : null}
+            </div>
           </section>
 
           <section className={forms.sectionCard} style={{ marginTop: 16 }}>

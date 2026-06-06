@@ -234,10 +234,11 @@ function buildTotalPerDonorPdf({
           width: 124,
           align: "right",
         });
-        doc.font("Helvetica").fontSize(15).text("From:", 40, 84);
-        doc.font("Helvetica").fontSize(14).text(formatShortDateLabel(startDate), 118, 84);
-        doc.font("Helvetica").fontSize(15).text("To:", 274, 84);
-        doc.font("Helvetica").fontSize(14).text(formatShortDateLabel(endDate), 335, 84);
+        doc.font("Helvetica").fontSize(15).text("Date deposited:", 40, 84);
+        doc.font("Helvetica").fontSize(15).text("From:", 168, 84);
+        doc.font("Helvetica").fontSize(14).text(formatShortDateLabel(startDate), 222, 84);
+        doc.font("Helvetica").fontSize(15).text("To:", 374, 84);
+        doc.font("Helvetica").fontSize(14).text(formatShortDateLabel(endDate), 408, 84);
       doc.font("Helvetica").fontSize(11).text(`Scope: ${scopeLabel}`, 40, 109, {
         width: 530,
       });

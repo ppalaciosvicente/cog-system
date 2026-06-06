@@ -99,7 +99,7 @@ function buildGrandTotalPdf({
     });
 
     doc.font("Helvetica").fontSize(12).text(
-      `From ${formatShortDateLabel(startDate)} through ${formatShortDateLabel(endDate)}`,
+      `Date deposited: From ${formatShortDateLabel(startDate)} through ${formatShortDateLabel(endDate)}`,
       0,
       105,
       {

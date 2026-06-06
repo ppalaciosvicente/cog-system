@@ -1013,7 +1013,7 @@ export default function ViewContributionsPage() {
                   {access.isAdmin ? (
                     <div className={forms.row}>
                       <label className={forms.label} htmlFor="daily-entry-scope">
-                        Entries
+                        Entered by
                       </label>
                       <div className={forms.control}>
                         <select

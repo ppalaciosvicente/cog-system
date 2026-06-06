@@ -270,7 +270,7 @@ function drawQuarterlyHeader(
   });
 
   doc.font("Helvetica").fontSize(12).text(
-    `${t.fromLabel} ${formatShortDateLabel(startDate, locale)} ${t.toLabel} ${formatShortDateLabel(endDate, locale)}`,
+    `Date deposited: ${t.fromLabel} ${formatShortDateLabel(startDate, locale)} ${t.toLabel} ${formatShortDateLabel(endDate, locale)}`,
     0,
     111,
     {

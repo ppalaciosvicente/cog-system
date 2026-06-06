@@ -153,7 +153,7 @@ function buildDailyEntryPdf({
     if (batches.length > 1) {
       const inlineGrandTotalHeight = 40 + totalsBlockHeight(totalsByCurrency);
       if (rowY + inlineGrandTotalHeight <= footerTopY - 12) {
-        rowY += 22;
+        rowY = Math.max(rowY + 22, footerTopY - 12 - inlineGrandTotalHeight);
         drawGrandTotalTitle(rowY);
         rowY += 30;
       } else {

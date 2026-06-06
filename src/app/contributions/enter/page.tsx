@@ -693,7 +693,6 @@ export default function EnterContributionsPage() {
               <p style={{ marginTop: 12, color: "#92400e" }}>{memberWarning}</p>
             ) : null}
             {memberError ? <p className={forms.error}>{memberError}</p> : null}
-            {saveError ? <p className={forms.error}>{saveError}</p> : null}
 
             <ScrollableTable style={{ marginTop: 12 }}>
               <table className={forms.table}>
@@ -835,6 +834,7 @@ export default function EnterContributionsPage() {
                 {saving ? "Saving..." : "Save Contributions"}
               </button>
               {saveSuccess ? <span className={forms.actionsMsg}>{saveSuccess}</span> : null}
+              {saveError ? <span className={forms.error}>{saveError}</span> : null}
             </div>
           </section>
 

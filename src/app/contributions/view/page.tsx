@@ -1262,10 +1262,9 @@ export default function ViewContributionsPage() {
                           Member {sortIndicator(sortKey === "memberName", sortDirection)}
                         </button>
                       </th>
-                      <th className={forms.th}>Country</th>
                       <th className={forms.th}>Amount</th>
-                      <th className={forms.th}>Fund Type</th>
                       <th className={forms.th}>Currency</th>
+                      <th className={forms.th}>Fund Type</th>
                       <th className={forms.th}>Check No.</th>
                       <th className={forms.th}>
                         <button
@@ -1302,7 +1301,7 @@ export default function ViewContributionsPage() {
                   <tbody>
                     {!hasRows ? (
                       <tr>
-                        <td className={forms.td} colSpan={12}>
+                        <td className={forms.td} colSpan={11}>
                           {loading
                             ? "Loading contributions..."
                             : "No contributions found for the selected filters."}
@@ -1312,14 +1311,9 @@ export default function ViewContributionsPage() {
                       visibleResultRows.map((row) => (
                         <tr key={row.id}>
                           <td className={forms.td}>{row.memberName}</td>
-                          <td className={forms.td}>
-                            {row.memberCountryCode
-                              ? countryNameByCode[row.memberCountryCode] ?? row.memberCountryCode
-                              : ""}
-                          </td>
                           <td className={forms.td}>{formatAmount(row.amount)}</td>
-                          <td className={forms.td}>{row.fundType}</td>
                           <td className={forms.td}>{row.currencyCode}</td>
+                          <td className={forms.td}>{row.fundType}</td>
                           <td className={forms.td}>{row.checkNo ?? ""}</td>
                           <td className={forms.td}>{row.contributionType}</td>
                           <td className={forms.td}>{row.dateDeposited}</td>

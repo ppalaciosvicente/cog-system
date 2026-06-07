@@ -1141,8 +1141,8 @@ export default function ContributionDonorsPage() {
                       <tr>
                         <th className={forms.th}>Member</th>
                         <th className={forms.th}>Amount</th>
-                        <th className={forms.th}>Fund Type</th>
                         <th className={forms.th}>Currency</th>
+                        <th className={forms.th}>Fund Type</th>
                         <th className={forms.th}>Check No.</th>
                         <th className={forms.th}>Contribution Type</th>
                         <th className={forms.th}>Date Deposited</th>
@@ -1164,8 +1164,8 @@ export default function ContributionDonorsPage() {
                           <tr key={row.id}>
                             <td className={forms.td}>{row.memberName}</td>
                             <td className={forms.td}>{formatAmount(row.amount)}</td>
-                            <td className={forms.td}>{row.fundType}</td>
                             <td className={forms.td}>{row.currencyCode}</td>
+                            <td className={forms.td}>{row.fundType}</td>
                             <td className={forms.td}>{row.checkNo ?? ""}</td>
                             <td className={forms.td}>{row.contributionType}</td>
                             <td className={forms.td}>{row.dateDeposited}</td>

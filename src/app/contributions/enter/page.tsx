@@ -746,7 +746,9 @@ export default function EnterContributionsPage() {
                         />
                       </td>
                       <td className={forms.td} style={{ minWidth: 90 }}>
-                        {row.currencyCode}
+                        <span style={{ display: "block", fontSize: 16, padding: "8px 10px" }}>
+                          {row.currencyCode}
+                        </span>
                       </td>
                       <td className={forms.td} style={{ minWidth: 120 }}>
                         <input
@@ -861,15 +863,15 @@ export default function EnterContributionsPage() {
                   <table className={forms.table}>
                     <thead>
                       <tr>
-                        <th className={forms.th}>Donor</th>
-                        <th className={forms.th}>Batch #</th>
+                        <th className={forms.th}>Member</th>
                         <th className={forms.th}>Amount</th>
-                        <th className={forms.th}>Fund Type</th>
                         <th className={forms.th}>Currency</th>
+                        <th className={forms.th}>Fund Type</th>
                         <th className={forms.th}>Check No.</th>
                         <th className={forms.th}>Contribution Type</th>
                         <th className={forms.th}>Date Deposited</th>
                         <th className={forms.th}>Date Entered</th>
+                        <th className={forms.th}>Batch #</th>
                         <th className={forms.th}>Comments</th>
                         <th className={forms.th}>Actions</th>
                       </tr>
@@ -878,14 +880,14 @@ export default function EnterContributionsPage() {
                       {dailyEntryRows.map((row) => (
                         <tr key={row.id}>
                           <td className={forms.td}>{row.donorLabel}</td>
-                          <td className={forms.td}>{row.batchNumber}</td>
                           <td className={forms.td}>{row.formattedAmount}</td>
-                          <td className={forms.td}>{row.fundType}</td>
                           <td className={forms.td}>{row.currencyCode}</td>
+                          <td className={forms.td}>{row.fundType}</td>
                           <td className={forms.td}>{row.checkNo}</td>
                           <td className={forms.td}>{row.contributionType}</td>
                           <td className={forms.td}>{row.dateDeposited}</td>
                           <td className={forms.td}>{row.dateEntered.slice(0, 10)}</td>
+                          <td className={forms.td}>{row.batchNumber}</td>
                           <td className={forms.td}>{row.comments}</td>
                           <td className={forms.td}>
                             <div className={forms.tableActions}>

@@ -1294,7 +1294,7 @@ export default function ViewContributionsPage() {
                           Date Entered {sortIndicator(sortKey === "dateEntered", sortDirection)}
                         </button>
                       </th>
-                      <th className={forms.th}>Batch No</th>
+                      <th className={forms.th}>Batch #</th>
                       <th className={forms.th}>Comments</th>
                       <th className={forms.th}>Actions</th>
                     </tr>

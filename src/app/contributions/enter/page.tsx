@@ -698,9 +698,9 @@ export default function EnterContributionsPage() {
                   <tr>
                     <th className={forms.th}>Member</th>
                     <th className={forms.th}>Amount</th>
+                    <th className={forms.th}>Currency</th>
                     <th className={forms.th}>Check No.</th>
                     <th className={forms.th}>Fund Type</th>
-                    <th className={forms.th}>Currency</th>
                     <th className={forms.th}>Contribution Type</th>
                     <th className={forms.th}>Comments</th>
                     <th className={forms.th}>Action</th>
@@ -745,6 +745,9 @@ export default function EnterContributionsPage() {
                           onChange={(event) => updateRow(row.id, "amount", event.target.value)}
                         />
                       </td>
+                      <td className={forms.td} style={{ minWidth: 90 }}>
+                        {row.currencyCode}
+                      </td>
                       <td className={forms.td} style={{ minWidth: 120 }}>
                         <input
                           className={forms.field}
@@ -763,20 +766,6 @@ export default function EnterContributionsPage() {
                           {fundTypeOptions.map((name) => (
                             <option key={name} value={name}>
                               {name}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className={forms.td} style={{ minWidth: 150 }}>
-                        <select
-                          className={forms.field}
-                          value={row.currencyCode}
-                          onChange={(event) => updateRow(row.id, "currencyCode", event.target.value)}
-                        >
-                          <option value="">Select currency</option>
-                          {currencyOptions.map((currency) => (
-                            <option key={currency.code} value={currency.code}>
-                              {currency.code} ({currency.symbol})
                             </option>
                           ))}
                         </select>

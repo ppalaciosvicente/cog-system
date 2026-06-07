@@ -1147,7 +1147,7 @@ export default function ContributionDonorsPage() {
                         <th className={forms.th}>Contribution Type</th>
                         <th className={forms.th}>Date Deposited</th>
                         <th className={forms.th}>Date Entered</th>
-                        <th className={forms.th}>Batch No</th>
+                        <th className={forms.th}>Batch #</th>
                         <th className={forms.th}>Comments</th>
                         <th className={forms.th}>Actions</th>
                       </tr>

@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import {
+  EditContributionDialog,
+  type ContributionEditDraft,
+} from "@/components/contributions/EditContributionDialog";
 import { ContributionPage } from "@/components/contributions/ContributionPage";
 import { ScrollableTable } from "@/components/ScrollableTable";
 import {
@@ -31,21 +35,6 @@ const DEFAULT_CURRENCY_OPTIONS: CurrencyOption[] = [
   { code: "AUD", name: "Australian Dollar", symbol: "A$" },
   { code: "NZD", name: "New Zealand Dollar", symbol: "NZ$" },
 ];
-
-type EditDraft = {
-  id: number;
-  memberId: string;
-  memberLabel: string;
-  amount: string;
-  fundType: string;
-  currencyCode: string;
-  checkNo: string;
-  contributionType: string;
-  dateDeposited: string;
-  dateEntered: string;
-  batchNumber: string;
-  comments: string;
-};
 
 type Mode = "view" | "grandTotal" | "totalPerDonor" | "dailyEntry" | "taxReceipts";
 type SortKey = "memberName" | "contributionType" | "dateDeposited" | "dateEntered";
@@ -96,7 +85,7 @@ function formatAmount(value: number) {
   return value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function toEditDraft(row: ContributionRecord): EditDraft {
+function toEditDraft(row: ContributionRecord): ContributionEditDraft {
   return {
     id: row.id,
     memberId: String(row.memberId),
@@ -144,7 +133,7 @@ export default function ViewContributionsPage() {
   const [reportDownloading, setReportDownloading] = useState<Mode | null>(null);
   const [reportMessage, setReportMessage] = useState<string | null>(null);
   const [reportError, setReportError] = useState<string | null>(null);
-  const [editDraft, setEditDraft] = useState<EditDraft | null>(null);
+  const [editDraft, setEditDraft] = useState<ContributionEditDraft | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
   const [editSaving, setEditSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -617,7 +606,7 @@ export default function ViewContributionsPage() {
     window.URL.revokeObjectURL(url);
   }
 
-  function updateEditField(field: keyof EditDraft, value: string) {
+  function updateEditField(field: keyof ContributionEditDraft, value: string) {
     setEditDraft((current) => {
       if (!current) return current;
       if (field === "fundType") {
@@ -641,7 +630,7 @@ export default function ViewContributionsPage() {
     });
   }
 
-  function buildEditPayload(draft: EditDraft): ContributionDraftInput {
+  function buildEditPayload(draft: ContributionEditDraft): ContributionDraftInput {
     const parsedMemberId = Number(draft.memberId);
     const parsedAmount = Number(draft.amount);
     const parsedBatchNumber = Number(draft.batchNumber);
@@ -1305,6 +1294,7 @@ export default function ViewContributionsPage() {
                           Date Entered {sortIndicator(sortKey === "dateEntered", sortDirection)}
                         </button>
                       </th>
+                      <th className={forms.th}>Batch No</th>
                       <th className={forms.th}>Comments</th>
                       <th className={forms.th}>Actions</th>
                     </tr>
@@ -1312,7 +1302,7 @@ export default function ViewContributionsPage() {
                   <tbody>
                     {!hasRows ? (
                       <tr>
-                        <td className={forms.td} colSpan={11}>
+                        <td className={forms.td} colSpan={12}>
                           {loading
                             ? "Loading contributions..."
                             : "No contributions found for the selected filters."}
@@ -1334,6 +1324,7 @@ export default function ViewContributionsPage() {
                           <td className={forms.td}>{row.contributionType}</td>
                           <td className={forms.td}>{row.dateDeposited}</td>
                           <td className={forms.td}>{row.dateEntered.slice(0, 10)}</td>
+                          <td className={forms.td}>{row.batchNumber ?? ""}</td>
                           <td className={forms.td}>{row.comments ?? ""}</td>
                           <td className={forms.td}>
                             <div className={forms.tableActions}>
@@ -1422,198 +1413,17 @@ export default function ViewContributionsPage() {
           ) : null}
 
           {editDraft ? (
-            <div className={forms.modalBackdrop} role="dialog" aria-modal="true">
-            <div className={forms.modalCard}>
-              <h2 className={forms.modalTitle}>Edit Contribution</h2>
-              <p className={forms.modalText}>Update the saved contribution and save your changes.</p>
-              <p
-                style={{
-                  marginTop: -4,
-                  marginBottom: 10,
-                  fontSize: 13,
-                  color: "#6b7280",
-                  fontStyle: "italic",
-                }}
-              >
-                Member changes aren&apos;t editable here. Delete and re-enter if the member was incorrect.
-              </p>
-              {editError ? <p className={forms.error}>{editError}</p> : null}
-              <div className={forms.col}>
-                <div className={forms.row}>
-                  <label className={forms.label} htmlFor="edit-contribution-member">
-                    Member
-                  </label>
-                  <div className={forms.control}>{editDraft.memberLabel}</div>
-                </div>
-                  <div className={forms.row}>
-                    <label className={forms.label} htmlFor="edit-contribution-amount">
-                      Amount
-                    </label>
-                    <div className={forms.control}>
-                      <input
-                        id="edit-contribution-amount"
-                        className={forms.field}
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={editDraft.amount}
-                        onChange={(event) => updateEditField("amount", event.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className={forms.row}>
-                    <label className={forms.label} htmlFor="edit-contribution-fund-type">
-                      Fund Type
-                    </label>
-                    <div className={forms.control}>
-                      <select
-                        id="edit-contribution-fund-type"
-                        className={forms.field}
-                        value={editDraft.fundType}
-                        onChange={(event) => updateEditField("fundType", event.target.value)}
-                      >
-                        <option value="">Select fund type</option>
-                        {fundTypeOptions.map((name) => (
-                          <option key={name} value={name}>
-                            {name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  <div className={forms.row}>
-                    <label className={forms.label} htmlFor="edit-contribution-check-no">
-                      Check No.
-                    </label>
-                    <div className={forms.control}>
-                      <input
-                        id="edit-contribution-check-no"
-                        className={forms.field}
-                        value={editDraft.checkNo}
-                        disabled={isCashFundType(editDraft.fundType)}
-                        onChange={(event) => updateEditField("checkNo", event.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className={forms.row}>
-                    <label className={forms.label} htmlFor="edit-contribution-currency">
-                      Currency
-                    </label>
-                    <div className={forms.control}>
-                      <select
-                        id="edit-contribution-currency"
-                        className={forms.field}
-                        value={editDraft.currencyCode}
-                        onChange={(event) => updateEditField("currencyCode", event.target.value)}
-                      >
-                        <option value="">Select currency</option>
-                        {currencyOptions.map((currency) => (
-                          <option key={currency.code} value={currency.code}>
-                            {currency.code} ({currency.symbol})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  <div className={forms.row}>
-                    <label className={forms.label} htmlFor="edit-contribution-type">
-                      Contribution Type
-                    </label>
-                    <div className={forms.control}>
-                      <select
-                        id="edit-contribution-type"
-                        className={forms.field}
-                        value={editDraft.contributionType}
-                        onChange={(event) => updateEditField("contributionType", event.target.value)}
-                      >
-                        <option value="">Select contribution type</option>
-                        {contributionTypeOptions.map((name) => (
-                          <option key={name} value={name}>
-                            {name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  <div className={forms.row}>
-                    <label className={forms.label} htmlFor="edit-contribution-date-deposited">
-                      Date Deposited
-                    </label>
-                    <div className={forms.control}>
-                      <input
-                        id="edit-contribution-date-deposited"
-                        type="date"
-                        className={forms.field}
-                        value={editDraft.dateDeposited}
-                        onChange={(event) => updateEditField("dateDeposited", event.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className={forms.row}>
-                    <label className={forms.label} htmlFor="edit-contribution-date-entered">
-                      Date Entered
-                    </label>
-                    <div className={forms.control}>
-                      <input
-                        id="edit-contribution-date-entered"
-                        type="date"
-                        className={forms.field}
-                        value={editDraft.dateEntered}
-                        onChange={(event) => updateEditField("dateEntered", event.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div className={forms.row}>
-                    <label className={forms.label} htmlFor="edit-contribution-batch-number">
-                      Batch Number
-                    </label>
-                    <div className={forms.control}>
-                      <input
-                        id="edit-contribution-batch-number"
-                        type="number"
-                        min="1"
-                        step="1"
-                        className={forms.field}
-                        value={editDraft.batchNumber}
-                        onChange={(event) =>
-                          updateEditField("batchNumber", event.target.value)
-                        }
-                      />
-                    </div>
-                  </div>
-                  <div className={forms.row}>
-                    <label className={forms.label} htmlFor="edit-contribution-comments">
-                      Comments
-                    </label>
-                    <div className={forms.control}>
-                      <input
-                        id="edit-contribution-comments"
-                        className={forms.field}
-                        value={editDraft.comments}
-                        onChange={(event) => updateEditField("comments", event.target.value)}
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className={forms.modalActions} style={{ marginTop: 16 }}>
-                  <button
-                    type="button"
-                    className={`${forms.button} ${forms.linkButtonLight} ${forms.linkButtonCompactTouch}`}
-                    onClick={() => setEditDraft(null)}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    className={forms.button}
-                    onClick={() => void handleSaveEdit()}
-                    disabled={editSaving}
-                  >
-                    {editSaving ? "Saving..." : "Save Changes"}
-                  </button>
-                </div>
-              </div>
-            </div>
+            <EditContributionDialog
+              draft={editDraft}
+              error={editError}
+              saving={editSaving}
+              fundTypeOptions={fundTypeOptions}
+              contributionTypeOptions={contributionTypeOptions}
+              currencyOptions={currencyOptions}
+              onChange={updateEditField}
+              onCancel={() => setEditDraft(null)}
+              onSave={() => void handleSaveEdit()}
+            />
           ) : null}
         </>
       )}

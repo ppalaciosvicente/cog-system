@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import {
+  EditContributionDialog,
+  type ContributionEditDraft,
+} from "@/components/contributions/EditContributionDialog";
 import { ContributionPage } from "@/components/contributions/ContributionPage";
 import { SearchCombobox } from "@/components/SearchCombobox";
 import { ScrollableTable } from "@/components/ScrollableTable";
@@ -77,21 +81,6 @@ type DonorPayload = {
   contributions: ContributionRecord[];
 };
 
-type EditDraft = {
-  id: number;
-  memberId: string;
-  donorLabel: string;
-  amount: string;
-  fundType: string;
-  currencyCode: string;
-  checkNo: string;
-  contributionType: string;
-  dateDeposited: string;
-  dateEntered: string;
-  batchNumber: string;
-  comments: string;
-};
-
 type TaxReceiptRecipientPreview = {
   representativeId: number;
   memberName: string;
@@ -136,11 +125,11 @@ function dateDaysAgoString(days: number) {
   return date.toISOString().slice(0, 10);
 }
 
-function toEditDraft(row: ContributionRecord): EditDraft {
+function toEditDraft(row: ContributionRecord): ContributionEditDraft {
   return {
     id: row.id,
     memberId: String(row.memberId),
-    donorLabel: row.memberName,
+    memberLabel: row.memberName,
     amount: String(row.amount),
     fundType: row.fundType,
     currencyCode: row.currencyCode,
@@ -173,7 +162,7 @@ export default function ContributionDonorsPage() {
   const [detail, setDetail] = useState<DonorPayload | null>(null);
   const [startDate, setStartDate] = useState(currentYearStartDateString());
   const [endDate, setEndDate] = useState(todayDateString());
-  const [editDraft, setEditDraft] = useState<EditDraft | null>(null);
+  const [editDraft, setEditDraft] = useState<ContributionEditDraft | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
   const [editSaving, setEditSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -331,7 +320,7 @@ export default function ContributionDonorsPage() {
     }
   }
 
-  function updateEditField(field: keyof EditDraft, value: string) {
+  function updateEditField(field: keyof ContributionEditDraft, value: string) {
     setEditDraft((current) => {
       if (!current) return current;
       if (field === "fundType") {
@@ -345,7 +334,7 @@ export default function ContributionDonorsPage() {
     });
   }
 
-  function buildEditPayload(draft: EditDraft): ContributionDraftInput {
+  function buildEditPayload(draft: ContributionEditDraft): ContributionDraftInput {
     const memberId = Number(draft.memberId);
     const amount = Number(draft.amount);
     const batchNumber = Number(draft.batchNumber);
@@ -1158,6 +1147,7 @@ export default function ContributionDonorsPage() {
                         <th className={forms.th}>Contribution Type</th>
                         <th className={forms.th}>Date Deposited</th>
                         <th className={forms.th}>Date Entered</th>
+                        <th className={forms.th}>Batch No</th>
                         <th className={forms.th}>Comments</th>
                         <th className={forms.th}>Actions</th>
                       </tr>
@@ -1165,7 +1155,7 @@ export default function ContributionDonorsPage() {
                     <tbody>
                       {filteredContributions.length === 0 ? (
                         <tr>
-                          <td className={forms.td} colSpan={10}>
+                          <td className={forms.td} colSpan={11}>
                             No contributions found for this donor.
                           </td>
                         </tr>
@@ -1180,6 +1170,7 @@ export default function ContributionDonorsPage() {
                             <td className={forms.td}>{row.contributionType}</td>
                             <td className={forms.td}>{row.dateDeposited}</td>
                             <td className={forms.td}>{formatDate(row.dateEntered)}</td>
+                            <td className={forms.td}>{row.batchNumber ?? ""}</td>
                             <td className={forms.td}>{row.comments ?? ""}</td>
                             <td className={forms.td}>
                               <div className={forms.tableActions}>
@@ -1214,200 +1205,17 @@ export default function ContributionDonorsPage() {
               </section>
 
               {editDraft ? (
-                <div className={forms.modalBackdrop} role="dialog" aria-modal="true">
-                  <div className={forms.modalCard}>
-                    <h2 className={forms.modalTitle}>Edit Contribution</h2>
-                    <p className={forms.modalText}>Update the saved contribution and save your changes.</p>
-                    <p
-                      style={{
-                        marginTop: -4,
-                        marginBottom: 10,
-                        fontSize: 13,
-                        color: "#6b7280",
-                        fontStyle: "italic",
-                      }}
-                    >
-                      Donor changes aren&apos;t editable here. Delete and re-enter if the donor was incorrect.
-                    </p>
-                    {editError ? <p className={forms.error}>{editError}</p> : null}
-                    <div className={forms.col}>
-                      <div className={forms.row}>
-                        <label className={forms.label} htmlFor="donor-edit-member">
-                          Donor
-                        </label>
-                        <div className={forms.control}>{editDraft.donorLabel || editDraft.memberId}</div>
-                      </div>
-                      <div className={forms.row}>
-                        <label className={forms.label} htmlFor="donor-edit-amount">
-                          Amount
-                        </label>
-                        <div className={forms.control}>
-                          <input
-                            id="donor-edit-amount"
-                            className={forms.field}
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={editDraft.amount}
-                            onChange={(event) => updateEditField("amount", event.target.value)}
-                          />
-                        </div>
-                      </div>
-                      <div className={forms.row}>
-                        <label className={forms.label} htmlFor="donor-edit-fund-type">
-                          Fund Type
-                        </label>
-                        <div className={forms.control}>
-                          <select
-                            id="donor-edit-fund-type"
-                            className={forms.field}
-                            value={editDraft.fundType}
-                            onChange={(event) => updateEditField("fundType", event.target.value)}
-                          >
-                            <option value="">Select fund type</option>
-                            {fundTypeOptions.map((name) => (
-                              <option key={name} value={name}>
-                                {name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                      <div className={forms.row}>
-                        <label className={forms.label} htmlFor="donor-edit-check-no">
-                          Check No.
-                        </label>
-                        <div className={forms.control}>
-                          <input
-                            id="donor-edit-check-no"
-                            className={forms.field}
-                            value={editDraft.checkNo}
-                            disabled={isCashFundType(editDraft.fundType)}
-                            onChange={(event) => updateEditField("checkNo", event.target.value)}
-                          />
-                        </div>
-                      </div>
-                      <div className={forms.row}>
-                        <label className={forms.label} htmlFor="donor-edit-currency">
-                          Currency
-                        </label>
-                        <div className={forms.control}>
-                          <select
-                            id="donor-edit-currency"
-                            className={forms.field}
-                            value={editDraft.currencyCode}
-                            onChange={(event) => updateEditField("currencyCode", event.target.value)}
-                          >
-                            <option value="">Select currency</option>
-                            {currencyOptions.map((currency) => (
-                              <option key={currency.code} value={currency.code}>
-                                {currency.code} ({currency.symbol})
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                      <div className={forms.row}>
-                        <label className={forms.label} htmlFor="donor-edit-contribution-type">
-                          Contribution Type
-                        </label>
-                        <div className={forms.control}>
-                          <select
-                            id="donor-edit-contribution-type"
-                            className={forms.field}
-                            value={editDraft.contributionType}
-                            onChange={(event) =>
-                              updateEditField("contributionType", event.target.value)
-                            }
-                          >
-                            <option value="">Select contribution type</option>
-                            {contributionTypeOptions.map((name) => (
-                              <option key={name} value={name}>
-                                {name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                      <div className={forms.row}>
-                        <label className={forms.label} htmlFor="donor-edit-date-deposited">
-                          Date Deposited
-                        </label>
-                        <div className={forms.control}>
-                          <input
-                            id="donor-edit-date-deposited"
-                            type="date"
-                            className={forms.field}
-                            value={editDraft.dateDeposited}
-                            onChange={(event) => updateEditField("dateDeposited", event.target.value)}
-                          />
-                        </div>
-                      </div>
-                      <div className={forms.row}>
-                        <label className={forms.label} htmlFor="donor-edit-date-entered">
-                          Date Entered
-                        </label>
-                        <div className={forms.control}>
-                          <input
-                            id="donor-edit-date-entered"
-                            type="date"
-                            className={forms.field}
-                            value={editDraft.dateEntered}
-                            onChange={(event) => updateEditField("dateEntered", event.target.value)}
-                          />
-                        </div>
-                      </div>
-                      <div className={forms.row}>
-                        <label className={forms.label} htmlFor="donor-edit-batch-number">
-                          Batch Number
-                        </label>
-                        <div className={forms.control}>
-                          <input
-                            id="donor-edit-batch-number"
-                            type="number"
-                            min="1"
-                            step="1"
-                            className={forms.field}
-                            value={editDraft.batchNumber}
-                            onChange={(event) =>
-                              updateEditField("batchNumber", event.target.value)
-                            }
-                          />
-                        </div>
-                      </div>
-                      <div className={forms.row}>
-                        <label className={forms.label} htmlFor="donor-edit-comments">
-                          Comments
-                        </label>
-                        <div className={forms.control}>
-                          <input
-                            id="donor-edit-comments"
-                            className={forms.field}
-                            value={editDraft.comments}
-                            onChange={(event) => updateEditField("comments", event.target.value)}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    <div className={forms.modalActions} style={{ marginTop: 16 }}>
-                      <button
-                        type="button"
-                        className={`${forms.button} ${forms.linkButtonLight} ${forms.linkButtonCompactTouch}`}
-                        onClick={() => setEditDraft(null)}
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="button"
-                        className={forms.button}
-                        onClick={() => void handleSaveEdit()}
-                        disabled={editSaving}
-                      >
-                        {editSaving ? "Saving..." : "Save Changes"}
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <EditContributionDialog
+                  draft={editDraft}
+                  error={editError}
+                  saving={editSaving}
+                  fundTypeOptions={fundTypeOptions}
+                  contributionTypeOptions={contributionTypeOptions}
+                  currencyOptions={currencyOptions}
+                  onChange={updateEditField}
+                  onCancel={() => setEditDraft(null)}
+                  onSave={() => void handleSaveEdit()}
+                />
               ) : null}
             </>
           ) : null}

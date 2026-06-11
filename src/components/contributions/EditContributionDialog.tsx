@@ -7,6 +7,11 @@ type CurrencyOption = {
   symbol: string;
 };
 
+type MemberOption = {
+  value: number;
+  label: string;
+};
+
 export type ContributionEditDraft = {
   id: number;
   memberId: string;
@@ -26,6 +31,8 @@ type EditContributionDialogProps = {
   draft: ContributionEditDraft;
   error: string | null;
   saving: boolean;
+  memberOptions: MemberOption[];
+  memberOptionsLoading?: boolean;
   fundTypeOptions: string[];
   contributionTypeOptions: string[];
   currencyOptions: CurrencyOption[];
@@ -42,6 +49,8 @@ export function EditContributionDialog({
   draft,
   error,
   saving,
+  memberOptions,
+  memberOptionsLoading = false,
   fundTypeOptions,
   contributionTypeOptions,
   currencyOptions,
@@ -49,6 +58,10 @@ export function EditContributionDialog({
   onCancel,
   onSave,
 }: EditContributionDialogProps) {
+  const hasCurrentMemberOption = memberOptions.some(
+    (option) => String(option.value) === draft.memberId,
+  );
+
   function handleFundTypeChange(value: string) {
     onChange("fundType", value);
     if (isCashFundType(value)) {
@@ -61,22 +74,31 @@ export function EditContributionDialog({
       <div className={forms.modalCard}>
         <h2 className={forms.modalTitle}>Edit Contribution</h2>
         <p className={forms.modalText}>Update the saved contribution and save your changes.</p>
-        <p
-          style={{
-            marginTop: -4,
-            marginBottom: 10,
-            fontSize: 13,
-            color: "#6b7280",
-            fontStyle: "italic",
-          }}
-        >
-          Member changes aren&apos;t editable here. Delete and re-enter if the member was incorrect.
-        </p>
         {error ? <p className={forms.error}>{error}</p> : null}
         <div className={forms.col}>
           <div className={forms.row}>
-            <label className={forms.label}>Member</label>
-            <div className={forms.control}>{draft.memberLabel || draft.memberId}</div>
+            <label className={forms.label} htmlFor="edit-contribution-member">
+              Member
+            </label>
+            <div className={forms.control}>
+              <select
+                id="edit-contribution-member"
+                className={forms.field}
+                value={draft.memberId}
+                disabled={memberOptionsLoading}
+                onChange={(event) => onChange("memberId", event.target.value)}
+              >
+                <option value="">Select member</option>
+                {draft.memberId && !hasCurrentMemberOption ? (
+                  <option value={draft.memberId}>{draft.memberLabel || draft.memberId}</option>
+                ) : null}
+                {memberOptions.map((member) => (
+                  <option key={member.value} value={member.value}>
+                    {member.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
           <div className={forms.row}>
             <label className={forms.label} htmlFor="edit-contribution-amount">

@@ -27,6 +27,12 @@ type CurrencyOption = {
   symbol: string;
 };
 
+type HouseholdOption = {
+  value: number;
+  label: string;
+  memberIds: number[];
+};
+
 const DEFAULT_CURRENCY_OPTIONS: CurrencyOption[] = [
   { code: "USD", name: "US Dollar", symbol: "$" },
   { code: "CAD", name: "Canadian Dollar", symbol: "C$" },
@@ -124,6 +130,7 @@ export default function ViewContributionsPage() {
   const [countryOptions, setCountryOptions] = useState<string[]>([]);
   const [countryNameByCode, setCountryNameByCode] = useState<Record<string, string>>({});
   const [currencyOptions, setCurrencyOptions] = useState<CurrencyOption[]>(DEFAULT_CURRENCY_OPTIONS);
+  const [householdOptions, setHouseholdOptions] = useState<HouseholdOption[]>([]);
   const [householdDefaultCurrencyByRepresentative, setHouseholdDefaultCurrencyByRepresentative] =
     useState<Record<string, string>>({});
   const [rows, setRows] = useState<ContributionRecord[]>([]);
@@ -163,6 +170,7 @@ export default function ViewContributionsPage() {
         const payload = await getContributionMemberOptionsCached();
 
         if (!cancelled) {
+          setHouseholdOptions(payload.households ?? []);
           setHouseholdDefaultCurrencyByRepresentative(
             payload.householdDefaultCurrencyByRepresentative ?? {},
           );
@@ -1411,6 +1419,7 @@ export default function ViewContributionsPage() {
               draft={editDraft}
               error={editError}
               saving={editSaving}
+              memberOptions={householdOptions}
               fundTypeOptions={fundTypeOptions}
               contributionTypeOptions={contributionTypeOptions}
               currencyOptions={currencyOptions}

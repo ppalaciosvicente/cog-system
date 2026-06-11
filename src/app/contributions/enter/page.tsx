@@ -13,7 +13,10 @@ import {
   CONTRIBUTION_FUND_TYPE_NAMES,
   CONTRIBUTION_TYPE_NAMES,
 } from "@/lib/contributions";
-import { getContributionLookupsCached } from "@/lib/contributions-client-cache";
+import {
+  getContributionLookupsCached,
+  getContributionMemberOptionsCached,
+} from "@/lib/contributions-client-cache";
 import { getAuthHeaders } from "@/lib/supabase/client";
 import forms from "@/styles/forms.module.css";
 
@@ -21,7 +24,7 @@ type HouseholdOption = {
   value: number;
   label: string;
   memberIds: number[];
-  defaultCurrencyCode: string;
+  defaultCurrencyCode?: string;
   countryCode?: string;
 };
 
@@ -106,6 +109,9 @@ export default function EnterContributionsPage() {
     ...CONTRIBUTION_TYPE_NAMES,
   ]);
   const [currencyOptions, setCurrencyOptions] = useState<CurrencyOption[]>(DEFAULT_CURRENCY_OPTIONS);
+  const [editHouseholdOptions, setEditHouseholdOptions] = useState<HouseholdOption[]>([]);
+  const [householdDefaultCurrencyByRepresentative, setHouseholdDefaultCurrencyByRepresentative] =
+    useState<Record<string, string>>({});
   const [searchResultsByRowId, setSearchResultsByRowId] = useState<Record<number, HouseholdOption[]>>({});
   const [searchLoadingByRowId, setSearchLoadingByRowId] = useState<Record<number, boolean>>({});
   const [openSearchRowId, setOpenSearchRowId] = useState<number | null>(null);
@@ -156,6 +162,30 @@ export default function EnterContributionsPage() {
     }
 
     void loadLookups();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadMemberOptions() {
+      try {
+        const payload = await getContributionMemberOptionsCached();
+
+        if (!cancelled) {
+          setEditHouseholdOptions(payload.households ?? []);
+          setHouseholdDefaultCurrencyByRepresentative(
+            payload.householdDefaultCurrencyByRepresentative ?? {},
+          );
+        }
+      } catch {
+        // The existing selected member is still shown in the edit dialog.
+      }
+    }
+
+    void loadMemberOptions();
     return () => {
       cancelled = true;
     };
@@ -596,7 +626,19 @@ export default function EnterContributionsPage() {
   }
 
   function updateEditField(field: keyof ContributionEditDraft, value: string) {
-    setEditDraft((current) => (current ? { ...current, [field]: value } : current));
+    setEditDraft((current) => {
+      if (!current) return current;
+      if (field === "memberId") {
+        return {
+          ...current,
+          memberId: value,
+          currencyCode: value
+            ? (householdDefaultCurrencyByRepresentative[value] ?? current.currencyCode ?? "USD")
+            : current.currencyCode,
+        };
+      }
+      return { ...current, [field]: value };
+    });
   }
 
   function buildEditPayload(draft: ContributionEditDraft): ContributionDraftInput {
@@ -929,6 +971,7 @@ export default function EnterContributionsPage() {
               draft={editDraft}
               error={editError}
               saving={editSaving}
+              memberOptions={editHouseholdOptions}
               fundTypeOptions={fundTypeOptions}
               contributionTypeOptions={contributionTypeOptions}
               currencyOptions={currencyOptions}

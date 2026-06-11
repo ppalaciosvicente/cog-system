@@ -23,6 +23,7 @@ type HouseholdOption = {
   value: number;
   label: string;
   memberIds: number[];
+  defaultCurrencyCode?: string;
 };
 
 type CurrencyOption = {
@@ -328,6 +329,18 @@ export default function ContributionDonorsPage() {
           ...current,
           fundType: value,
           checkNo: isCashFundType(value) ? "" : current.checkNo,
+        };
+      }
+      if (field === "memberId") {
+        const selectedMember = editHouseholdOptions.find(
+          (option) => String(option.value) === value,
+        );
+        return {
+          ...current,
+          memberId: value,
+          currencyCode: value
+            ? (selectedMember?.defaultCurrencyCode ?? current.currencyCode ?? "USD")
+            : current.currencyCode,
         };
       }
       return { ...current, [field]: value };
@@ -1209,6 +1222,8 @@ export default function ContributionDonorsPage() {
                   draft={editDraft}
                   error={editError}
                   saving={editSaving}
+                  memberOptions={editHouseholdOptions}
+                  memberOptionsLoading={loadingEditOptions}
                   fundTypeOptions={fundTypeOptions}
                   contributionTypeOptions={contributionTypeOptions}
                   currencyOptions={currencyOptions}

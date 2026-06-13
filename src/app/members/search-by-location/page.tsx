@@ -283,6 +283,11 @@ export default function MembersSearchByLocationPage() {
                     : false,
                 );
           setCountryOptions(filteredCountries);
+          setCountry(
+            filteredCountries.some((option) => option.value.toUpperCase() === "US")
+              ? "US"
+              : "",
+          );
           setUsStateOptions(lookups.usStateOptions);
           setCanadaStateOptions(lookups.canadaStateOptions);
           setAustraliaStateOptions(lookups.australiaStateOptions);

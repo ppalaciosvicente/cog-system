@@ -36,6 +36,14 @@ type EnsureAccountResult = {
   sent?: "invite" | "reset" | "rate_limited";
 };
 
+const accessRoleNames = [
+  "emc_admin",
+  "emc_superuser",
+  "emc_user",
+  "contrib_admin",
+  "contrib_user",
+];
+
 function resolveAppOrigin(request: NextRequest) {
   const configured = String(process.env.NEXT_PUBLIC_APP_URL ?? "")
     .trim()
@@ -88,6 +96,10 @@ function highestContribAccessRoleName(
   if (roleNames.includes("contrib_admin")) return "contrib_admin";
   if (roleNames.includes("contrib_user")) return "contrib_user";
   return null;
+}
+
+function hasAccessRole(roleNames: string[]) {
+  return roleNames.some((roleName) => accessRoleNames.includes(roleName));
 }
 
 async function ensureActiveAccountForMember(
@@ -421,15 +433,6 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "Missing role update payload." }, { status: 400 });
   }
 
-  const supabase = createServiceRoleClient();
-  const ensured = await ensureActiveAccountForMember(supabase, request, memberId, {
-    skipEmail: Boolean(payload.skipEmail),
-  });
-  if (ensured.error || !ensured.accountId) {
-    return NextResponse.json({ error: ensured.error ?? "Failed to ensure account." }, { status: 500 });
-  }
-  const accountId = ensured.accountId;
-
   const roleNamesToResolve = [
     "emc_admin",
     "emc_superuser",
@@ -437,6 +440,7 @@ export async function PUT(request: NextRequest) {
     "contrib_admin",
     "contrib_user",
   ] as const;
+  const supabase = createServiceRoleClient();
   const { data: roleRows, error: roleErr } = await supabase
     .from("emcroles")
     .select("id,rolename")
@@ -460,6 +464,58 @@ export async function PUT(request: NextRequest) {
   if (contribRoleName && !roleIdByName.has(contribRoleName)) {
     return NextResponse.json({ error: `Role ${contribRoleName} was not found.` }, { status: 500 });
   }
+
+  const { data: existingAccountRows, error: existingAccountErr } = await supabase
+    .from("emcaccounts")
+    .select("id,memberid,isactive")
+    .eq("memberid", memberId)
+    .eq("isactive", true)
+    .order("id", { ascending: false })
+    .limit(1);
+
+  if (existingAccountErr) {
+    return NextResponse.json({ error: existingAccountErr.message }, { status: 500 });
+  }
+
+  const existingAccount = (existingAccountRows ?? [])[0] as AccountRow | undefined;
+  let existingRoleNames: string[] = [];
+  if (existingAccount?.id) {
+    const { data: existingRoleRows, error: existingRoleErr } = await supabase
+      .from("emcaccountroles")
+      .select("emcroles(rolename)")
+      .eq("accountid", existingAccount.id);
+
+    if (existingRoleErr) {
+      return NextResponse.json({ error: existingRoleErr.message }, { status: 500 });
+    }
+
+    existingRoleNames = ((existingRoleRows ?? []) as AccountRoleWithAccountId[])
+      .map((row) => {
+        const roleEntry = Array.isArray(row.emcroles)
+          ? row.emcroles[0] ?? null
+          : row.emcroles ?? null;
+        return String(roleEntry?.rolename ?? "").trim().toLowerCase();
+      })
+      .filter(Boolean);
+  }
+
+  const hadAccess = hasAccessRole(existingRoleNames);
+  const willHaveAccess = Boolean(
+    (updateEmcRole && emcRoleName) ||
+      (updateContribRole && contribRoleName) ||
+      (!updateEmcRole && highestAccessRoleName(existingRoleNames)) ||
+      (!updateContribRole && highestContribAccessRoleName(existingRoleNames)),
+  );
+  const shouldSendInitialAccessEmail =
+    !payload.skipEmail && !hadAccess && willHaveAccess;
+
+  const ensured = await ensureActiveAccountForMember(supabase, request, memberId, {
+    skipEmail: !shouldSendInitialAccessEmail,
+  });
+  if (ensured.error || !ensured.accountId) {
+    return NextResponse.json({ error: ensured.error ?? "Failed to ensure account." }, { status: 500 });
+  }
+  const accountId = ensured.accountId;
 
   const managedRoleIds: number[] = [];
   if (updateEmcRole) {

@@ -744,7 +744,7 @@ export default function EldersDetailsPage() {
               "Account updated. Email already sent recently; Supabase rate limit applies for about a minute.";
           }
         }
-      } catch (err) {
+      } catch {
         accessError = "Saved elder changes, but failed to update account access (network error).";
       }
     }

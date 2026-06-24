@@ -90,7 +90,7 @@ export async function DELETE(
     return NextResponse.json(
       {
         error:
-          "This member belongs to a household. Please unlink the household/spouse relationship first and you will be able to delete the member afterwards.",
+          "This member belongs to a household. Please unlink the household/spouse relationship first. You will be able to delete the member afterwards.",
       },
       { status: 400 },
     );

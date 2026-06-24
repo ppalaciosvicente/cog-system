@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, getAuthHeaders } from "@/lib/supabase/client";
 import { fetchCountryAndUSStateLookups } from "@/lib/lookups";
 import { CountryStatePicker } from "@/components/CountryStatePicker";
 import { BackLink } from "@/components/BackLink";
@@ -110,6 +110,7 @@ export default function MembersPage() {
   const [editMode, setEditMode] = useState(false);
   const [form, setForm] = useState<MemberDetail | null>(null);
   const [dirty, setDirty] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null); // API errors
@@ -602,6 +603,67 @@ export default function MembersPage() {
     setSelectedId(form.id);
   }
 
+  async function deleteMember(confirmAccountDelete = false) {
+    if (!isAdmin || !member) return;
+
+    setSaveMsg(null);
+    setDetailError(null);
+    setValidationError(null);
+    setDeleteLoading(true);
+
+    try {
+      const response = await fetch(`/api/members/${member.id}`, {
+        method: "DELETE",
+        headers: {
+          ...(await getAuthHeaders()),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ confirmAccountDelete }),
+      });
+      const payload = await response.json().catch(() => ({}));
+
+      if (response.status === 409 && payload?.code === "active_account") {
+        const ok = window.confirm(
+          typeof payload.error === "string"
+            ? payload.error
+            : "This member has an active EMC account linked to them. Are you sure you want to delete both the member and the associated account?",
+        );
+        if (ok) {
+          await deleteMember(true);
+        }
+        return;
+      }
+
+      if (!response.ok) {
+        window.alert(
+          typeof payload?.error === "string" ? payload.error : "Failed to delete member.",
+        );
+        return;
+      }
+
+      const deletedId = member.id;
+      setMemberOptions((prev) => prev.filter((row) => row.id !== deletedId));
+      setSelectedId(null);
+      setMember(null);
+      setForm(null);
+      setDirty(false);
+      setEditMode(false);
+      setSaveMsg("Member deleted.");
+    } finally {
+      setDeleteLoading(false);
+    }
+  }
+
+  function confirmDeleteMember() {
+    if (!member) return;
+    const ok = window.confirm(
+      `Delete member ${displayName(member)}? This cannot be undone.`,
+    );
+    if (ok) {
+      void deleteMember();
+    }
+  }
+
   if (pageLoading) {
     return <main className={`${forms.page} ${forms.pageWarn} ${forms.compactPage}`}>Loading…</main>;
   }
@@ -697,6 +759,14 @@ export default function MembersPage() {
               style={{ opacity: !dirty || !editMode ? 0.5 : 1 }}
             >
               Save
+            </button>
+
+            <button
+              disabled={!member || deleteLoading}
+              onClick={confirmDeleteMember}
+              style={{ opacity: !member || deleteLoading ? 0.5 : 1 }}
+            >
+              {deleteLoading ? "Deleting..." : "Delete"}
             </button>
 
             {saveMsg && <span className={forms.actionsMsg}>{saveMsg}</span>}

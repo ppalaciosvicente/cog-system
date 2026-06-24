@@ -107,7 +107,7 @@ export async function DELETE(
     return NextResponse.json(
       {
         error:
-          "This member has an elder/area assignment. Remove that assignment before deleting this member.",
+          "This member is an elder with areas of responsibility assigned to him/her. Please remove those assignments first and delete the member afterwards.",
       },
       { status: 400 },
     );

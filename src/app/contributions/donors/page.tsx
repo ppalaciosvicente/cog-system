@@ -658,64 +658,93 @@ export default function ContributionDonorsPage() {
       return [text.slice(0, lastSpace), text.slice(lastSpace + 1).trimStart()];
     };
 
-    const lines: Parameters<typeof buildSimplePdf>[0] = [
-      { text: "Contributions", size: 18, bold: true, x: 30, y: 760 },
-      { text: `Donor: ${detail?.donorLabel ?? ""}`, size: 12, x: 30, y: 742 },
-      { text: `Date Deposited: ${startDate || "earliest"} to ${endDate || todayDateString()}`, size: 12, x: 30, y: 726 },
-      { text: "Member", bold: true, size: 11, x: 30, y: 704 },
-      { text: "Amount", bold: true, size: 11, x: 190, y: 704 },
-      { text: "Fund", bold: true, size: 11, x: 255, y: 704 },
-      { text: "Type", bold: true, size: 11, x: 360, y: 704 },
-      { text: "Date Dep.", bold: true, size: 11, x: 470, y: 704 },
-      { text: "Date Ent.", bold: true, size: 11, x: 540, y: 704 },
-    ];
+    const lines: Parameters<typeof buildSimplePdf>[0] = [];
+    let page = 1;
+    const footerY = 32;
+    const bottomY = 66;
+    const addHeader = (pageNumber: number) => {
+      lines.push({ text: "Contributions", size: 18, bold: true, x: 30, y: 760, page: pageNumber });
+      lines.push({ text: `Donor: ${detail?.donorLabel ?? ""}`, size: 12, x: 30, y: 742, page: pageNumber });
+      lines.push({
+        text: `Date Deposited: ${startDate || "earliest"} to ${endDate || todayDateString()}`,
+        size: 12,
+        x: 30,
+        y: 726,
+        page: pageNumber,
+      });
+      lines.push({ text: "Member", bold: true, size: 11, x: 30, y: 704, page: pageNumber });
+      lines.push({ text: "Amount", bold: true, size: 11, x: 190, y: 704, page: pageNumber });
+      lines.push({ text: "Fund", bold: true, size: 11, x: 255, y: 704, page: pageNumber });
+      lines.push({ text: "Type", bold: true, size: 11, x: 360, y: 704, page: pageNumber });
+      lines.push({ text: "Date Dep.", bold: true, size: 11, x: 470, y: 704, page: pageNumber });
+      lines.push({ text: "Date Ent.", bold: true, size: 11, x: 540, y: 704, page: pageNumber });
+      return 688;
+    };
 
-    let y = 688;
+    let y = addHeader(page);
     for (const row of filteredContributions) {
       const memberLines = wrapLine(row.memberName, 18);
       const fundLines = wrapLine(row.fundType, 14);
       const checkLines = row.checkNo ? [`(${row.checkNo})`] : [];
       const fundBlockLines = fundLines.length + checkLines.length;
       const maxLines = Math.max(memberLines.length, fundBlockLines || 1);
+      const rowHeight = maxLines * 11 + 2;
+      if (y - rowHeight < bottomY) {
+        page += 1;
+        y = addHeader(page);
+      }
 
       memberLines.forEach((text, idx) => {
-        lines.push({ text, size: 10, x: 30, y: y - idx * 11 });
+        lines.push({ text, size: 10, x: 30, y: y - idx * 11, page });
       });
       const amountText = `${currencySymbol(row.currencyCode)} ${formatAmount(row.amount)}`;
-      lines.push({ text: amountText, size: 10, x: 190, y });
+      lines.push({ text: amountText, size: 10, x: 190, y, page });
       fundLines.forEach((text, idx) => {
-        lines.push({ text, size: 10, x: 255, y: y - idx * 11 });
+        lines.push({ text, size: 10, x: 255, y: y - idx * 11, page });
       });
       checkLines.forEach((text, idx) => {
-        lines.push({ text, size: 10, x: 255, y: y - (fundLines.length + idx) * 11 });
+        lines.push({ text, size: 10, x: 255, y: y - (fundLines.length + idx) * 11, page });
       });
-      lines.push({ text: row.contributionType, size: 10, x: 360, y });
-      lines.push({ text: row.dateDeposited, size: 10, x: 470, y });
-      lines.push({ text: formatDate(row.dateEntered), size: 10, x: 540, y });
+      lines.push({ text: row.contributionType, size: 10, x: 360, y, page });
+      lines.push({ text: row.dateDeposited, size: 10, x: 470, y, page });
+      lines.push({ text: formatDate(row.dateEntered), size: 10, x: 540, y, page });
 
-      y -= maxLines * 11 + 2;
-      if (y < 80) break;
+      y -= rowHeight;
     }
 
     const totalAmount = filteredContributions.reduce((sum, r) => sum + r.amount, 0);
-    lines.push({ text: "Grand Total", size: 11, bold: true, x: 30, y: y - 12 });
+    if (y - 12 < bottomY) {
+      page += 1;
+      y = addHeader(page);
+    }
+    lines.push({ text: "Grand Total", size: 11, bold: true, x: 30, y: y - 12, page });
     lines.push({
       text: `${currencySymbol(filteredContributions[0].currencyCode)} ${formatAmount(totalAmount)}`,
       size: 11,
       bold: true,
       x: 190,
       y: y - 12,
+      page,
     });
 
-    const footerY = 32;
     const todayLong = new Intl.DateTimeFormat("en-US", {
       weekday: "long",
       month: "long",
       day: "numeric",
       year: "numeric",
     }).format(new Date());
-    lines.push({ text: todayLong, size: 10, x: 30, y: footerY, italic: true });
-    lines.push({ text: "Page 1 of 1", size: 10, x: 520, y: footerY, align: "right", italic: true });
+    for (let pageNumber = 1; pageNumber <= page; pageNumber += 1) {
+      lines.push({ text: todayLong, size: 10, x: 30, y: footerY, page: pageNumber, italic: true });
+      lines.push({
+        text: `Page ${pageNumber} of ${page}`,
+        size: 10,
+        x: 520,
+        y: footerY,
+        page: pageNumber,
+        align: "right",
+        italic: true,
+      });
+    }
 
     const pdfBuffer = buildSimplePdf(lines);
     const blob = new Blob([pdfBuffer], { type: "application/pdf" });

@@ -115,6 +115,7 @@ export async function sendTaxReceiptEmail({
   const html = [
     `<p>Dear ${safeName},</p>`,
     `<p>Please find your tax receipt attached for the period ${startDate} to ${endDate}.</p>`,
+    "<p>This is an automated email. Please do not reply.</p>",
     "<p>Sincerely,<br/>COG-PKG Team</p>",
   ].join("");
 

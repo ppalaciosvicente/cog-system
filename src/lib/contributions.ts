@@ -82,6 +82,7 @@ const CONTRIBUTION_DONOR_STATUS_NAMES = new Set([
   "disfellowship but tithing",
   "disfellowedship but tithing",
   "disfellowed but tithing",
+  "suspended but tithing",
   "not yet in fellowship",
 ]);
 

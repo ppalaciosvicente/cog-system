@@ -29,6 +29,7 @@ type LookupsPayload = {
   countryCurrencyByCode: Record<string, string>;
   countries: Array<{ code: string; name: string }>;
   countryNameByCode: Record<string, string>;
+  memberCountryCodes: string[];
 };
 
 let lookupsCache: { expiresAt: number; payload: LookupsPayload } | null = null;
@@ -44,17 +45,48 @@ function normalizeCode(value: string | null | undefined) {
     .toUpperCase();
 }
 
+async function loadMemberCountryCodes(supabase: ReturnType<typeof createServiceRoleClient>) {
+  const codes = new Set<string>();
+  const pageSize = 1000;
+  // Paginate so Supabase's row limit cannot hide countries on later pages.
+  for (let offset = 0; ; offset += pageSize) {
+    const { data, error } = await supabase.from("emcmember")
+      .select("countrycode").not("countrycode", "is", null)
+      .order("id", { ascending: true }).range(offset, offset + pageSize - 1);
+    if (error) throw new Error(error.message);
+    for (const row of data ?? []) {
+      const code = normalizeCode(row.countrycode);
+      if (code) codes.add(code);
+    }
+    if (!data || data.length < pageSize) break;
+  }
+  return [...codes];
+}
+
 export async function GET(request: NextRequest) {
   const access = await getContributionAccess(request);
   if (!access.ok) {
     return NextResponse.json({ error: access.error }, { status: access.status });
   }
 
+  // Cache shared lookup data, then apply the current user's access on every response.
+  const respond = (payload: LookupsPayload) => NextResponse.json({
+    ...payload,
+    countries: payload.countries.filter((row) => access.isAdmin || access.allowedCountryCodes.includes(row.code)),
+    memberCountryCodes: payload.memberCountryCodes.filter((code) => access.isAdmin || access.allowedCountryCodes.includes(code)),
+  });
+
   if (lookupsCache && lookupsCache.expiresAt > Date.now()) {
-    return NextResponse.json(lookupsCache.payload);
+    return respond(lookupsCache.payload);
   }
 
   const supabase = createServiceRoleClient();
+  let memberCountryCodes: string[];
+  try {
+    memberCountryCodes = await loadMemberCountryCodes(supabase);
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Failed to load member countries." }, { status: 500 });
+  }
   const [
     { data: fundTypeRows, error: fundTypeErr },
     { data: contributionTypeRows, error: contributionTypeErr },
@@ -114,15 +146,13 @@ export async function GET(request: NextRequest) {
     currencies,
     countryCurrencyByCode,
     countryNameByCode,
-    countries: (access.isAdmin
-      ? countries
-      : countries.filter((row) => access.allowedCountryCodes.includes(row.code))
-    ).sort((a, b) => a.name.localeCompare(b.name)),
+    countries: countries.sort((a, b) => a.name.localeCompare(b.name)),
+    memberCountryCodes,
   };
   lookupsCache = {
     expiresAt: Date.now() + LOOKUPS_CACHE_TTL_MS,
     payload,
   };
 
-  return NextResponse.json(payload);
+  return respond(payload);
 }

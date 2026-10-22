@@ -17,6 +17,7 @@ export type ContributionLookupsPayload = {
   contributionTypes?: string[];
   currencies?: ContributionCurrencyOption[];
   countryCurrencyByCode?: Record<string, string>;
+  memberCountryCodes?: string[];
   countries?: Array<{ code: string; name: string }>;
   countryNameByCode?: Record<string, string>;
 };

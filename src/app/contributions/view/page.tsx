@@ -129,6 +129,7 @@ export default function ViewContributionsPage() {
   const [contributionTypeOptions, setContributionTypeOptions] = useState<string[]>([
     ...CONTRIBUTION_TYPE_NAMES,
   ]);
+  const [memberCountryCodes, setMemberCountryCodes] = useState<string[]>([]);
   const [countryOptions, setCountryOptions] = useState<string[]>([]);
   const [countryNameByCode, setCountryNameByCode] = useState<Record<string, string>>({});
   const [currencyOptions, setCurrencyOptions] = useState<CurrencyOption[]>(DEFAULT_CURRENCY_OPTIONS);
@@ -208,6 +209,7 @@ export default function ViewContributionsPage() {
         if (Array.isArray(payload.countries) && payload.countries.length > 0) {
           setCountryOptions(payload.countries.map((row) => row.code));
         }
+        setMemberCountryCodes(payload.memberCountryCodes ?? []);
         if (payload.countryNameByCode) {
           setCountryNameByCode(payload.countryNameByCode);
         }
@@ -939,7 +941,7 @@ export default function ViewContributionsPage() {
                         <option value="">Any country</option>
                         {(isTaxReceipts
                           ? countryOptions.filter((code) => ["US", "CA", "NL"].includes(code))
-                          : countryOptions
+                          : countryOptions.filter((code) => memberCountryCodes.includes(code))
                         ).map((code) => {
                           const name = countryNameByCode[code] ?? code;
                           return (
@@ -1048,7 +1050,7 @@ export default function ViewContributionsPage() {
                         onChange={(event) => setCountryCode(event.target.value)}
                       >
                         <option value="">Any country</option>
-                        {countryOptions.map((code) => {
+                        {countryOptions.filter((code) => memberCountryCodes.includes(code)).map((code) => {
                           const name = countryNameByCode[code] ?? code;
                           return (
                             <option key={code} value={code}>

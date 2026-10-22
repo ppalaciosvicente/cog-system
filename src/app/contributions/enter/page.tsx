@@ -5,6 +5,7 @@ import {
   EditContributionDialog,
   type ContributionEditDraft,
 } from "@/components/contributions/EditContributionDialog";
+import { useTableDateFormat } from "@/components/contributions/useTableDateFormat";
 import { ContributionPage } from "@/components/contributions/ContributionPage";
 import { SearchCombobox } from "@/components/SearchCombobox";
 import { ScrollableTable } from "@/components/ScrollableTable";
@@ -86,6 +87,7 @@ const DEFAULT_ENTRY_ROW_COUNT = 10;
 const DEFAULT_US_FUND_TYPE = "Check";
 
 export default function EnterContributionsPage() {
+  const { formatTableDate, dateFormatHint } = useTableDateFormat();
   const rowIdCounterRef = useRef(0);
   const nextRowId = () => {
     rowIdCounterRef.current += 1;
@@ -911,8 +913,8 @@ export default function EnterContributionsPage() {
                         <th className={forms.th}>Fund Type</th>
                         <th className={forms.th}>Check No.</th>
                         <th className={forms.th}>Contribution Type</th>
-                        <th className={forms.th}>Date Deposited</th>
-                        <th className={forms.th}>Date Entered</th>
+                        <th className={forms.th}>Date Deposited{dateFormatHint}</th>
+                        <th className={forms.th}>Date Entered{dateFormatHint}</th>
                         <th className={forms.th}>Batch #</th>
                         <th className={forms.th}>Comments</th>
                         <th className={forms.th}>Actions</th>
@@ -927,8 +929,8 @@ export default function EnterContributionsPage() {
                           <td className={forms.td}>{row.fundType}</td>
                           <td className={forms.td}>{row.checkNo}</td>
                           <td className={forms.td}>{row.contributionType}</td>
-                          <td className={forms.td}>{row.dateDeposited}</td>
-                          <td className={forms.td}>{row.dateEntered.slice(0, 10)}</td>
+                          <td className={forms.td}>{formatTableDate(row.dateDeposited)}</td>
+                          <td className={forms.td}>{formatTableDate(row.dateEntered)}</td>
                           <td className={forms.td}>{row.batchNumber}</td>
                           <td className={forms.td}>{row.comments}</td>
                           <td className={forms.td}>
